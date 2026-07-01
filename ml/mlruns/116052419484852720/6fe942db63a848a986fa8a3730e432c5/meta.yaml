@@ -1,0 +1,15 @@
+artifact_uri: /Users/harith/lastmeter ai/ml/mlruns/116052419484852720/6fe942db63a848a986fa8a3730e432c5/artifacts
+end_time: 1782478002731
+entry_point_name: ''
+experiment_id: '116052419484852720'
+lifecycle_stage: active
+run_id: 6fe942db63a848a986fa8a3730e432c5
+run_name: failure_reason_clf_v1.0
+run_uuid: 6fe942db63a848a986fa8a3730e432c5
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1782478000100
+status: 3
+tags: []
+user_id: harith

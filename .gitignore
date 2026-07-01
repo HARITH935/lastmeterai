@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.db
+.env
+
+# Node
+node_modules/
+dist/
+
+# Mac
+.DS_Store
+
+# Logs
+*.log
+/tmp/
+backend.log
+frontend.log

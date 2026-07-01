@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: lastmeter-ai-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements-prod.txt
+    # Auto-seed on every deploy (Option A: ephemeral SQLite).
+    # Database resets on each restart but always has demo data.
+    startCommand: python seed.py && gunicorn -k gthread -w 1 --threads 4 --bind 0.0.0.0:$PORT run:app
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      # SQLite path — Flask places this under backend/instance/lastmeter.db
+      - key: DATABASE_URL
+        value: sqlite:///lastmeter.db
+      # After Vercel deploy, replace this with your actual Vercel URL.
+      # You can keep * initially and tighten it after.
+      - key: CORS_ORIGINS
+        value: "*"
+      # Set these manually in the Render dashboard if you have the keys.
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: OPENWEATHER_API_KEY
+        sync: false

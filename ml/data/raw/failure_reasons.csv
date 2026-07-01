@@ -1,0 +1,541 @@
+text,category
+Heavy rain made delivery impossible today,weather
+Heavy rainfall made delivery impossible today,weather
+Heavy storm made delivery impossible today,weather
+Heavy flooding made delivery impossible today,weather
+Heavy cyclone made delivery impossible today,weather
+Heavy heavy downpour made delivery impossible today,weather
+Heavy thunderstorm made delivery impossible today,weather
+Heavy monsoon rain made delivery impossible today,weather
+Heavy flash flood made delivery impossible today,weather
+Could not deliver due to rain in the area,weather
+Could not deliver due to rainfall in the area,weather
+Could not deliver due to storm in the area,weather
+Could not deliver due to flooding in the area,weather
+Could not deliver due to cyclone in the area,weather
+Could not deliver due to heavy downpour in the area,weather
+Could not deliver due to thunderstorm in the area,weather
+Could not deliver due to monsoon rain in the area,weather
+Could not deliver due to flash flood in the area,weather
+rain flooded the roads near the delivery address,weather
+rainfall flooded the roads near the delivery address,weather
+storm flooded the roads near the delivery address,weather
+flooding flooded the roads near the delivery address,weather
+cyclone flooded the roads near the delivery address,weather
+heavy downpour flooded the roads near the delivery address,weather
+thunderstorm flooded the roads near the delivery address,weather
+monsoon rain flooded the roads near the delivery address,weather
+flash flood flooded the roads near the delivery address,weather
+Delivery cancelled because of rain conditions,weather
+Delivery cancelled because of rainfall conditions,weather
+Delivery cancelled because of storm conditions,weather
+Delivery cancelled because of flooding conditions,weather
+Delivery cancelled because of cyclone conditions,weather
+Delivery cancelled because of heavy downpour conditions,weather
+Delivery cancelled because of thunderstorm conditions,weather
+Delivery cancelled because of monsoon rain conditions,weather
+Delivery cancelled because of flash flood conditions,weather
+Roads were flooded due to rain,weather
+Roads were slippery due to rainfall,weather
+Roads were dangerous due to storm,weather
+Roads were waterlogged due to flooding,weather
+Roads were hazardous due to cyclone,weather
+Roads were wet due to heavy downpour,weather
+Roads were unsafe due to thunderstorm,weather
+Roads were flooded due to monsoon rain,weather
+Roads were submerged due to flash flood,weather
+Extreme rain prevented reaching the customer,weather
+Extreme rainfall prevented reaching the customer,weather
+Extreme storm prevented reaching the customer,weather
+Extreme flooding prevented reaching the customer,weather
+Extreme cyclone prevented reaching the customer,weather
+Extreme heavy downpour prevented reaching the customer,weather
+Extreme thunderstorm prevented reaching the customer,weather
+Extreme monsoon rain prevented reaching the customer,weather
+Extreme flash flood prevented reaching the customer,weather
+Delivery suspended as rain damaged the route,weather
+Delivery suspended as rainfall damaged the route,weather
+Delivery suspended as storm damaged the route,weather
+Delivery suspended as flooding damaged the route,weather
+Delivery suspended as cyclone damaged the route,weather
+Delivery suspended as heavy downpour damaged the route,weather
+Delivery suspended as thunderstorm damaged the route,weather
+Delivery suspended as monsoon rain damaged the route,weather
+Delivery suspended as flash flood damaged the route,weather
+rain caused severe visibility problems on the way,weather
+rainfall caused severe visibility problems on the way,weather
+storm caused severe visibility problems on the way,weather
+flooding caused severe visibility problems on the way,weather
+cyclone caused severe visibility problems on the way,weather
+heavy downpour caused severe visibility problems on the way,weather
+thunderstorm caused severe visibility problems on the way,weather
+monsoon rain caused severe visibility problems on the way,weather
+flash flood caused severe visibility problems on the way,weather
+The area experienced rain and delivery was halted,weather
+The area experienced rainfall and delivery was halted,weather
+The area experienced storm and delivery was halted,weather
+The area experienced flooding and delivery was halted,weather
+The area experienced cyclone and delivery was halted,weather
+The area experienced heavy downpour and delivery was halted,weather
+The area experienced thunderstorm and delivery was halted,weather
+The area experienced monsoon rain and delivery was halted,weather
+The area experienced flash flood and delivery was halted,weather
+Weather was too flooded for safe delivery,weather
+Weather was too slippery for safe delivery,weather
+Weather was too dangerous for safe delivery,weather
+Weather was too waterlogged for safe delivery,weather
+Weather was too hazardous for safe delivery,weather
+Weather was too wet for safe delivery,weather
+Weather was too unsafe for safe delivery,weather
+Weather was too flooded for safe delivery,weather
+Weather was too submerged for safe delivery,weather
+Customer area inaccessible due to rain,weather
+Customer area inaccessible due to rainfall,weather
+Customer area inaccessible due to storm,weather
+Customer area inaccessible due to flooding,weather
+Customer area inaccessible due to cyclone,weather
+Customer area inaccessible due to heavy downpour,weather
+Customer area inaccessible due to thunderstorm,weather
+Customer area inaccessible due to monsoon rain,weather
+Customer area inaccessible due to flash flood,weather
+Forced to turn back because rain blocked the path,weather
+Forced to turn back because rainfall blocked the path,weather
+Forced to turn back because storm blocked the path,weather
+Forced to turn back because flooding blocked the path,weather
+Forced to turn back because cyclone blocked the path,weather
+Forced to turn back because heavy downpour blocked the path,weather
+Forced to turn back because thunderstorm blocked the path,weather
+Forced to turn back because monsoon rain blocked the path,weather
+Forced to turn back because flash flood blocked the path,weather
+rain warning issued and delivery postponed,weather
+rainfall warning issued and delivery postponed,weather
+storm warning issued and delivery postponed,weather
+flooding warning issued and delivery postponed,weather
+cyclone warning issued and delivery postponed,weather
+heavy downpour warning issued and delivery postponed,weather
+thunderstorm warning issued and delivery postponed,weather
+monsoon rain warning issued and delivery postponed,weather
+flash flood warning issued and delivery postponed,weather
+Unable to deliver due to flooded weather conditions all day,weather
+Unable to deliver due to slippery weather conditions all day,weather
+Unable to deliver due to dangerous weather conditions all day,weather
+Unable to deliver due to waterlogged weather conditions all day,weather
+Unable to deliver due to hazardous weather conditions all day,weather
+Unable to deliver due to wet weather conditions all day,weather
+Unable to deliver due to unsafe weather conditions all day,weather
+Unable to deliver due to flooded weather conditions all day,weather
+Unable to deliver due to submerged weather conditions all day,weather
+Storm level rain hit the route midway,weather
+Storm level rainfall hit the route midway,weather
+Storm level storm hit the route midway,weather
+Storm level flooding hit the route midway,weather
+Storm level cyclone hit the route midway,weather
+Storm level heavy downpour hit the route midway,weather
+Storm level thunderstorm hit the route midway,weather
+Storm level monsoon rain hit the route midway,weather
+Storm level flash flood hit the route midway,weather
+Customer was not available at the time of delivery,customer
+Customer was absent at the time of delivery,customer
+Customer was unavailable at the time of delivery,customer
+Customer was not home at the time of delivery,customer
+Customer was out of town at the time of delivery,customer
+Customer was not reachable at the time of delivery,customer
+Customer was away at the time of delivery,customer
+Customer was asleep at the time of delivery,customer
+Customer was unavailable all day at the time of delivery,customer
+Customer did not answer the door,customer
+Recipient did not answer the door,customer
+Nobody did not answer the door,customer
+Customer did not answer the door,customer
+Resident did not answer the door,customer
+Contact person did not answer the door,customer
+Customer did not answer the door,customer
+Customer did not answer the door,customer
+Recipient did not answer the door,customer
+Nobody was not available at the delivery address,customer
+Nobody was absent at the delivery address,customer
+Nobody was unavailable at the delivery address,customer
+Nobody was not home at the delivery address,customer
+Nobody was out of town at the delivery address,customer
+Nobody was not reachable at the delivery address,customer
+Nobody was away at the delivery address,customer
+Nobody was asleep at the delivery address,customer
+Nobody was unavailable all day at the delivery address,customer
+Customer refused the package upon arrival,customer
+Customer was not there the package upon arrival,customer
+Customer did not answer the package upon arrival,customer
+Customer cancelled the package upon arrival,customer
+Customer declined the package upon arrival,customer
+Customer refused the package upon arrival,customer
+Customer did not pick up the package upon arrival,customer
+Customer did not respond the package upon arrival,customer
+Customer was unreachable the package upon arrival,customer
+Customer was absent and could not collect,customer
+Recipient was absent and could not collect,customer
+Nobody was absent and could not collect,customer
+Customer was absent and could not collect,customer
+Resident was absent and could not collect,customer
+Contact person was absent and could not collect,customer
+Customer was absent and could not collect,customer
+Customer was absent and could not collect,customer
+Recipient was absent and could not collect,customer
+Attempted delivery but customer was not available,customer
+Attempted delivery but customer was absent,customer
+Attempted delivery but customer was unavailable,customer
+Attempted delivery but customer was not home,customer
+Attempted delivery but customer was out of town,customer
+Attempted delivery but customer was not reachable,customer
+Attempted delivery but customer was away,customer
+Attempted delivery but customer was asleep,customer
+Attempted delivery but customer was unavailable all day,customer
+Customer refused to accept the order,customer
+Customer was not there to accept the order,customer
+Customer did not answer to accept the order,customer
+Customer cancelled to accept the order,customer
+Customer declined to accept the order,customer
+Customer refused to accept the order,customer
+Customer did not pick up to accept the order,customer
+Customer did not respond to accept the order,customer
+Customer was unreachable to accept the order,customer
+Delivery failed because Customer was not reachable,customer
+Delivery failed because Recipient was not reachable,customer
+Delivery failed because Nobody was not reachable,customer
+Delivery failed because Customer was not reachable,customer
+Delivery failed because Resident was not reachable,customer
+Delivery failed because Contact person was not reachable,customer
+Delivery failed because Customer was not reachable,customer
+Delivery failed because Customer was not reachable,customer
+Delivery failed because Recipient was not reachable,customer
+Customer requested delay but then refused,customer
+Recipient requested delay but then was not there,customer
+Nobody requested delay but then did not answer,customer
+Customer requested delay but then cancelled,customer
+Resident requested delay but then declined,customer
+Contact person requested delay but then refused,customer
+Customer requested delay but then did not pick up,customer
+Customer requested delay but then did not respond,customer
+Recipient requested delay but then was unreachable,customer
+Customer was not available when we arrived with the package,customer
+Customer was absent when we arrived with the package,customer
+Customer was unavailable when we arrived with the package,customer
+Customer was not home when we arrived with the package,customer
+Customer was out of town when we arrived with the package,customer
+Customer was not reachable when we arrived with the package,customer
+Customer was away when we arrived with the package,customer
+Customer was asleep when we arrived with the package,customer
+Customer was unavailable all day when we arrived with the package,customer
+No one not available at the given address,customer
+No one absent at the given address,customer
+No one unavailable at the given address,customer
+No one not home at the given address,customer
+No one out of town at the given address,customer
+No one not reachable at the given address,customer
+No one away at the given address,customer
+No one asleep at the given address,customer
+No one unavailable all day at the given address,customer
+Package undelivered as customer refused it,customer
+Package undelivered as customer was not there it,customer
+Package undelivered as customer did not answer it,customer
+Package undelivered as customer cancelled it,customer
+Package undelivered as customer declined it,customer
+Package undelivered as customer refused it,customer
+Package undelivered as customer did not pick up it,customer
+Package undelivered as customer did not respond it,customer
+Package undelivered as customer was unreachable it,customer
+Customer was busy and refused to receive delivery,customer
+Recipient was busy and was not there to receive delivery,customer
+Nobody was busy and did not answer to receive delivery,customer
+Customer was busy and cancelled to receive delivery,customer
+Resident was busy and declined to receive delivery,customer
+Contact person was busy and refused to receive delivery,customer
+Customer was busy and did not pick up to receive delivery,customer
+Customer was busy and did not respond to receive delivery,customer
+Recipient was busy and was unreachable to receive delivery,customer
+Could not handover since Customer was not available,customer
+Could not handover since Recipient was absent,customer
+Could not handover since Nobody was unavailable,customer
+Could not handover since Customer was not home,customer
+Could not handover since Resident was out of town,customer
+Could not handover since Contact person was not reachable,customer
+Could not handover since Customer was away,customer
+Could not handover since Customer was asleep,customer
+Could not handover since Recipient was unavailable all day,customer
+Third delivery attempt also failed as customer was not available,customer
+Third delivery attempt also failed as customer was absent,customer
+Third delivery attempt also failed as customer was unavailable,customer
+Third delivery attempt also failed as customer was not home,customer
+Third delivery attempt also failed as customer was out of town,customer
+Third delivery attempt also failed as customer was not reachable,customer
+Third delivery attempt also failed as customer was away,customer
+Third delivery attempt also failed as customer was asleep,customer
+Third delivery attempt also failed as customer was unavailable all day,customer
+Massive traffic jam on the main road delayed delivery,traffic
+Massive road blockage on the main road delayed delivery,traffic
+Massive accident on the main road delayed delivery,traffic
+Massive construction work on the main road delayed delivery,traffic
+Massive road closure on the main road delayed delivery,traffic
+Massive police barricade on the main road delayed delivery,traffic
+Massive bridge collapse on the main road delayed delivery,traffic
+Massive VIP convoy on the main road delayed delivery,traffic
+Massive traffic congestion on the main road delayed delivery,traffic
+Road blocked due to traffic jam and had to take detour,traffic
+Road closed due to road blockage and had to take detour,traffic
+Road congested due to accident and had to take detour,traffic
+Road narrowed due to construction work and had to take detour,traffic
+Road shut due to road closure and had to take detour,traffic
+Road restricted due to police barricade and had to take detour,traffic
+Road closed due to bridge collapse and had to take detour,traffic
+Road blocked due to VIP convoy and had to take detour,traffic
+Road jammed due to traffic congestion and had to take detour,traffic
+Heavy traffic jam near the delivery area,traffic
+Heavy road blockage near the delivery area,traffic
+Heavy accident near the delivery area,traffic
+Heavy construction work near the delivery area,traffic
+Heavy road closure near the delivery area,traffic
+Heavy police barricade near the delivery area,traffic
+Heavy bridge collapse near the delivery area,traffic
+Heavy VIP convoy near the delivery area,traffic
+Heavy traffic congestion near the delivery area,traffic
+Could not reach customer because traffic jam blocked the route,traffic
+Could not reach customer because road blockage blocked the route,traffic
+Could not reach customer because accident blocked the route,traffic
+Could not reach customer because construction work blocked the route,traffic
+Could not reach customer because road closure blocked the route,traffic
+Could not reach customer because police barricade blocked the route,traffic
+Could not reach customer because bridge collapse blocked the route,traffic
+Could not reach customer because VIP convoy blocked the route,traffic
+Could not reach customer because traffic congestion blocked the route,traffic
+traffic jam on the highway caused major delay,traffic
+road blockage on the highway caused major delay,traffic
+accident on the highway caused major delay,traffic
+construction work on the highway caused major delay,traffic
+road closure on the highway caused major delay,traffic
+police barricade on the highway caused major delay,traffic
+bridge collapse on the highway caused major delay,traffic
+VIP convoy on the highway caused major delay,traffic
+traffic congestion on the highway caused major delay,traffic
+Roads blocked because of traffic jam ahead,traffic
+Roads closed because of road blockage ahead,traffic
+Roads congested because of accident ahead,traffic
+Roads narrowed because of construction work ahead,traffic
+Roads shut because of road closure ahead,traffic
+Roads restricted because of police barricade ahead,traffic
+Roads closed because of bridge collapse ahead,traffic
+Roads blocked because of VIP convoy ahead,traffic
+Roads jammed because of traffic congestion ahead,traffic
+Delivery delayed due to traffic jam near customer area,traffic
+Delivery delayed due to road blockage near customer area,traffic
+Delivery delayed due to accident near customer area,traffic
+Delivery delayed due to construction work near customer area,traffic
+Delivery delayed due to road closure near customer area,traffic
+Delivery delayed due to police barricade near customer area,traffic
+Delivery delayed due to bridge collapse near customer area,traffic
+Delivery delayed due to VIP convoy near customer area,traffic
+Delivery delayed due to traffic congestion near customer area,traffic
+Agent stuck in traffic jam for over two hours,traffic
+Agent stuck in road blockage for over two hours,traffic
+Agent stuck in accident for over two hours,traffic
+Agent stuck in construction work for over two hours,traffic
+Agent stuck in road closure for over two hours,traffic
+Agent stuck in police barricade for over two hours,traffic
+Agent stuck in bridge collapse for over two hours,traffic
+Agent stuck in VIP convoy for over two hours,traffic
+Agent stuck in traffic congestion for over two hours,traffic
+Route blocked after traffic jam,traffic
+Route closed after road blockage,traffic
+Route congested after accident,traffic
+Route narrowed after construction work,traffic
+Route shut after road closure,traffic
+Route restricted after police barricade,traffic
+Route closed after bridge collapse,traffic
+Route blocked after VIP convoy,traffic
+Route jammed after traffic congestion,traffic
+traffic jam near the junction prevented entry,traffic
+road blockage near the junction prevented entry,traffic
+accident near the junction prevented entry,traffic
+construction work near the junction prevented entry,traffic
+road closure near the junction prevented entry,traffic
+police barricade near the junction prevented entry,traffic
+bridge collapse near the junction prevented entry,traffic
+VIP convoy near the junction prevented entry,traffic
+traffic congestion near the junction prevented entry,traffic
+Delivery time exceeded because of traffic jam,traffic
+Delivery time exceeded because of road blockage,traffic
+Delivery time exceeded because of accident,traffic
+Delivery time exceeded because of construction work,traffic
+Delivery time exceeded because of road closure,traffic
+Delivery time exceeded because of police barricade,traffic
+Delivery time exceeded because of bridge collapse,traffic
+Delivery time exceeded because of VIP convoy,traffic
+Delivery time exceeded because of traffic congestion,traffic
+The usual route was blocked due to traffic jam,traffic
+The usual route was closed due to road blockage,traffic
+The usual route was congested due to accident,traffic
+The usual route was narrowed due to construction work,traffic
+The usual route was shut due to road closure,traffic
+The usual route was restricted due to police barricade,traffic
+The usual route was closed due to bridge collapse,traffic
+The usual route was blocked due to VIP convoy,traffic
+The usual route was jammed due to traffic congestion,traffic
+Could not bypass traffic jam and took too long,traffic
+Could not bypass road blockage and took too long,traffic
+Could not bypass accident and took too long,traffic
+Could not bypass construction work and took too long,traffic
+Could not bypass road closure and took too long,traffic
+Could not bypass police barricade and took too long,traffic
+Could not bypass bridge collapse and took too long,traffic
+Could not bypass VIP convoy and took too long,traffic
+Could not bypass traffic congestion and took too long,traffic
+Severe traffic jam made the road impassable,traffic
+Severe road blockage made the road impassable,traffic
+Severe accident made the road impassable,traffic
+Severe construction work made the road impassable,traffic
+Severe road closure made the road impassable,traffic
+Severe police barricade made the road impassable,traffic
+Severe bridge collapse made the road impassable,traffic
+Severe VIP convoy made the road impassable,traffic
+Severe traffic congestion made the road impassable,traffic
+Delivery skipped as traffic jam blocked all access roads,traffic
+Delivery skipped as road blockage blocked all access roads,traffic
+Delivery skipped as accident blocked all access roads,traffic
+Delivery skipped as construction work blocked all access roads,traffic
+Delivery skipped as road closure blocked all access roads,traffic
+Delivery skipped as police barricade blocked all access roads,traffic
+Delivery skipped as bridge collapse blocked all access roads,traffic
+Delivery skipped as VIP convoy blocked all access roads,traffic
+Delivery skipped as traffic congestion blocked all access roads,traffic
+Address not found and could not locate the destination,other
+Address was locked with no entry and could not locate the destination,other
+Address was damaged in transit and could not locate the destination,other
+Address had wrong pin code and could not locate the destination,other
+Address moved to new location and could not locate the destination,other
+Address was cancelled by management and could not locate the destination,other
+Address vehicle breakdown and could not locate the destination,other
+Address system error and could not locate the destination,other
+Address was incomplete and could not locate the destination,other
+Delivery failed due to not found at the pickup point,other
+Delivery failed due to was locked with no entry at the pickup point,other
+Delivery failed due to was damaged in transit at the pickup point,other
+Delivery failed due to had wrong pin code at the pickup point,other
+Delivery failed due to moved to new location at the pickup point,other
+Delivery failed due to was cancelled by management at the pickup point,other
+Delivery failed due to vehicle breakdown at the pickup point,other
+Delivery failed due to system error at the pickup point,other
+Delivery failed due to was incomplete at the pickup point,other
+Package not found and delivery could not proceed,other
+Package was locked with no entry and delivery could not proceed,other
+Package was damaged in transit and delivery could not proceed,other
+Package had wrong pin code and delivery could not proceed,other
+Package moved to new location and delivery could not proceed,other
+Package was cancelled by management and delivery could not proceed,other
+Package vehicle breakdown and delivery could not proceed,other
+Package system error and delivery could not proceed,other
+Package was incomplete and delivery could not proceed,other
+Could not find the building because not found,other
+Could not find the building because was locked with no entry,other
+Could not find the building because was damaged in transit,other
+Could not find the building because had wrong pin code,other
+Could not find the building because moved to new location,other
+Could not find the building because was cancelled by management,other
+Could not find the building because vehicle breakdown,other
+Could not find the building because system error,other
+Could not find the building because was incomplete,other
+Incorrect address provided in the order,other
+Incorrect phone number provided in the order,other
+Incorrect pin code provided in the order,other
+Incorrect landmark provided in the order,other
+Incorrect address details provided in the order,other
+Incorrect contact provided in the order,other
+Incorrect address provided in the order,other
+Incorrect order details provided in the order,other
+Incorrect address provided in the order,other
+Access to the building was not found,other
+Access to the building was was locked with no entry,other
+Access to the building was was damaged in transit,other
+Access to the building was had wrong pin code,other
+Access to the building was moved to new location,other
+Access to the building was was cancelled by management,other
+Access to the building was vehicle breakdown,other
+Access to the building was system error,other
+Access to the building was was incomplete,other
+Order not found before dispatch was complete,other
+Order was locked with no entry before dispatch was complete,other
+Order was damaged in transit before dispatch was complete,other
+Order had wrong pin code before dispatch was complete,other
+Order moved to new location before dispatch was complete,other
+Order was cancelled by management before dispatch was complete,other
+Order vehicle breakdown before dispatch was complete,other
+Order system error before dispatch was complete,other
+Order was incomplete before dispatch was complete,other
+not found prevented completion of delivery,other
+was locked with no entry prevented completion of delivery,other
+was damaged in transit prevented completion of delivery,other
+had wrong pin code prevented completion of delivery,other
+moved to new location prevented completion of delivery,other
+was cancelled by management prevented completion of delivery,other
+vehicle breakdown prevented completion of delivery,other
+system error prevented completion of delivery,other
+was incomplete prevented completion of delivery,other
+Delivery vehicle had not found on the way,other
+Delivery vehicle had was locked with no entry on the way,other
+Delivery vehicle had was damaged in transit on the way,other
+Delivery vehicle had had wrong pin code on the way,other
+Delivery vehicle had moved to new location on the way,other
+Delivery vehicle had was cancelled by management on the way,other
+Delivery vehicle had vehicle breakdown on the way,other
+Delivery vehicle had system error on the way,other
+Delivery vehicle had was incomplete on the way,other
+Could not reach customer due to not found,other
+Could not reach customer due to was locked with no entry,other
+Could not reach customer due to was damaged in transit,other
+Could not reach customer due to had wrong pin code,other
+Could not reach customer due to moved to new location,other
+Could not reach customer due to was cancelled by management,other
+Could not reach customer due to vehicle breakdown,other
+Could not reach customer due to system error,other
+Could not reach customer due to was incomplete,other
+Dispatch error with not found in the system,other
+Dispatch error with was locked with no entry in the system,other
+Dispatch error with was damaged in transit in the system,other
+Dispatch error with had wrong pin code in the system,other
+Dispatch error with moved to new location in the system,other
+Dispatch error with was cancelled by management in the system,other
+Dispatch error with vehicle breakdown in the system,other
+Dispatch error with system error in the system,other
+Dispatch error with was incomplete in the system,other
+Delivery not found after agent left the hub,other
+Delivery was locked with no entry after agent left the hub,other
+Delivery was damaged in transit after agent left the hub,other
+Delivery had wrong pin code after agent left the hub,other
+Delivery moved to new location after agent left the hub,other
+Delivery was cancelled by management after agent left the hub,other
+Delivery vehicle breakdown after agent left the hub,other
+Delivery system error after agent left the hub,other
+Delivery was incomplete after agent left the hub,other
+Technical not found delayed the route assignment,other
+Technical was locked with no entry delayed the route assignment,other
+Technical was damaged in transit delayed the route assignment,other
+Technical had wrong pin code delayed the route assignment,other
+Technical moved to new location delayed the route assignment,other
+Technical was cancelled by management delayed the route assignment,other
+Technical vehicle breakdown delayed the route assignment,other
+Technical system error delayed the route assignment,other
+Technical was incomplete delayed the route assignment,other
+Customer address had not found,other
+Customer address had was locked with no entry,other
+Customer address had was damaged in transit,other
+Customer address had had wrong pin code,other
+Customer address had moved to new location,other
+Customer address had was cancelled by management,other
+Customer address had vehicle breakdown,other
+Customer address had system error,other
+Customer address had was incomplete,other
+Order cancelled due to not found at warehouse,other
+Order cancelled due to was locked with no entry at warehouse,other
+Order cancelled due to was damaged in transit at warehouse,other
+Order cancelled due to had wrong pin code at warehouse,other
+Order cancelled due to moved to new location at warehouse,other
+Order cancelled due to was cancelled by management at warehouse,other
+Order cancelled due to vehicle breakdown at warehouse,other
+Order cancelled due to system error at warehouse,other
+Order cancelled due to was incomplete at warehouse,other

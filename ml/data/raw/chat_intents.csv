@@ -1,0 +1,708 @@
+text,intent
+What is the status of order #124?,order_status
+What is the status of order #256?,order_status
+What is the status of my last order?,order_status
+What is the status of the pending order?,order_status
+What is the status of #789?,order_status
+What is the status of order number 42?,order_status
+What is the status of the Velachery order?,order_status
+What is the status of today's first order?,order_status
+Where is order #124 right now?,order_status
+Where is order #256 right now?,order_status
+Where is my last order right now?,order_status
+Where is the pending order right now?,order_status
+Where is #789 right now?,order_status
+Where is order number 42 right now?,order_status
+Where is the Velachery order right now?,order_status
+Where is today's first order right now?,order_status
+Has order #124 been delivered yet?,order_status
+Has order #256 been delivered yet?,order_status
+Has my last order been delivered yet?,order_status
+Has the pending order been delivered yet?,order_status
+Has #789 been delivered yet?,order_status
+Has order number 42 been delivered yet?,order_status
+Has the Velachery order been delivered yet?,order_status
+Has today's first order been delivered yet?,order_status
+Can you check on order #124 for me?,order_status
+Can you check on order #256 for me?,order_status
+Can you check on my last order for me?,order_status
+Can you check on the pending order for me?,order_status
+Can you check on #789 for me?,order_status
+Can you check on order number 42 for me?,order_status
+Can you check on the Velachery order for me?,order_status
+Can you check on today's first order for me?,order_status
+Is order #124 still pending or delivered?,order_status
+Is order #256 still pending or delivered?,order_status
+Is my last order still pending or delivered?,order_status
+Is the pending order still pending or delivered?,order_status
+Is #789 still pending or delivered?,order_status
+Is order number 42 still pending or delivered?,order_status
+Is the Velachery order still pending or delivered?,order_status
+Is today's first order still pending or delivered?,order_status
+Track order #124 please,order_status
+Track order #256 please,order_status
+Track my last order please,order_status
+Track the pending order please,order_status
+Track #789 please,order_status
+Track order number 42 please,order_status
+Track the Velachery order please,order_status
+Track today's first order please,order_status
+Give me an update on order #124,order_status
+Give me an update on order #256,order_status
+Give me an update on my last order,order_status
+Give me an update on the pending order,order_status
+Give me an update on #789,order_status
+Give me an update on order number 42,order_status
+Give me an update on the Velachery order,order_status
+Give me an update on today's first order,order_status
+What happened with order #124?,order_status
+What happened with order #256?,order_status
+What happened with my last order?,order_status
+What happened with the pending order?,order_status
+What happened with #789?,order_status
+What happened with order number 42?,order_status
+What happened with the Velachery order?,order_status
+What happened with today's first order?,order_status
+Any news on the delivery of order #124?,order_status
+Any news on the delivery of order #256?,order_status
+Any news on the delivery of my last order?,order_status
+Any news on the delivery of the pending order?,order_status
+Any news on the delivery of #789?,order_status
+Any news on the delivery of order number 42?,order_status
+Any news on the delivery of the Velachery order?,order_status
+Any news on the delivery of today's first order?,order_status
+Show me the latest status for order #124,order_status
+Show me the latest status for order #256,order_status
+Show me the latest status for my last order,order_status
+Show me the latest status for the pending order,order_status
+Show me the latest status for #789,order_status
+Show me the latest status for order number 42,order_status
+Show me the latest status for the Velachery order,order_status
+Show me the latest status for today's first order,order_status
+Was order #124 successfully delivered?,order_status
+Was order #256 successfully delivered?,order_status
+Was my last order successfully delivered?,order_status
+Was the pending order successfully delivered?,order_status
+Was #789 successfully delivered?,order_status
+Was order number 42 successfully delivered?,order_status
+Was the Velachery order successfully delivered?,order_status
+Was today's first order successfully delivered?,order_status
+I need to know if order #124 is delivered,order_status
+I need to know if order #256 is delivered,order_status
+I need to know if my last order is delivered,order_status
+I need to know if the pending order is delivered,order_status
+I need to know if #789 is delivered,order_status
+I need to know if order number 42 is delivered,order_status
+I need to know if the Velachery order is delivered,order_status
+I need to know if today's first order is delivered,order_status
+Delivery status of order #124,order_status
+Delivery status of order #256,order_status
+Delivery status of my last order,order_status
+Delivery status of the pending order,order_status
+Delivery status of #789,order_status
+Delivery status of order number 42,order_status
+Delivery status of the Velachery order,order_status
+Delivery status of today's first order,order_status
+Where does order #124 stand currently?,order_status
+Where does order #256 stand currently?,order_status
+Where does my last order stand currently?,order_status
+Where does the pending order stand currently?,order_status
+Where does #789 stand currently?,order_status
+Where does order number 42 stand currently?,order_status
+Where does the Velachery order stand currently?,order_status
+Where does today's first order stand currently?,order_status
+Is order #124 out for delivery or completed?,order_status
+Is order #256 out for delivery or completed?,order_status
+Is my last order out for delivery or completed?,order_status
+Is the pending order out for delivery or completed?,order_status
+Is #789 out for delivery or completed?,order_status
+Is order number 42 out for delivery or completed?,order_status
+Is the Velachery order out for delivery or completed?,order_status
+Is today's first order out for delivery or completed?,order_status
+How much will I earn today?,earnings_query
+How much will I earn this week?,earnings_query
+How much will I earn this month?,earnings_query
+How much will I earn yesterday?,earnings_query
+How much will I earn last week?,earnings_query
+How much will I earn so far today?,earnings_query
+What are my total earnings for today?,earnings_query
+What are my total earnings for this week?,earnings_query
+What are my total earnings for this month?,earnings_query
+What are my total earnings for yesterday?,earnings_query
+What are my total earnings for last week?,earnings_query
+What are my total earnings for so far today?,earnings_query
+Show me my commission for today,earnings_query
+Show me my commission for this week,earnings_query
+Show me my commission for this month,earnings_query
+Show me my commission for yesterday,earnings_query
+Show me my commission for last week,earnings_query
+Show me my commission for so far today,earnings_query
+How much have I made today?,earnings_query
+How much have I made this week?,earnings_query
+How much have I made this month?,earnings_query
+How much have I made yesterday?,earnings_query
+How much have I made last week?,earnings_query
+How much have I made so far today?,earnings_query
+What is my pay for today?,earnings_query
+What is my pay for this week?,earnings_query
+What is my pay for this month?,earnings_query
+What is my pay for yesterday?,earnings_query
+What is my pay for last week?,earnings_query
+What is my pay for so far today?,earnings_query
+Earnings breakdown for today,earnings_query
+Earnings breakdown for this week,earnings_query
+Earnings breakdown for this month,earnings_query
+Earnings breakdown for yesterday,earnings_query
+Earnings breakdown for last week,earnings_query
+Earnings breakdown for so far today,earnings_query
+Tell me my income for today,earnings_query
+Tell me my income for this week,earnings_query
+Tell me my income for this month,earnings_query
+Tell me my income for yesterday,earnings_query
+Tell me my income for last week,earnings_query
+Tell me my income for so far today,earnings_query
+How much did the team earn today?,earnings_query
+How much did the team earn this week?,earnings_query
+How much did the team earn this month?,earnings_query
+How much did the team earn yesterday?,earnings_query
+How much did the team earn last week?,earnings_query
+How much did the team earn so far today?,earnings_query
+What is the total payout for today?,earnings_query
+What is the total payout for this week?,earnings_query
+What is the total payout for this month?,earnings_query
+What is the total payout for yesterday?,earnings_query
+What is the total payout for last week?,earnings_query
+What is the total payout for so far today?,earnings_query
+My earnings summary for today,earnings_query
+My earnings summary for this week,earnings_query
+My earnings summary for this month,earnings_query
+My earnings summary for yesterday,earnings_query
+My earnings summary for last week,earnings_query
+My earnings summary for so far today,earnings_query
+How many rupees did I make today?,earnings_query
+How many rupees did I make this week?,earnings_query
+How many rupees did I make this month?,earnings_query
+How many rupees did I make yesterday?,earnings_query
+How many rupees did I make last week?,earnings_query
+How many rupees did I make so far today?,earnings_query
+What is my delivery commission today?,earnings_query
+What is my delivery commission this week?,earnings_query
+What is my delivery commission this month?,earnings_query
+What is my delivery commission yesterday?,earnings_query
+What is my delivery commission last week?,earnings_query
+What is my delivery commission so far today?,earnings_query
+Show earnings report for today,earnings_query
+Show earnings report for this week,earnings_query
+Show earnings report for this month,earnings_query
+Show earnings report for yesterday,earnings_query
+Show earnings report for last week,earnings_query
+Show earnings report for so far today,earnings_query
+How much profit from deliveries today?,earnings_query
+How much profit from deliveries this week?,earnings_query
+How much profit from deliveries this month?,earnings_query
+How much profit from deliveries yesterday?,earnings_query
+How much profit from deliveries last week?,earnings_query
+How much profit from deliveries so far today?,earnings_query
+Agent earnings for today,earnings_query
+Agent earnings for this week,earnings_query
+Agent earnings for this month,earnings_query
+Agent earnings for yesterday,earnings_query
+Agent earnings for last week,earnings_query
+Agent earnings for so far today,earnings_query
+Which area has the most failures?,area_risk
+Which area has the most delivery issues?,area_risk
+Which area has the most failed orders?,area_risk
+Which area has the most delays?,area_risk
+Which area has the most no-go decisions?,area_risk
+Which area has the most problems?,area_risk
+What is the failure rate in Velachery?,area_risk
+What is the failure rate in Adyar?,area_risk
+What is the failure rate in T Nagar?,area_risk
+What is the failure rate in Porur?,area_risk
+What is the failure rate in Anna Nagar?,area_risk
+What is the failure rate in all areas?,area_risk
+Is Velachery a high risk area today?,area_risk
+Is Adyar a high risk area this week?,area_risk
+Is T Nagar a high risk area right now?,area_risk
+Is Porur a high risk area this morning?,area_risk
+Is Anna Nagar a high risk area lately?,area_risk
+Is all areas a high risk area today?,area_risk
+How is Velachery performing today?,area_risk
+How is Adyar performing this week?,area_risk
+How is T Nagar performing right now?,area_risk
+How is Porur performing this morning?,area_risk
+How is Anna Nagar performing lately?,area_risk
+How is all areas performing today?,area_risk
+Show me the risk level for Velachery,area_risk
+Show me the risk level for Adyar,area_risk
+Show me the risk level for T Nagar,area_risk
+Show me the risk level for Porur,area_risk
+Show me the risk level for Anna Nagar,area_risk
+Show me the risk level for all areas,area_risk
+Which zones have failures above average?,area_risk
+Which zones have delivery issues above average?,area_risk
+Which zones have failed orders above average?,area_risk
+Which zones have delays above average?,area_risk
+Which zones have no-go decisions above average?,area_risk
+Which zones have problems above average?,area_risk
+Risk report for Velachery,area_risk
+Risk report for Adyar,area_risk
+Risk report for T Nagar,area_risk
+Risk report for Porur,area_risk
+Risk report for Anna Nagar,area_risk
+Risk report for all areas,area_risk
+What are the failure hotspots today?,area_risk
+What are the failure hotspots this week?,area_risk
+What are the failure hotspots right now?,area_risk
+What are the failure hotspots this morning?,area_risk
+What are the failure hotspots lately?,area_risk
+What are the failure hotspots today?,area_risk
+Why is Velachery showing high failure rates?,area_risk
+Why is Adyar showing high failure rates?,area_risk
+Why is T Nagar showing high failure rates?,area_risk
+Why is Porur showing high failure rates?,area_risk
+Why is Anna Nagar showing high failure rates?,area_risk
+Why is all areas showing high failure rates?,area_risk
+Compare failure rates across areas today,area_risk
+Compare failure rates across areas this week,area_risk
+Compare failure rates across areas right now,area_risk
+Compare failure rates across areas this morning,area_risk
+Compare failure rates across areas lately,area_risk
+Compare failure rates across areas today,area_risk
+List the most problematic delivery zones,area_risk
+List the most problematic delivery zones,area_risk
+List the most problematic delivery zones,area_risk
+List the most problematic delivery zones,area_risk
+List the most problematic delivery zones,area_risk
+List the most problematic delivery zones,area_risk
+Which area should I be worried about?,area_risk
+Which area should I be worried about?,area_risk
+Which area should I be worried about?,area_risk
+Which area should I be worried about?,area_risk
+Which area should I be worried about?,area_risk
+Which area should I be worried about?,area_risk
+Area performance breakdown for Velachery,area_risk
+Area performance breakdown for Adyar,area_risk
+Area performance breakdown for T Nagar,area_risk
+Area performance breakdown for Porur,area_risk
+Area performance breakdown for Anna Nagar,area_risk
+Area performance breakdown for all areas,area_risk
+Show the delivery success rate in Velachery,area_risk
+Show the delivery success rate in Adyar,area_risk
+Show the delivery success rate in T Nagar,area_risk
+Show the delivery success rate in Porur,area_risk
+Show the delivery success rate in Anna Nagar,area_risk
+Show the delivery success rate in all areas,area_risk
+Which area needs attention due to failures?,area_risk
+Which area needs attention due to delivery issues?,area_risk
+Which area needs attention due to failed orders?,area_risk
+Which area needs attention due to delays?,area_risk
+Which area needs attention due to no-go decisions?,area_risk
+Which area needs attention due to problems?,area_risk
+Suggest pending order reassignment,reassign_suggestion
+Suggest the workload reassignment,reassign_suggestion
+Suggest delivery reassignment,reassign_suggestion
+Suggest order reassignment,reassign_suggestion
+Suggest route reassignment,reassign_suggestion
+Which orders should be reassigned?,reassign_suggestion
+Which orders should be reassigned?,reassign_suggestion
+Which orders should be reassigned?,reassign_suggestion
+Which orders should be reassigned?,reassign_suggestion
+Which orders should be reassigned?,reassign_suggestion
+Can you recommend redistributing pending order?,reassign_suggestion
+Can you recommend redistributing the workload?,reassign_suggestion
+Can you recommend redistributing delivery?,reassign_suggestion
+Can you recommend redistributing order?,reassign_suggestion
+Can you recommend redistributing route?,reassign_suggestion
+Who should take over the Velachery deliveries?,reassign_suggestion
+Who should take over the Adyar deliveries?,reassign_suggestion
+Who should take over the T Nagar deliveries?,reassign_suggestion
+Who should take over the all areas deliveries?,reassign_suggestion
+Who should take over the Porur deliveries?,reassign_suggestion
+Reassign pending order to less loaded agents,reassign_suggestion
+Reassign the workload to less loaded agents,reassign_suggestion
+Reassign delivery to less loaded agents,reassign_suggestion
+Reassign order to less loaded agents,reassign_suggestion
+Reassign route to less loaded agents,reassign_suggestion
+Which agent can handle more orders today?,reassign_suggestion
+Which agent can handle more orders this afternoon?,reassign_suggestion
+Which agent can handle more orders now?,reassign_suggestion
+Which agent can handle more orders this morning?,reassign_suggestion
+Which agent can handle more orders evening?,reassign_suggestion
+Help me redistribute the pending order,reassign_suggestion
+Help me redistribute the the workload,reassign_suggestion
+Help me redistribute the delivery,reassign_suggestion
+Help me redistribute the order,reassign_suggestion
+Help me redistribute the route,reassign_suggestion
+Recommend order reassignments for Velachery,reassign_suggestion
+Recommend order reassignments for Adyar,reassign_suggestion
+Recommend order reassignments for T Nagar,reassign_suggestion
+Recommend order reassignments for all areas,reassign_suggestion
+Recommend order reassignments for Porur,reassign_suggestion
+Which deliveries need a new agent today?,reassign_suggestion
+Which deliveries need a new agent this afternoon?,reassign_suggestion
+Which deliveries need a new agent now?,reassign_suggestion
+Which deliveries need a new agent this morning?,reassign_suggestion
+Which deliveries need a new agent evening?,reassign_suggestion
+Suggest better routing and assignment for pending order,reassign_suggestion
+Suggest better routing and assignment for the workload,reassign_suggestion
+Suggest better routing and assignment for delivery,reassign_suggestion
+Suggest better routing and assignment for order,reassign_suggestion
+Suggest better routing and assignment for route,reassign_suggestion
+Agent workload is uneven so suggest pending order changes,reassign_suggestion
+Agent workload is uneven so suggest the workload changes,reassign_suggestion
+Agent workload is uneven so suggest delivery changes,reassign_suggestion
+Agent workload is uneven so suggest order changes,reassign_suggestion
+Agent workload is uneven so suggest route changes,reassign_suggestion
+Move some orders to free agents,reassign_suggestion
+Move some orders to free agents,reassign_suggestion
+Move some orders to free agents,reassign_suggestion
+Move some orders to free agents,reassign_suggestion
+Move some orders to free agents,reassign_suggestion
+Help rebalance pending order across the team,reassign_suggestion
+Help rebalance the workload across the team,reassign_suggestion
+Help rebalance delivery across the team,reassign_suggestion
+Help rebalance order across the team,reassign_suggestion
+Help rebalance route across the team,reassign_suggestion
+Which orders should I move to another agent?,reassign_suggestion
+Which orders should I move to another agent?,reassign_suggestion
+Which orders should I move to another agent?,reassign_suggestion
+Which orders should I move to another agent?,reassign_suggestion
+Which orders should I move to another agent?,reassign_suggestion
+Auto suggest reassignment for overloaded routes,reassign_suggestion
+Auto suggest reassignment for overloaded routes,reassign_suggestion
+Auto suggest reassignment for overloaded routes,reassign_suggestion
+Auto suggest reassignment for overloaded routes,reassign_suggestion
+Auto suggest reassignment for overloaded routes,reassign_suggestion
+What is the weather rain in Adyar?,weather_query
+What is the weather weather situation in Velachery?,weather_query
+What is the weather storm in Chennai?,weather_query
+What is the weather flooding in T Nagar?,weather_query
+What is the weather monsoon in all areas?,weather_query
+What is the weather weather in Porur?,weather_query
+Is it raining in Adyar today?,weather_query
+Is it raining in Velachery this evening?,weather_query
+Is it raining in Chennai this morning?,weather_query
+Is it raining in T Nagar right now?,weather_query
+Is it raining in all areas this week?,weather_query
+Is it raining in Porur afternoon?,weather_query
+How is the weather affecting deliveries in Adyar?,weather_query
+How is the weather affecting deliveries in Velachery?,weather_query
+How is the weather affecting deliveries in Chennai?,weather_query
+How is the weather affecting deliveries in T Nagar?,weather_query
+How is the weather affecting deliveries in all areas?,weather_query
+How is the weather affecting deliveries in Porur?,weather_query
+Weather conditions for Adyar today,weather_query
+Weather conditions for Velachery this evening,weather_query
+Weather conditions for Chennai this morning,weather_query
+Weather conditions for T Nagar right now,weather_query
+Weather conditions for all areas this week,weather_query
+Weather conditions for Porur afternoon,weather_query
+What is the rain forecast for Adyar?,weather_query
+What is the weather situation forecast for Velachery?,weather_query
+What is the storm forecast for Chennai?,weather_query
+What is the flooding forecast for T Nagar?,weather_query
+What is the monsoon forecast for all areas?,weather_query
+What is the weather forecast for Porur?,weather_query
+Is Adyar affected by rain today?,weather_query
+Is Velachery affected by weather situation this evening?,weather_query
+Is Chennai affected by storm this morning?,weather_query
+Is T Nagar affected by flooding right now?,weather_query
+Is all areas affected by monsoon this week?,weather_query
+Is Porur affected by weather afternoon?,weather_query
+Rain impact on Adyar deliveries today,weather_query
+Rain impact on Velachery deliveries this evening,weather_query
+Rain impact on Chennai deliveries this morning,weather_query
+Rain impact on T Nagar deliveries right now,weather_query
+Rain impact on all areas deliveries this week,weather_query
+Rain impact on Porur deliveries afternoon,weather_query
+Weather update for Adyar,weather_query
+Weather update for Velachery,weather_query
+Weather update for Chennai,weather_query
+Weather update for T Nagar,weather_query
+Weather update for all areas,weather_query
+Weather update for Porur,weather_query
+Is the weather dangerous for agents in Adyar?,weather_query
+Is the weather dangerous for agents in Velachery?,weather_query
+Is the weather dangerous for agents in Chennai?,weather_query
+Is the weather dangerous for agents in T Nagar?,weather_query
+Is the weather dangerous for agents in all areas?,weather_query
+Is the weather dangerous for agents in Porur?,weather_query
+How bad is the rain in Adyar?,weather_query
+How bad is the weather situation in Velachery?,weather_query
+How bad is the storm in Chennai?,weather_query
+How bad is the flooding in T Nagar?,weather_query
+How bad is the monsoon in all areas?,weather_query
+How bad is the weather in Porur?,weather_query
+Will rain affect deliveries today?,weather_query
+Will weather situation affect deliveries this evening?,weather_query
+Will storm affect deliveries this morning?,weather_query
+Will flooding affect deliveries right now?,weather_query
+Will monsoon affect deliveries this week?,weather_query
+Will weather affect deliveries afternoon?,weather_query
+Check weather for Adyar today,weather_query
+Check weather for Velachery this evening,weather_query
+Check weather for Chennai this morning,weather_query
+Check weather for T Nagar right now,weather_query
+Check weather for all areas this week,weather_query
+Check weather for Porur afternoon,weather_query
+Storm alert for Adyar?,weather_query
+Storm alert for Velachery?,weather_query
+Storm alert for Chennai?,weather_query
+Storm alert for T Nagar?,weather_query
+Storm alert for all areas?,weather_query
+Storm alert for Porur?,weather_query
+Weather risk level for Adyar,weather_query
+Weather risk level for Velachery,weather_query
+Weather risk level for Chennai,weather_query
+Weather risk level for T Nagar,weather_query
+Weather risk level for all areas,weather_query
+Weather risk level for Porur,weather_query
+Is the rain expected to clear up today?,weather_query
+Is the weather situation expected to clear up this evening?,weather_query
+Is the storm expected to clear up this morning?,weather_query
+Is the flooding expected to clear up right now?,weather_query
+Is the monsoon expected to clear up this week?,weather_query
+Is the weather expected to clear up afternoon?,weather_query
+How is Ravi performing this week?,agent_performance
+How is agent 3 performing today?,agent_performance
+How is the team performing this month?,agent_performance
+How is all agents performing yesterday?,agent_performance
+How is Kumar performing last week?,agent_performance
+How is the top agent performing this quarter?,agent_performance
+What is Ravi's success rate this week?,agent_performance
+What is agent 3's success rate today?,agent_performance
+What is the team's success rate this month?,agent_performance
+What is all agents's success rate yesterday?,agent_performance
+What is Kumar's success rate last week?,agent_performance
+What is the top agent's success rate this quarter?,agent_performance
+Who are the top performing agents this week?,agent_performance
+Who are the top performing agents today?,agent_performance
+Who are the top performing agents this month?,agent_performance
+Who are the top performing agents yesterday?,agent_performance
+Who are the top performing agents last week?,agent_performance
+Who are the top performing agents this quarter?,agent_performance
+Which agent has the most deliveries this week?,agent_performance
+Which agent has the most deliveries today?,agent_performance
+Which agent has the most deliveries this month?,agent_performance
+Which agent has the most deliveries yesterday?,agent_performance
+Which agent has the most deliveries last week?,agent_performance
+Which agent has the most deliveries this quarter?,agent_performance
+Show me Ravi's delivery stats,agent_performance
+Show me agent 3's delivery stats,agent_performance
+Show me the team's delivery stats,agent_performance
+Show me all agents's delivery stats,agent_performance
+Show me Kumar's delivery stats,agent_performance
+Show me the top agent's delivery stats,agent_performance
+How many orders did Ravi complete this week?,agent_performance
+How many orders did agent 3 complete today?,agent_performance
+How many orders did the team complete this month?,agent_performance
+How many orders did all agents complete yesterday?,agent_performance
+How many orders did Kumar complete last week?,agent_performance
+How many orders did the top agent complete this quarter?,agent_performance
+Agent performance report for this week,agent_performance
+Agent performance report for today,agent_performance
+Agent performance report for this month,agent_performance
+Agent performance report for yesterday,agent_performance
+Agent performance report for last week,agent_performance
+Agent performance report for this quarter,agent_performance
+Who is underperforming this week?,agent_performance
+Who is underperforming today?,agent_performance
+Who is underperforming this month?,agent_performance
+Who is underperforming yesterday?,agent_performance
+Who is underperforming last week?,agent_performance
+Who is underperforming this quarter?,agent_performance
+What is the team average delivery success rate?,agent_performance
+What is the team average delivery success rate?,agent_performance
+What is the team average delivery success rate?,agent_performance
+What is the team average delivery success rate?,agent_performance
+What is the team average delivery success rate?,agent_performance
+What is the team average delivery success rate?,agent_performance
+Compare agent performance for this week,agent_performance
+Compare agent performance for today,agent_performance
+Compare agent performance for this month,agent_performance
+Compare agent performance for yesterday,agent_performance
+Compare agent performance for last week,agent_performance
+Compare agent performance for this quarter,agent_performance
+How is the team doing overall this week?,agent_performance
+How is the team doing overall today?,agent_performance
+How is the team doing overall this month?,agent_performance
+How is the team doing overall yesterday?,agent_performance
+How is the team doing overall last week?,agent_performance
+How is the team doing overall this quarter?,agent_performance
+Which agents need support or training?,agent_performance
+Which agents need support or training?,agent_performance
+Which agents need support or training?,agent_performance
+Which agents need support or training?,agent_performance
+Which agents need support or training?,agent_performance
+Which agents need support or training?,agent_performance
+Show Ravi's NO-GO rate,agent_performance
+Show agent 3's NO-GO rate,agent_performance
+Show the team's NO-GO rate,agent_performance
+Show all agents's NO-GO rate,agent_performance
+Show Kumar's NO-GO rate,agent_performance
+Show the top agent's NO-GO rate,agent_performance
+List agents by success rate this week,agent_performance
+List agents by success rate today,agent_performance
+List agents by success rate this month,agent_performance
+List agents by success rate yesterday,agent_performance
+List agents by success rate last week,agent_performance
+List agents by success rate this quarter,agent_performance
+Performance breakdown for Ravi,agent_performance
+Performance breakdown for agent 3,agent_performance
+Performance breakdown for the team,agent_performance
+Performance breakdown for all agents,agent_performance
+Performance breakdown for Kumar,agent_performance
+Performance breakdown for the top agent,agent_performance
+Which orders should be postponed due to rain?,postpone_query
+Which orders should be postponed because of flooding?,postpone_query
+Which orders should be postponed due to traffic?,postpone_query
+Which orders should be postponed given the weather?,postpone_query
+Which orders should be postponed for safety?,postpone_query
+Should I delay any deliveries due to rain?,postpone_query
+Should I delay any deliveries because of flooding?,postpone_query
+Should I delay any deliveries due to traffic?,postpone_query
+Should I delay any deliveries given the weather?,postpone_query
+Should I delay any deliveries for safety?,postpone_query
+What should I reschedule for tomorrow?,postpone_query
+What should I reschedule for tomorrow?,postpone_query
+What should I reschedule for tomorrow?,postpone_query
+What should I reschedule for tomorrow?,postpone_query
+What should I reschedule for tomorrow?,postpone_query
+Which orders are not safe to deliver due to rain?,postpone_query
+Which orders are not safe to deliver because of flooding?,postpone_query
+Which orders are not safe to deliver due to traffic?,postpone_query
+Which orders are not safe to deliver given the weather?,postpone_query
+Which orders are not safe to deliver for safety?,postpone_query
+Suggest postponements due to rain,postpone_query
+Suggest postponements because of flooding,postpone_query
+Suggest postponements due to traffic,postpone_query
+Suggest postponements given the weather,postpone_query
+Suggest postponements for safety,postpone_query
+Can you list orders to defer due to rain?,postpone_query
+Can you list orders to defer because of flooding?,postpone_query
+Can you list orders to defer due to traffic?,postpone_query
+Can you list orders to defer given the weather?,postpone_query
+Can you list orders to defer for safety?,postpone_query
+Recommend deferral of risky orders due to rain,postpone_query
+Recommend deferral of risky orders because of flooding,postpone_query
+Recommend deferral of risky orders due to traffic,postpone_query
+Recommend deferral of risky orders given the weather,postpone_query
+Recommend deferral of risky orders for safety,postpone_query
+Which deliveries should wait until tomorrow morning?,postpone_query
+Which deliveries should wait until next slot?,postpone_query
+Which deliveries should wait until evening?,postpone_query
+Which deliveries should wait until later today?,postpone_query
+Which deliveries should wait until a better time?,postpone_query
+Is it better to postpone Velachery orders due to rain?,postpone_query
+Is it better to postpone Adyar orders because of flooding?,postpone_query
+Is it better to postpone T Nagar orders due to traffic?,postpone_query
+Is it better to postpone all areas orders given the weather?,postpone_query
+Is it better to postpone risky zones orders for safety?,postpone_query
+Help me decide what to hold back due to rain,postpone_query
+Help me decide what to hold back because of flooding,postpone_query
+Help me decide what to hold back due to traffic,postpone_query
+Help me decide what to hold back given the weather,postpone_query
+Help me decide what to hold back for safety,postpone_query
+Which NO-GO orders need rescheduling?,postpone_query
+Which NO-GO orders need rescheduling?,postpone_query
+Which NO-GO orders need rescheduling?,postpone_query
+Which NO-GO orders need rescheduling?,postpone_query
+Which NO-GO orders need rescheduling?,postpone_query
+What should I put off due to rain?,postpone_query
+What should I put off because of flooding?,postpone_query
+What should I put off due to traffic?,postpone_query
+What should I put off given the weather?,postpone_query
+What should I put off for safety?,postpone_query
+List all orders that should be deferred,postpone_query
+List all orders that should be deferred,postpone_query
+List all orders that should be deferred,postpone_query
+List all orders that should be deferred,postpone_query
+List all orders that should be deferred,postpone_query
+Should today's orders be postponed due to rain?,postpone_query
+Should today's orders be postponed because of flooding?,postpone_query
+Should today's orders be postponed due to traffic?,postpone_query
+Should today's orders be postponed given the weather?,postpone_query
+Should today's orders be postponed for safety?,postpone_query
+What is safe to deliver versus what to postpone?,postpone_query
+What is safe to deliver versus what to postpone?,postpone_query
+What is safe to deliver versus what to postpone?,postpone_query
+What is safe to deliver versus what to postpone?,postpone_query
+What is safe to deliver versus what to postpone?,postpone_query
+Hello I need some help,general
+Good morning,general
+Hi there,general
+What can you do?,general
+What features do you have?,general
+Can you help me?,general
+Thanks for the info,general
+Thank you,general
+That was useful,general
+Okay got it,general
+I understand,general
+How does this work?,general
+Tell me something interesting,general
+I am not sure what to ask,general
+What should I focus on today?,general
+Give me a summary of everything,general
+I just wanted to check in,general
+Is anyone there?,general
+Show me something helpful,general
+What is LastMeter AI?,general
+Can you explain how the system works?,general
+What is the purpose of this chat?,general
+Can you do calculations?,general
+I need to think about this,general
+Let me get back to you,general
+Nothing in particular,general
+Tell me a joke,general
+What day is it?,general
+Remind me later,general
+Good evening,general
+Good afternoon,general
+Goodbye,general
+See you later,general
+Have a great day,general
+I am done for now,general
+Signing off,general
+One more thing,general
+Actually never mind,general
+Just checking,general
+Okay thanks,general
+Perfect,general
+Sounds good,general
+Can you repeat that?,general
+I did not understand,general
+Explain again please,general
+Make it simpler,general
+Give a short answer,general
+I need help with something,general
+Not sure what is happening,general
+Everything seems fine,general
+Nothing urgent,general
+Just curious,general
+Interesting,general
+Good to know,general
+Amazing,general
+Got it thanks,general
+Noted,general
+Will do,general
+Understood,general
+No issues,general
+All clear,general
+Looks good,general
+Keep going,general
+What else can you tell me?,general
+Anything new?,general
+Update me,general
+I am back,general
+Still here,general
+Let me know,general
+Please continue,general
+Can you explain what this number means?,general
+I am confused,general
+What is this metric?,general
+What do these results mean?,general
+I am not a tech person,general
+Simple language please,general
+This is helpful thanks,general
