@@ -3,7 +3,7 @@ services:
     name: lastmeter-ai-backend
     runtime: python
     rootDir: backend
-    buildCommand: pip install -r requirements-prod.txt
+    buildCommand: pip install -r requirements.txt
     # Auto-seed on every deploy (Option A: ephemeral SQLite).
     # Database resets on each restart but always has demo data.
     startCommand: python seed.py && gunicorn -k gthread -w 1 --threads 4 --bind 0.0.0.0:$PORT run:app

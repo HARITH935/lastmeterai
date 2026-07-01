@@ -1,0 +1,19 @@
+# Full local dev + ML training stack
+-r requirements.txt
+
+# ML training (not used at inference time — models are pre-built .pkl files)
+pandas==2.2.3
+scipy==1.15.1
+shap==0.46.0
+mlflow==2.19.0
+
+# API docs
+flask-smorest==0.45.0
+
+# Testing
+pytest==8.3.4
+pytest-flask==1.3.0
+
+# Dev tools
+black==24.10.0
+flake8==7.1.1
