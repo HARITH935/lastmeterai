@@ -8,7 +8,7 @@ Public API:
 Behaviour:
     1. Build a structured prompt: role instruction + plain-English context summary
        + the original question + grounding instructions for Gemini.
-    2. Call Gemini API via _call_gemini() (model: gemini-1.5-flash-002, the 0.8.x SDK default).
+    2. Call Gemini API via _call_gemini() (model: gemini-2.5-flash).
     3. On any failure (missing key, network, quota exceeded, any exception):
        return a deterministic fallback reply built from context_data.
        Never raises. Always returns a useful string.
@@ -28,7 +28,7 @@ import logging
 
 log = logging.getLogger(__name__)
 
-_GEMINI_MODEL = "gemini-1.5-flash-002"
+_GEMINI_MODEL = "gemini-2.5-flash"
 
 
 # ── Internal hooks ─────────────────────────────────────────────────────────────
