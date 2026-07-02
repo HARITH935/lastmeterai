@@ -20,7 +20,7 @@ def create_app(config_name: str | None = None) -> Flask:
     socketio.init_app(
         app,
         cors_allowed_origins=app.config.get("SOCKETIO_CORS_ALLOWED_ORIGINS", "*"),
-        async_mode="threading",
+        async_mode="eventlet",
     )
 
     # ── CORS ──────────────────────────────────────────────────────────────────
