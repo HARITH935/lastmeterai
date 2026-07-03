@@ -625,6 +625,12 @@ def update_status(
     try:
         from app.sockets import events as _se  # noqa: PLC0415
         _se.emit_order_updated(order)
+        # Recalculate route when an order exits active delivery (failed / postponed).
+        if new_status in (OrderStatus.FAILED, OrderStatus.POSTPONED) and order.agent_id:
+            from app.services import route_service as _rs  # noqa: PLC0415
+            new_route = _rs.get_optimized_route_for_agent(order.agent_id)
+            if new_route is not None:
+                _se.emit_route_updated(order.agent_id, new_route)
     except Exception:
         pass
 

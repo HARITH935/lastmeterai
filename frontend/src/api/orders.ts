@@ -101,6 +101,45 @@ export interface UpdateStatusResponse {
   updated_at: string
 }
 
+// ── Route optimization ────────────────────────────────────────────────────────
+
+export interface RouteStop {
+  order_id: number
+  order_number: string
+  sequence: number
+  customer_name: string
+  customer_address: string
+  latitude: number
+  longitude: number
+  area: string
+  status: string
+  risk_level: string | null
+  is_urgent: boolean
+  eta: string
+  duration_from_prev_min: number
+  distance_from_prev_km: number
+}
+
+export interface OptimizedRoute {
+  stops: RouteStop[]
+  total_distance_km: number
+  total_duration_min: number
+  route_geometry: [number, number][]
+  start_location: { lat: number; lon: number } | null
+  recalculated_at: string | null
+  traffic_factor: number
+  weather_risk: number
+}
+
+export async function getOptimizedRoute(accessToken: string): Promise<OptimizedRoute> {
+  const res = await authFetch(`${API_BASE}/api/orders/optimized-route`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  const body = await res.json()
+  if (!res.ok) throw body
+  return body as OptimizedRoute
+}
+
 export async function updateOrderStatus(
   accessToken: string,
   orderId: number,

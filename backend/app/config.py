@@ -15,6 +15,7 @@ class Config:
     CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "http://localhost:5173,https://lastmeterai-lq6p.vercel.app")
     OPENWEATHER_API_KEY = os.environ.get("OPENWEATHER_API_KEY")
     GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+    TOMTOM_API_KEY = os.environ.get("TOMTOM_API_KEY")
     ML_MODELS_DIR = os.environ.get("ML_MODELS_DIR", "../ml/models")
     GONOGO_THRESHOLD = float(os.environ.get("GONOGO_THRESHOLD", "0.5"))
 

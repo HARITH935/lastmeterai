@@ -14,7 +14,7 @@ from app.models import User
 from app.schemas.order_schema import (
     OrderCreateSchema, OrderUpdateSchema, OrderStatusSchema, parse_list_filters
 )
-from app.services import order_service
+from app.services import order_service, route_service
 from app.services.order_service import (
     OrderNotFound, Forbidden, AreaMismatch, InvalidTransition
 )
@@ -98,6 +98,20 @@ def create_order():
         return jsonify({**order_dict, "_warning": "PREDICTION_UNAVAILABLE"}), 503
 
     return jsonify(order_dict), 201
+
+
+# ── GET /api/orders/optimized-route ──────────────────────────────────────────
+
+@bp.get("/optimized-route")
+@jwt_required()
+def get_optimized_route():
+    """🧢 Agent only. TSP-optimized route for today's pending/in_transit orders."""
+    current_user = _current_user()
+    if err := _require_agent(current_user):
+        return err
+
+    result = route_service.get_optimized_route(current_user)
+    return jsonify(result), 200
 
 
 # ── GET /api/orders/:id ────────────────────────────────────────────────────────

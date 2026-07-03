@@ -2,6 +2,54 @@
 
 ## Completed Milestones
 
+---
+
+### B15 — Route Optimization
+
+**Files changed:**
+
+| Layer | File | Change |
+|-------|------|--------|
+| Config | `backend/app/config.py` | Added `TOMTOM_API_KEY` (env-read, same pattern as `GEMINI_API_KEY`) |
+| Config | `backend/.env.example` | Added `TOMTOM_API_KEY` placeholder |
+| Service | `backend/app/services/route_service.py` | **NEW** — full route optimization pipeline |
+| Socket | `backend/app/sockets/events.py` | Added `emit_route_updated(agent_id, route_data)` |
+| Service | `backend/app/services/order_service.py` | `update_status` triggers `emit_route_updated` when status → `failed`/`postponed` |
+| Route | `backend/app/routes/orders.py` | `GET /api/orders/optimized-route` (agent-only) |
+| API | `frontend/src/api/orders.ts` | `getOptimizedRoute()` + `RouteStop`, `OptimizedRoute` types |
+| Context | `frontend/src/contexts/SocketContext.tsx` | Exposed `socket: Socket \| null` to consumers |
+| Map | `frontend/src/pages/Map.tsx` | Polyline route, stop markers with ETA labels, agent position marker, `route_updated` + `agent_location` socket listeners, simulated location emit |
+| Tests | `backend/tests/test_route.py` | **NEW** — 13 smoke tests |
+
+**Route optimization pipeline:**
+1. OSRM `/table/v1` — road-network NxN distance + duration matrix (single call, no key required)
+2. TomTom Traffic Flow API — `freeFlowSpeed / currentSpeed` congestion factor ∈ [1.0, 3.0]; falls back to 1.0 if `TOMTOM_API_KEY` absent or call fails
+3. OpenWeatherMap (reuses `decision_service._fetch_weather` + `_compute_weather_risk`) — weather overhead applied to durations
+4. Weighted cost matrix: `duration_s × traffic_factor × (1 + weather_risk × 0.3)`
+5. Nearest-neighbor construction from agent position (node 0) → 2-opt improvement (open-path, start fixed)
+6. OSRM `/route/v1` geometry fetch per segment → concatenated `[[lat, lon], ...]` polyline
+7. Per-stop ETA: cumulative sum of adjusted durations from current time
+
+**Verification table (ravi.kumar / Adyar, seeded data):**
+
+| Check | Expected | How to verify |
+|-------|----------|---------------|
+| `GET /api/orders/optimized-route` as manager | `403 FORBIDDEN` | `curl -H "Authorization: Bearer <mgr_token>" /api/orders/optimized-route` |
+| `GET /api/orders/optimized-route` as agent | `200`, stops list | Same with agent token |
+| Each stop has `eta`, `sequence`, `risk_level` | Present | Check response body |
+| `PATCH /api/orders/:id/status` → `postponed` | Emits `route_updated` to agent socket room | `python3 tests/test_route.py` → all pass |
+| No TOMTOM_API_KEY | `traffic_factor: 1.0` | Unset key, re-request |
+| Agent offline / no GPS | Uses area centroid as start | `AgentLocation.is_online = False` |
+| OSRM unreachable | Haversine fallback, endpoint still 200 | `_OSRM_BASE` set to unreachable host in test |
+
+**Known limitations:**
+- TomTom congestion is sampled at the agent's start position only (one call); in a real system each segment midpoint would be sampled.
+- Agent location emitted every 15 s from the browser using the area centroid as the fixed position (no device GPS). Replace `setInterval` emitter in Map.tsx with `navigator.geolocation.watchPosition()` for real GPS.
+- OSRM geometry calls are serial (one per segment). For ≥ 10 stops, parallel fetches or the OSRM `/match` endpoint would be faster.
+- 2-opt is O(n²) per improvement pass; adequate for ≤ 20 stops (typical agent load). For larger fleets, or-opt or LKH would be needed.
+
+---
+
 ### Backend — 12/12 modules complete
 | Module | Files | Tests |
 |--------|-------|-------|

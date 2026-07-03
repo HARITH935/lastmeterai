@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { io, type Socket } from 'socket.io-client'
 import { useAuth } from './AuthContext'
 import { getNotifications } from '../api/notifications'
@@ -6,11 +6,13 @@ import { getNotifications } from '../api/notifications'
 const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:5001'
 
 interface SocketContextValue {
+  socket: Socket | null
   unreadCount: number
   setUnreadCount: (n: number) => void
 }
 
 const SocketContext = createContext<SocketContextValue>({
+  socket: null,
   unreadCount: 0,
   setUnreadCount: () => {},
 })
@@ -18,7 +20,7 @@ const SocketContext = createContext<SocketContextValue>({
 export function SocketProvider({ children }: { children: ReactNode }) {
   const { user, access_token } = useAuth()
   const [unreadCount, setUnreadCount] = useState(0)
-  const socketRef = useRef<Socket | null>(null)
+  const [socket, setSocket] = useState<Socket | null>(null)
 
   // Fetch initial unread count from REST API whenever the token changes.
   useEffect(() => {
@@ -37,34 +39,34 @@ export function SocketProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!access_token || !user) return
 
-    const socket = io(API_BASE, {
+    const s = io(API_BASE, {
       auth: { token: access_token },
       transports: ['websocket', 'polling'],
       reconnectionAttempts: 10,
       reconnectionDelay: 2000,
     })
-    socketRef.current = socket
+    setSocket(s)
 
-    socket.on('connected', (data: { user_id: number; role: string; room: string }) => {
+    s.on('connected', (data: { user_id: number; role: string; room: string }) => {
       console.debug('[Socket] connected — room:', data.room)
     })
 
-    socket.on('new_notification', () => {
+    s.on('new_notification', () => {
       setUnreadCount(prev => prev + 1)
     })
 
-    socket.on('disconnect', (reason) => {
+    s.on('disconnect', (reason) => {
       console.debug('[Socket] disconnected —', reason)
     })
 
     return () => {
-      socket.disconnect()
-      socketRef.current = null
+      s.disconnect()
+      setSocket(null)
     }
   }, [access_token, user])
 
   return (
-    <SocketContext.Provider value={{ unreadCount, setUnreadCount }}>
+    <SocketContext.Provider value={{ socket, unreadCount, setUnreadCount }}>
       {children}
     </SocketContext.Provider>
   )

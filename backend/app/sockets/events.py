@@ -297,6 +297,11 @@ def emit_agent_location(location_data: dict):
     _safe_emit("agent_location", location_data, room="managers")
 
 
+def emit_route_updated(agent_id: int, route_data: dict):
+    """Emit route_updated to the agent's room after a NO-GO/failed status triggers recalculation."""
+    _safe_emit("route_updated", route_data, room=f"user_{agent_id}")
+
+
 def emit_activity_feed(audit_entry, actor_name: str | None = None):
     """Broadcast new audit log entry to all connected clients."""
     _safe_emit(
