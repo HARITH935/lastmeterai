@@ -17,16 +17,24 @@ def create_app(config_name: str | None = None) -> Flask:
     jwt.init_app(app)
     bcrypt.init_app(app)
     migrate.init_app(app, db)
-    socketio.init_app(
-        app,
-        cors_allowed_origins=app.config.get("SOCKETIO_CORS_ALLOWED_ORIGINS", "*"),
-        async_mode="eventlet",
-    )
 
     # ── CORS ──────────────────────────────────────────────────────────────────
+    # Parse once, reuse for both Flask-CORS (REST) and Flask-SocketIO (WebSocket).
+    # Flask-SocketIO requires a list or the bare string "*" — it does NOT split
+    # comma-separated strings the way Flask-CORS does, so passing the raw env
+    # string causes every WebSocket handshake to fail with a CORS error.
     from flask_cors import CORS
     cors_origin_str = app.config.get("CORS_ORIGINS", "http://localhost:5173")
     cors_origins = [o.strip() for o in cors_origin_str.split(",")]
+    # Flask-SocketIO treats the bare string "*" as allow-all; a list ["*"] also works.
+    socket_origins = "*" if cors_origins == ["*"] else cors_origins
+
+    socketio.init_app(
+        app,
+        cors_allowed_origins=socket_origins,
+        async_mode="eventlet",
+    )
+
     CORS(
         app,
         origins=cors_origins,
