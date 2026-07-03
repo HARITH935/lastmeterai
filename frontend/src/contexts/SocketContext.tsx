@@ -41,7 +41,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
     const s = io(API_BASE, {
       auth: { token: access_token },
-      transports: ['websocket', 'polling'],
+      transports: ['polling', 'websocket'],
       reconnectionAttempts: 10,
       reconnectionDelay: 2000,
     })
