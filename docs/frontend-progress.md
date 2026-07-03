@@ -1315,131 +1315,15 @@ V5: WRONG_PASSWORD path (changePassword, 401) — `error: "WRONG_PASSWORD"` is N
 
 ---
 
----
+## Remaining Frontend Milestones
 
-### B15 — Deployment (Vercel + Render) ✅
-
-**Status:** Config files created and verified locally. Live URLs pending push to GitHub and first deploy.
-
-**SQLite approach: Option A — ephemeral SQLite + auto-seed.**
-Rationale: portfolio/demo project with synthetic data. Seed script runs on every Render deploy, database always has consistent demo data. Zero cost, zero extra configuration.
-
----
-
-**Backend — Render**
-
-**Files created:**
-- `render.yaml` (project root) — service definition, build/start commands, env var declarations
-- `backend/requirements-prod.txt` — leaner production requirements (strips mlflow, shap, scipy, flask-smorest, pytest, black, flake8 — none imported in app code)
-- `backend/runtime.txt` — `python-3.12.0`
-
-**Files modified:**
-- `backend/app/config.py` — `ProductionConfig.SQLALCHEMY_DATABASE_URI` adds fallback `sqlite:///lastmeter.db` so the app doesn't crash when `DATABASE_URL` is missing
-- `backend/seed.py` — changed hardcoded `create_app("development")` to `create_app(os.environ.get("FLASK_ENV", "development"))` so seed uses the same config (and SQLite file) as the backend on Render
-
-**gunicorn worker: `gthread` (NOT eventlet)**
-`async_mode="threading"` in `__init__.py` requires gunicorn's threaded worker class. Start command:
-```
-gunicorn -k gthread -w 1 --threads 4 --bind 0.0.0.0:$PORT run:app
-```
-A single worker (`-w 1`) is required for Socket.IO — multiple workers have separate memory and would break room-based broadcasts.
-
-**ML model paths:** All 4 predictors resolve paths via `Path(__file__).parent×4 / "ml/models"` — no CWD dependency, no env var needed. 4.6MB of `.pkl` files are committed to the repo and available on Render automatically.
-
-**Environment variables set in render.yaml:**
-| Variable | Source |
-|----------|--------|
-| `FLASK_ENV` | `production` (hardcoded) |
-| `SECRET_KEY` | `generateValue: true` (Render auto-generates) |
-| `JWT_SECRET_KEY` | `generateValue: true` (Render auto-generates) |
-| `DATABASE_URL` | `sqlite:///lastmeter.db` |
-| `CORS_ORIGINS` | `*` initially → update to Vercel URL after first deploy |
-| `GEMINI_API_KEY` | `sync: false` (manual entry in dashboard) |
-| `OPENWEATHER_API_KEY` | `sync: false` (manual entry in dashboard) |
-
----
-
-**Frontend — Vercel**
-
-**Files created:**
-- `frontend/vercel.json` — SPA rewrite rule: all routes → `index.html` (prevents 404 on deep-link refresh)
-- `frontend/.nvmrc` — `22` (Node v22 for Vercel)
-
-**Vercel settings:**
-- Framework: Vite (auto-detected)
-- Build command: `npm run build` (runs `tsc -b && vite build`)
-- Output directory: `dist`
-- Root directory: `frontend/`
-- Environment variable: `VITE_API_BASE=https://your-render-backend-url.onrender.com`
-
----
-
-**Files created (new):**
-- `.gitignore` (project root) — excludes `__pycache__`, `*.db`, `backend/instance/`, `node_modules/`, `dist/`, `ml/mlruns/`, `.env.*`
-- `render.yaml`
-- `backend/requirements-prod.txt`
-- `backend/runtime.txt`
-- `frontend/vercel.json`
-- `frontend/.nvmrc`
-
-**Files modified:**
-- `backend/app/config.py` — SQLite fallback in ProductionConfig
-- `backend/seed.py` — env-aware `create_app()`
-
----
-
-**Deployment procedure (one-time):**
-
-1. **Init git repo and push to GitHub:**
-   ```bash
-   git init
-   git add .
-   git commit -m "feat: production deployment config (Vercel + Render)"
-   # create GitHub repo, then:
-   git remote add origin https://github.com/YOUR_USERNAME/lastmeter-ai.git
-   git push -u origin main
-   ```
-
-2. **Deploy backend on Render:**
-   - New → Web Service → connect GitHub repo
-   - Set "Root Directory" to `backend` (render.yaml sets this, but confirm in UI)
-   - Render reads `render.yaml` automatically
-   - Manually add `GEMINI_API_KEY` and `OPENWEATHER_API_KEY` in the dashboard if available
-   - First deploy takes 5–10 min (pip install of scikit-learn + pandas is slow)
-   - Note the Render URL: `https://lastmeter-ai-backend.onrender.com`
-
-3. **Deploy frontend on Vercel:**
-   - New Project → import GitHub repo
-   - Set Root Directory: `frontend/`
-   - Add env var: `VITE_API_BASE=https://lastmeter-ai-backend.onrender.com`
-   - Deploy — build takes ~30s
-   - Note the Vercel URL: `https://lastmeter-ai.vercel.app`
-
-4. **Tighten CORS after both URLs are known:**
-   - In Render dashboard → Environment → set `CORS_ORIGINS=https://lastmeter-ai.vercel.app`
-   - Redeploy backend (or just update the env var — Render restarts automatically)
-
----
-
-**Known production limitations:**
-- Database resets on every Render deploy/restart (Option A trade-off)
-- Render free tier sleeps after 15 min of inactivity — first request after sleep takes ~30s (cold start)
-- Socket.IO connections will drop when Render restarts; clients reconnect automatically on next page interaction
-- `GEMINI_API_KEY` not set by default — AI chat falls back to template responses
-- Render free PostgreSQL (if ever needed) expires after 90 days
-
----
-
-**TypeScript check (pre-deploy):** `npx tsc --noEmit` — zero errors ✅
-
----
-
-## Remaining Technical Debt (non-blocking)
-
-| Item | Description |
-|------|-------------|
-| Heatmap link | Map.tsx → Area Intelligence click-through from Leaflet popups (deferred from B13) |
+| Milestone | Description |
+|-----------|-------------|
+| Heatmap link | Map.tsx → Area Intelligence click-through from zone popups (deferred from B13) |
 | Socket live-list | Notifications page auto-refreshes on `new_notification` without manual reload |
+| Deployment | Production build, environment config, hosting setup |
+
+**Next recommended step:** Deployment.
 
 ---
 
