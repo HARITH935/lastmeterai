@@ -29,7 +29,8 @@ const RISK_COLOR: Record<string, string> = {
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 function riskColor(level: string | null | undefined): string {
-  return RISK_COLOR[level ?? 'medium'] ?? '#94A3B8'
+  if (!level) return '#94A3B8'  // slate — unassessed, not a risk signal
+  return RISK_COLOR[level] ?? '#94A3B8'
 }
 
 function fmtEta(iso: string): string {
@@ -234,8 +235,8 @@ function MapView({ orders, zones, isManager, route, agentPos, agentMarkers }: Ma
                 center={agentPos}
                 radius={11}
                 pathOptions={{
-                  color:       '#F59E0B',
-                  fillColor:   '#F59E0B',
+                  color:       '#2563EB',
+                  fillColor:   '#2563EB',
                   fillOpacity: 0.95,
                   weight:      3,
                 }}
@@ -263,8 +264,8 @@ function MapView({ orders, zones, isManager, route, agentPos, agentMarkers }: Ma
             center={[a.lat, a.lon]}
             radius={10}
             pathOptions={{
-              color:       '#F59E0B',
-              fillColor:   '#F59E0B',
+              color:       '#2563EB',
+              fillColor:   '#2563EB',
               fillOpacity: 0.9,
               weight:      2,
             }}
