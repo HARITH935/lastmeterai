@@ -174,13 +174,23 @@ function MapView({ orders, zones, isManager, route, agentPos, agentMarkers }: Ma
         {/* ── Optimized route (agent view) ── */}
         {!isManager && showRoute && hasRoute && (
           <>
-            {/* Route polyline */}
-            {route.route_geometry.length > 1 && (
-              <Polyline
-                positions={route.route_geometry as [number, number][]}
-                pathOptions={{ color: '#8B5CF6', weight: 3, opacity: 0.85, dashArray: '10,5' }}
-              />
-            )}
+            {/* Route polyline — use road geometry from OSRM when available,
+                fall back to straight lines between stop coordinates. */}
+            {(() => {
+              const geo: [number, number][] =
+                route.route_geometry.length > 1
+                  ? (route.route_geometry as [number, number][])
+                  : [
+                      ...(agentPos ? [agentPos] : []),
+                      ...route.stops.map((s): [number, number] => [s.latitude, s.longitude]),
+                    ]
+              return geo.length > 1 ? (
+                <Polyline
+                  positions={geo}
+                  pathOptions={{ color: '#8B5CF6', weight: 3, opacity: 0.85, dashArray: '10,5' }}
+                />
+              ) : null
+            })()}
 
             {/* Stop markers with sequence numbers and ETA labels */}
             {route.stops.map((stop: RouteStop) => (
