@@ -113,6 +113,9 @@ function MapView({ orders, zones, isManager, route, agentPos, agentMarkers }: Ma
 
   const hasRoute = route && route.stops.length > 0
 
+  // IDs of orders already shown as route stop markers — skip duplicate pins for these.
+  const routeOrderIds = new Set((route?.stops ?? []).map(s => s.order_id))
+
   return (
     <div className="relative" style={{ height: 'calc(100vh - 64px)' }}>
       <MapContainer
@@ -147,30 +150,40 @@ function MapView({ orders, zones, isManager, route, agentPos, agentMarkers }: Ma
           </Circle>
         ))}
 
-        {/* ── Order pins ── */}
-        {showPins && orders.map(o => (
-          <CircleMarker
-            key={o.id}
-            center={[o.latitude, o.longitude]}
-            radius={7}
-            pathOptions={{
-              color:       riskColor(o.risk_level),
-              fillColor:   riskColor(o.risk_level),
-              fillOpacity: 0.85,
-              weight:      1.5,
-            }}
-          >
-            <Popup>
-              <div style={{ fontSize: 12, lineHeight: 1.7, minWidth: 150 }}>
-                <strong style={{ fontSize: 13 }}>{o.order_number}</strong>
-                <br />{o.customer_name}
-                <br />Area: {o.area}
-                <br />Status: {o.status.replace('_', ' ')}
-                <br />Risk: <strong>{o.risk_level ?? '—'}</strong>
-              </div>
-            </Popup>
-          </CircleMarker>
-        ))}
+        {/* ── Order pins ──
+            For agents: skip pins that are already shown as route stop markers.
+            Non-active orders (failed/delivered/postponed) show as muted gray
+            so the agent can see them but knows they aren't in today's route. */}
+        {showPins && orders
+          .filter(o => !(!isManager && routeOrderIds.has(o.id)))
+          .map(o => {
+            const isActive = o.status === 'pending' || o.status === 'in_transit'
+            const pinColor = isActive ? riskColor(o.risk_level) : '#64748B'
+            return (
+              <CircleMarker
+                key={o.id}
+                center={[o.latitude, o.longitude]}
+                radius={6}
+                pathOptions={{
+                  color:       pinColor,
+                  fillColor:   pinColor,
+                  fillOpacity: isActive ? 0.75 : 0.35,
+                  weight:      1.5,
+                }}
+              >
+                <Popup>
+                  <div style={{ fontSize: 12, lineHeight: 1.7, minWidth: 150 }}>
+                    <strong style={{ fontSize: 13 }}>{o.order_number}</strong>
+                    <br />{o.customer_name}
+                    <br />Area: {o.area}
+                    <br />Status: {o.status.replace('_', ' ')}
+                    <br />Risk: <strong>{o.risk_level ?? '—'}</strong>
+                  </div>
+                </Popup>
+              </CircleMarker>
+            )
+          })
+        }
 
         {/* ── Optimized route (agent view) ── */}
         {!isManager && showRoute && hasRoute && (
