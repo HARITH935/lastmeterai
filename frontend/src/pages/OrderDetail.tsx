@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import {
-  getOrder, updateOrderStatus, getReassignSuggestions, reassignOrder,
-  type OrderDetail, type ReassignSuggestion,
+  getOrder, updateOrderStatus, getReassignSuggestions, reassignOrder, getOrderEta,
+  type OrderDetail, type ReassignSuggestion, type OrderEta,
 } from '../api/orders'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -297,6 +297,104 @@ function ReassignPanel({
   )
 }
 
+// ── ETA prediction card ────────────────────────────────────────────────────────
+
+function EtaCard({ orderId, accessToken }: { orderId: number; accessToken: string }) {
+  const [state, setState] = useState<
+    | { status: 'loading' }
+    | { status: 'error' }
+    | { status: 'success'; data: OrderEta }
+  >({ status: 'loading' })
+
+  useEffect(() => {
+    let cancelled = false
+    setState({ status: 'loading' })
+    getOrderEta(accessToken, orderId)
+      .then(data => { if (!cancelled) setState({ status: 'success', data }) })
+      .catch(() => { if (!cancelled) setState({ status: 'error' }) })
+    return () => { cancelled = true }
+  }, [accessToken, orderId])
+
+  if (state.status === 'loading') {
+    return <div className="animate-pulse h-40 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
+  }
+  if (state.status === 'error') return null
+
+  const { data } = state
+  const arrival = new Date(data.eta_time).toLocaleTimeString('en-IN', {
+    hour: '2-digit', minute: '2-digit', hour12: true,
+  })
+  const confPct = Math.round(data.confidence * 100)
+  const maxMin  = Math.max(...data.factors.map(f => f.minutes), 1)
+
+  return (
+    <div className="card dark:bg-slate-900 dark:border-slate-800 space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+          ⏱ Predicted ETA
+        </h2>
+        <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-wide">AI estimate</span>
+      </div>
+
+      {/* Headline */}
+      <div className="flex items-end gap-3 flex-wrap">
+        <div>
+          <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 leading-none">
+            {data.predicted_min}<span className="text-lg font-semibold text-slate-400 ml-1">min</span>
+          </p>
+          <p className="text-xs text-slate-400 mt-1">
+            Window {data.eta_low_min}–{data.eta_high_min} min · arrives ~{arrival}
+          </p>
+        </div>
+        <div className="ml-auto text-right">
+          <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{data.distance_km} km</p>
+          <p className="text-[10px] text-slate-400">from depot</p>
+        </div>
+      </div>
+
+      {/* Confidence bar */}
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Confidence</span>
+          <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300">{confPct}%</span>
+        </div>
+        <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+          <div
+            className={`h-full rounded-full ${confPct >= 85 ? 'bg-green-500' : confPct >= 70 ? 'bg-amber-500' : 'bg-red-500'}`}
+            style={{ width: `${confPct}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Factor breakdown */}
+      <div className="space-y-2 pt-1">
+        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Time breakdown</p>
+        {data.factors.map(f => (
+          <div key={f.label} className="flex items-center gap-3">
+            <span className="text-xs text-slate-600 dark:text-slate-400 w-32 shrink-0">{f.label}</span>
+            <div className="flex-1 h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full bg-indigo-400"
+                style={{ width: `${Math.max((f.minutes / maxMin) * 100, f.minutes > 0 ? 6 : 0)}%` }}
+              />
+            </div>
+            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 w-14 text-right">
+              {f.minutes} min
+            </span>
+          </div>
+        ))}
+        <div className="pt-1 space-y-0.5">
+          {data.factors.map(f => (
+            <p key={f.label} className="text-[10px] text-slate-400">
+              <span className="font-semibold text-slate-500 dark:text-slate-400">{f.label}:</span> {f.detail}
+            </p>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Main export ────────────────────────────────────────────────────────────────
 
 export function OrderDetail() {
@@ -448,6 +546,11 @@ export function OrderDetail() {
         <div className="card dark:bg-slate-900 dark:border-slate-800">
           <p className="text-sm text-slate-400">No AI decision recorded for this order.</p>
         </div>
+      )}
+
+      {/* ETA prediction (active orders only) */}
+      {(order.status === 'pending' || order.status === 'in_transit') && (
+        <EtaCard orderId={order.id} accessToken={access_token!} />
       )}
 
       {/* Failure reason */}

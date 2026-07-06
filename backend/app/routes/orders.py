@@ -335,6 +335,27 @@ def reassign_suggestion(order_id: int):
     return jsonify({"order_id": order_id, "area": order.area, "suggestions": suggestions[:3]}), 200
 
 
+# ── GET /api/orders/:id/eta ───────────────────────────────────────────────────
+
+@bp.get("/<int:order_id>/eta")
+@jwt_required()
+def order_eta(order_id: int):
+    """👔🧢 Predicted delivery ETA for an order (respects agent area scoping)."""
+    current_user = _current_user()
+
+    try:
+        # Reuse get_order purely for access enforcement (raises on no access).
+        order_service.get_order(order_id, current_user)
+    except OrderNotFound:
+        return _err("ORDER_NOT_FOUND", f"Order {order_id} not found.", 404)
+    except Forbidden:
+        return _err("FORBIDDEN", "You do not have access to this order.", 403)
+
+    order = db.session.get(Order, order_id)
+    from app.services import eta_service
+    return jsonify(eta_service.predict_eta(order)), 200
+
+
 # ── GET /api/orders/:id/decision ──────────────────────────────────────────────
 
 @bp.get("/<int:order_id>/decision")

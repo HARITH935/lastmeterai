@@ -211,6 +211,35 @@ export async function getReassignSuggestions(
   return body as ReassignSuggestionsResponse
 }
 
+// ── ETA prediction ────────────────────────────────────────────────────────────
+
+export interface EtaFactor {
+  label: string
+  minutes: number
+  detail: string
+}
+
+export interface OrderEta {
+  order_id: number
+  predicted_min: number
+  eta_low_min: number
+  eta_high_min: number
+  eta_time: string
+  confidence: number
+  distance_km: number
+  weather_risk: number
+  factors: EtaFactor[]
+}
+
+export async function getOrderEta(accessToken: string, orderId: number): Promise<OrderEta> {
+  const res = await authFetch(`${API_BASE}/api/orders/${orderId}/eta`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  const body = await res.json()
+  if (!res.ok) throw body
+  return body as OrderEta
+}
+
 // ── Bulk create ───────────────────────────────────────────────────────────────
 
 export interface BulkOrderRow {
