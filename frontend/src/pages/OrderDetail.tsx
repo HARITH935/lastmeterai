@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import {
   getOrder, updateOrderStatus, getReassignSuggestions, reassignOrder, getOrderEta,
-  type OrderDetail, type ReassignSuggestion, type OrderEta,
+  notifyCustomer,
+  type OrderDetail, type ReassignSuggestion, type OrderEta, type NotifyResponse,
 } from '../api/orders'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -397,8 +398,18 @@ function EtaCard({ orderId, accessToken }: { orderId: number; accessToken: strin
 
 // ── Share tracking link (manager) ───────────────────────────────────────────────
 
-function ShareTrackingCard({ token }: { token: string }) {
-  const [copied, setCopied] = useState(false)
+function ShareTrackingCard({
+  token, orderId, accessToken, hasPhone,
+}: {
+  token: string
+  orderId: number
+  accessToken: string
+  hasPhone: boolean
+}) {
+  const [copied, setCopied]   = useState(false)
+  const [sending, setSending] = useState<'sms' | 'whatsapp' | null>(null)
+  const [result, setResult]   = useState<NotifyResponse | null>(null)
+  const [error, setError]     = useState<string | null>(null)
   const link = `${window.location.origin}/track/${token}`
 
   function copy() {
@@ -406,6 +417,20 @@ function ShareTrackingCard({ token }: { token: string }) {
       () => { setCopied(true); setTimeout(() => setCopied(false), 2000) },
       () => {},
     )
+  }
+
+  async function notify(channel: 'sms' | 'whatsapp') {
+    setSending(channel)
+    setError(null)
+    setResult(null)
+    try {
+      const res = await notifyCustomer(accessToken, orderId, channel)
+      setResult(res)
+    } catch (err) {
+      setError(extractMsg(err))
+    } finally {
+      setSending(null)
+    }
   }
 
   return (
@@ -436,13 +461,54 @@ function ShareTrackingCard({ token }: { token: string }) {
         <button
           onClick={copy}
           className={`shrink-0 text-xs font-semibold px-3 py-2 rounded-lg transition-colors ${
-            copied
-              ? 'bg-green-600 text-white'
-              : 'bg-blue-600 hover:bg-blue-700 text-white'
+            copied ? 'bg-green-600 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'
           }`}
         >
           {copied ? '✓ Copied' : 'Copy'}
         </button>
+      </div>
+
+      {/* Send alert */}
+      <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">
+          Send delivery alert to customer
+        </p>
+        {!hasPhone ? (
+          <p className="text-xs text-amber-600">No phone number on file for this order.</p>
+        ) : (
+          <div className="flex gap-2">
+            <button
+              onClick={() => notify('sms')}
+              disabled={sending !== null}
+              className="flex items-center gap-1.5 text-xs font-semibold text-white bg-slate-700 hover:bg-slate-800 disabled:opacity-50 px-3 py-2 rounded-lg transition-colors"
+            >
+              {sending === 'sms' ? 'Sending…' : '💬 Send SMS'}
+            </button>
+            <button
+              onClick={() => notify('whatsapp')}
+              disabled={sending !== null}
+              className="flex items-center gap-1.5 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 px-3 py-2 rounded-lg transition-colors"
+            >
+              {sending === 'whatsapp' ? 'Sending…' : '🟢 Send WhatsApp'}
+            </button>
+          </div>
+        )}
+
+        {error && <p className="text-xs font-semibold text-red-600 mt-2">{error}</p>}
+
+        {result && (
+          <div className="mt-3 p-3 rounded-xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
+            <p className="text-xs font-semibold text-green-700 dark:text-green-400">
+              ✓ {result.channel === 'whatsapp' ? 'WhatsApp' : 'SMS'} {result.simulated ? 'simulated' : 'sent'} to {result.to}
+            </p>
+            {result.simulated && (
+              <p className="text-[10px] text-amber-600 mt-0.5">
+                Demo mode — add Twilio keys to send real messages.
+              </p>
+            )}
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 italic">"{result.message}"</p>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -606,9 +672,14 @@ export function OrderDetail() {
         <EtaCard orderId={order.id} accessToken={access_token!} />
       )}
 
-      {/* Customer tracking link (manager only) */}
+      {/* Customer tracking link + alerts (manager only) */}
       {isManager && order.tracking_token && (
-        <ShareTrackingCard token={order.tracking_token} />
+        <ShareTrackingCard
+          token={order.tracking_token}
+          orderId={order.id}
+          accessToken={access_token!}
+          hasPhone={!!order.customer_phone}
+        />
       )}
 
       {/* Failure / reschedule reason — label depends on status */}

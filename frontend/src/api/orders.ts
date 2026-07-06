@@ -212,6 +212,34 @@ export async function getReassignSuggestions(
   return body as ReassignSuggestionsResponse
 }
 
+// ── Customer notify (SMS / WhatsApp) ──────────────────────────────────────────
+
+export interface NotifyResponse {
+  sent: boolean
+  simulated: boolean
+  channel: 'sms' | 'whatsapp'
+  to: string
+  message: string
+}
+
+export async function notifyCustomer(
+  accessToken: string,
+  orderId: number,
+  channel: 'sms' | 'whatsapp',
+): Promise<NotifyResponse> {
+  const res = await authFetch(`${API_BASE}/api/orders/${orderId}/notify`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ channel }),
+  })
+  const body = await res.json()
+  if (!res.ok) throw body
+  return body as NotifyResponse
+}
+
 // ── Public tracking (no auth) ─────────────────────────────────────────────────
 
 export interface TrackingInfo {

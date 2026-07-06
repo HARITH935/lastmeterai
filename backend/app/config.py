@@ -16,6 +16,12 @@ class Config:
     OPENWEATHER_API_KEY = os.environ.get("OPENWEATHER_API_KEY")
     GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
     TOMTOM_API_KEY = os.environ.get("TOMTOM_API_KEY")
+    # Twilio SMS / WhatsApp (optional — falls back to simulated send when unset)
+    TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID")
+    TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN")
+    TWILIO_FROM_SMS = os.environ.get("TWILIO_FROM_SMS")            # e.g. +14155238886
+    TWILIO_FROM_WHATSAPP = os.environ.get("TWILIO_FROM_WHATSAPP")  # e.g. whatsapp:+14155238886
+    PUBLIC_APP_URL = os.environ.get("PUBLIC_APP_URL", "https://lastmeterai-lq6p.vercel.app")
     ML_MODELS_DIR = os.environ.get("ML_MODELS_DIR", "../ml/models")
     GONOGO_THRESHOLD = float(os.environ.get("GONOGO_THRESHOLD", "0.5"))
 

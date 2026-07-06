@@ -5,7 +5,7 @@ Thin HTTP adapters — all logic in order_service.
 Follows docs/api/contract.md §2 exactly.
 """
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from marshmallow import ValidationError
 
@@ -333,6 +333,56 @@ def reassign_suggestion(order_id: int):
 
     suggestions.sort(key=lambda x: x["score"], reverse=True)
     return jsonify({"order_id": order_id, "area": order.area, "suggestions": suggestions[:3]}), 200
+
+
+# ── POST /api/orders/:id/notify ───────────────────────────────────────────────
+
+@bp.post("/<int:order_id>/notify")
+@jwt_required()
+def notify_customer(order_id: int):
+    """👔 Manager only. Send an SMS/WhatsApp delivery alert to the customer."""
+    current_user = _current_user()
+    if err := _require_manager(current_user):
+        return err
+
+    order = db.session.get(Order, order_id)
+    if not order:
+        return _err("ORDER_NOT_FOUND", f"Order {order_id} not found.", 404)
+
+    body = request.get_json(silent=True) or {}
+    channel = body.get("channel", "sms")
+    if channel not in ("sms", "whatsapp"):
+        return _err("VALIDATION_ERROR", "channel must be 'sms' or 'whatsapp'.", 400)
+
+    from app.services import messaging_service, tracking_service, notification_service
+
+    token = tracking_service.make_token(order.id)
+    tracking_url = f"{current_app.config['PUBLIC_APP_URL']}/track/{token}"
+    message = messaging_service.build_status_message(order, tracking_url)
+
+    result = messaging_service.send_message(order.customer_phone, message, channel)
+
+    if result["sent"]:
+        # Audit trail for the manager who triggered the alert.
+        notification_service.create_notification(
+            user_id=current_user.id,
+            category="delivery_alert",
+            title=f"{channel.upper()} sent to customer",
+            message=f"Order {order.order_number}: {message}",
+            order_id=order.id,
+            extra={"channel": channel, "simulated": result.get("simulated", False),
+                   "to": result.get("to")},
+        )
+        db.session.commit()
+        return jsonify({
+            "sent": True,
+            "simulated": result.get("simulated", False),
+            "channel": channel,
+            "to": result.get("to"),
+            "message": message,
+        }), 200
+
+    return _err("SEND_FAILED", result.get("error", "Could not send message."), 502)
 
 
 # ── GET /api/orders/:id/eta ───────────────────────────────────────────────────
