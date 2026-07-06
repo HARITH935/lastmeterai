@@ -188,7 +188,7 @@ function ReassignPanel({
     setLoading(true)
     setError(null)
     getReassignSuggestions(accessToken, orderId)
-      .then(res => { setSuggestions(res.suggestions); setLoading(false) })
+      .then(res => { setSuggestions(res.suggestions ?? []); setLoading(false) })
       .catch(() => { setError('Could not load suggestions.'); setLoading(false) })
   }
 
@@ -428,7 +428,7 @@ export function OrderDetail() {
             <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{d.explanation}</p>
           )}
 
-          {d.top_shap_factors.length > 0 && (
+          {(d.top_shap_factors?.length ?? 0) > 0 && (
             <div className="space-y-2 pt-1">
               <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                 Risk Factors

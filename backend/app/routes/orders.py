@@ -10,7 +10,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from marshmallow import ValidationError
 
 from app.extensions import db
-from app.models import User
+from app.models import User, UserRole, Order, OrderStatus
 from app.schemas.order_schema import (
     OrderCreateSchema, OrderUpdateSchema, OrderStatusSchema, parse_list_filters
 )
@@ -237,9 +237,7 @@ def reassign_suggestion(order_id: int):
     if not order:
         return _err("ORDER_NOT_FOUND", f"Order {order_id} not found.", 404)
 
-    from app.models.user import UserRole
-    from sqlalchemy import func, case
-    from app.models.order import OrderStatus
+    from sqlalchemy import func
 
     # Score every active agent
     agents = (
