@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { getKPI, type AgentPerf } from '../api/analytics'
+import { getKPI, getLeaderboard, type AgentPerf, type LeaderboardAgent } from '../api/analytics'
 import { getAllOrders, type OrderListItem } from '../api/orders'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 type Period  = 'week' | 'month'
 type SortKey = 'performance_score' | 'success_rate' | 'area' | 'agent_name'
+type View    = 'cards' | 'leaderboard'
 
 type OrderFetchState =
   | { status: 'idle' }
@@ -221,11 +222,131 @@ function AgentOrderDetail({ agent, state }: { agent: AgentPerf; state: OrderFetc
   )
 }
 
+// ── Leaderboard row ────────────────────────────────────────────────────────────
+
+const MEDALS: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' }
+
+function LeaderboardRow({ agent }: { agent: LeaderboardAgent }) {
+  const medal = MEDALS[agent.rank]
+  const srColor =
+    agent.success_rate >= 0.7 ? 'text-go' :
+    agent.success_rate >= 0.4 ? 'text-urgent' : 'text-nogo'
+
+  return (
+    <tr className={`border-b border-slate-50 last:border-0 ${agent.rank <= 3 ? 'bg-amber-50/30' : ''}`}>
+      <td className="px-4 py-3 text-center w-10">
+        {medal
+          ? <span className="text-lg">{medal}</span>
+          : <span className="text-sm font-bold text-slate-400">#{agent.rank}</span>
+        }
+      </td>
+      <td className="px-4 py-3">
+        <p className="font-semibold text-slate-800 text-sm">{agent.agent_name}</p>
+        {agent.area && (
+          <span className="text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full">{agent.area}</span>
+        )}
+      </td>
+      <td className="px-4 py-3 text-center">
+        <p className="text-sm font-bold text-slate-700">{agent.order_count}</p>
+        <p className="text-[10px] text-slate-400">{agent.delivered_count} delivered</p>
+      </td>
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-2">
+          <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden min-w-[60px]">
+            <div
+              className="h-full rounded-full"
+              style={{ width: `${Math.round(agent.success_rate * 100)}%`, backgroundColor: agent.success_rate >= 0.7 ? '#10B981' : agent.success_rate >= 0.4 ? '#F59E0B' : '#EF4444' }}
+            />
+          </div>
+          <span className={`text-xs font-bold ${srColor} w-10 text-right shrink-0`}>
+            {toPercent(agent.success_rate)}
+          </span>
+        </div>
+      </td>
+      <td className="px-4 py-3 text-right">
+        <p className="text-sm font-bold text-slate-800">₹{agent.earnings_inr.toLocaleString('en-IN')}</p>
+      </td>
+      <td className="px-4 py-3 text-center">
+        <span className="text-sm font-bold text-blue-600">{Math.round(agent.performance_score * 100)}</span>
+      </td>
+    </tr>
+  )
+}
+
+function Leaderboard({ period, accessToken }: { period: Period; accessToken: string }) {
+  const [state, setState] = useState<
+    | { status: 'loading' }
+    | { status: 'error'; message: string }
+    | { status: 'success'; agents: LeaderboardAgent[] }
+  >({ status: 'loading' })
+
+  useEffect(() => {
+    let cancelled = false
+    setState({ status: 'loading' })
+    getLeaderboard(accessToken, period)
+      .then(res => { if (!cancelled) setState({ status: 'success', agents: res.agents }) })
+      .catch((err: unknown) => { if (!cancelled) setState({ status: 'error', message: extractMsg(err) }) })
+    return () => { cancelled = true }
+  }, [accessToken, period])
+
+  if (state.status === 'loading') return <AgentsSkeleton />
+  if (state.status === 'error') return (
+    <div className="p-6"><div className="card border-red-200 bg-red-50">
+      <p className="text-sm font-semibold text-red-600">{state.message}</p>
+    </div></div>
+  )
+
+  const { agents } = state
+  const top = agents[0]
+
+  return (
+    <div className="p-4 md:p-6 space-y-4">
+      {/* Top performer highlight */}
+      {top && (
+        <div className="card bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200">
+          <div className="flex items-center gap-4">
+            <span className="text-4xl">🏆</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-amber-600 uppercase tracking-wide mb-0.5">Top Performer · {period === 'week' ? 'This Week' : 'This Month'}</p>
+              <p className="text-lg font-bold text-slate-900">{top.agent_name}</p>
+              <p className="text-sm text-slate-500">{top.area} · {toPercent(top.success_rate)} success · ₹{top.earnings_inr.toLocaleString('en-IN')} earned</p>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-2xl font-black text-blue-600">{Math.round(top.performance_score * 100)}</p>
+              <p className="text-[10px] text-slate-400">score</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Table */}
+      <div className="card overflow-hidden p-0">
+        <table className="w-full">
+          <thead>
+            <tr className="bg-slate-50 border-b border-slate-200">
+              <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-3 w-10">#</th>
+              <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-3">Agent</th>
+              <th className="text-center text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-3">Orders</th>
+              <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-3 min-w-[140px]">Success Rate</th>
+              <th className="text-right text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-3">Earnings</th>
+              <th className="text-center text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-3">Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            {agents.map(a => <LeaderboardRow key={a.agent_id} agent={a} />)}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 // ── Main export ────────────────────────────────────────────────────────────────
 
 export function Agents() {
   const { user, access_token } = useAuth()
 
+  const [view, setView]                   = useState<View>('leaderboard')
   const [period, setPeriod]               = useState<Period>('week')
   const [sortKey, setSortKey]             = useState<SortKey>('performance_score')
   const [selectedAgent, setSelectedAgent] = useState<AgentPerf | null>(null)
@@ -306,6 +427,20 @@ export function Agents() {
       <div className="px-4 md:px-6 pt-6 pb-4 flex flex-wrap items-center gap-3 justify-between">
         <h1 className="text-xl font-bold text-slate-900">Agent Management</h1>
         <div className="flex flex-wrap gap-2">
+          {/* View toggle */}
+          <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
+            {(['leaderboard', 'cards'] as View[]).map(v => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                className={`text-xs font-semibold px-3 py-1.5 rounded-md transition-colors ${
+                  view === v ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                {v === 'leaderboard' ? '🏆 Leaderboard' : 'Cards'}
+              </button>
+            ))}
+          </div>
           {/* Period toggle */}
           <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
             {(['week', 'month'] as Period[]).map(p => (
@@ -313,87 +448,90 @@ export function Agents() {
                 key={p}
                 onClick={() => setPeriod(p)}
                 className={`text-xs font-semibold px-3 py-1.5 rounded-md transition-colors ${
-                  period === p
-                    ? 'bg-white text-slate-800 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
+                  period === p ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
                 {p === 'week' ? 'This Week' : 'This Month'}
               </button>
             ))}
           </div>
-          {/* Sort dropdown */}
-          <select
-            value={sortKey}
-            onChange={e => setSortKey(e.target.value as SortKey)}
-            className="text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="performance_score">Sort: Score</option>
-            <option value="success_rate">Sort: Success Rate</option>
-            <option value="area">Sort: Area</option>
-            <option value="agent_name">Sort: Name</option>
-          </select>
+          {/* Sort dropdown — only in cards view */}
+          {view === 'cards' && (
+            <select
+              value={sortKey}
+              onChange={e => setSortKey(e.target.value as SortKey)}
+              className="text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="performance_score">Sort: Score</option>
+              <option value="success_rate">Sort: Success Rate</option>
+              <option value="area">Sort: Area</option>
+              <option value="agent_name">Sort: Name</option>
+            </select>
+          )}
         </div>
       </div>
 
-      {kpiState.status === 'loading' && <AgentsSkeleton />}
-
-      {kpiState.status === 'error' && (
-        <div className="p-6">
-          <div className="card border-red-200 bg-red-50">
-            <p className="text-sm font-semibold text-red-600">Failed to load agents</p>
-            <p className="text-xs text-red-500 mt-1">{kpiState.message}</p>
-          </div>
-        </div>
+      {/* Leaderboard view */}
+      {view === 'leaderboard' && (
+        <Leaderboard period={period} accessToken={access_token!} />
       )}
 
-      {kpiState.status === 'success' && (
-        <div className="p-4 md:p-6 space-y-4">
-          {/* Agent card grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {sortedAgents.map(agent => (
-              <AgentCard
-                key={agent.agent_id}
-                agent={agent}
-                selected={selectedAgent?.agent_id === agent.agent_id}
-                onClick={() =>
-                  setSelectedAgent(
-                    selectedAgent?.agent_id === agent.agent_id ? null : agent,
-                  )
-                }
-              />
-            ))}
-          </div>
+      {/* Cards view */}
+      {view === 'cards' && (
+        <>
+          {kpiState.status === 'loading' && <AgentsSkeleton />}
 
-          {/* Detail panel — only shown when an agent is selected */}
-          {selectedAgent && (
-            <div className="card">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="text-sm font-semibold text-slate-700">
-                    {selectedAgent.agent_name}
-                    <span className="ml-2 text-xs font-normal text-slate-400">
-                      · {selectedAgent.area}
-                    </span>
-                  </p>
-                  {orderState.status === 'success' && (
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      {orderState.orders.length} order
-                      {orderState.orders.length !== 1 ? 's' : ''} total
-                    </p>
-                  )}
-                </div>
-                <button
-                  onClick={() => setSelectedAgent(null)}
-                  className="text-xs text-slate-400 hover:text-slate-600 px-2 py-1 rounded hover:bg-slate-100 transition-colors"
-                >
-                  Close ×
-                </button>
+          {kpiState.status === 'error' && (
+            <div className="p-6">
+              <div className="card border-red-200 bg-red-50">
+                <p className="text-sm font-semibold text-red-600">Failed to load agents</p>
+                <p className="text-xs text-red-500 mt-1">{kpiState.message}</p>
               </div>
-              <AgentOrderDetail agent={selectedAgent} state={orderState} />
             </div>
           )}
-        </div>
+
+          {kpiState.status === 'success' && (
+            <div className="p-4 md:p-6 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {sortedAgents.map(agent => (
+                  <AgentCard
+                    key={agent.agent_id}
+                    agent={agent}
+                    selected={selectedAgent?.agent_id === agent.agent_id}
+                    onClick={() =>
+                      setSelectedAgent(selectedAgent?.agent_id === agent.agent_id ? null : agent)
+                    }
+                  />
+                ))}
+              </div>
+
+              {selectedAgent && (
+                <div className="card">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-700">
+                        {selectedAgent.agent_name}
+                        <span className="ml-2 text-xs font-normal text-slate-400">· {selectedAgent.area}</span>
+                      </p>
+                      {orderState.status === 'success' && (
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          {orderState.orders.length} order{orderState.orders.length !== 1 ? 's' : ''} total
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setSelectedAgent(null)}
+                      className="text-xs text-slate-400 hover:text-slate-600 px-2 py-1 rounded hover:bg-slate-100 transition-colors"
+                    >
+                      Close ×
+                    </button>
+                  </div>
+                  <AgentOrderDetail agent={selectedAgent} state={orderState} />
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
     </div>
   )

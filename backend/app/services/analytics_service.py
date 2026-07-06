@@ -802,6 +802,191 @@ def get_area_intelligence(area: str) -> dict | None:
     }
 
 
+# ── 8. Leaderboard ───────────────────────────────────────────────────────────
+
+def get_leaderboard(period: str = "week") -> dict:
+    if period not in ("today", "week", "month"):
+        period = "week"
+    period_start = _period_start(period)
+
+    agent_rows = (
+        db.session.query(
+            User.id.label("agent_id"),
+            User.name.label("agent_name"),
+            User.area.label("area"),
+            func.count(Order.id).label("order_count"),
+            func.sum(case((Order.status == OrderStatus.DELIVERED, 1), else_=0)).label("delivered_count"),
+            func.sum(case((Order.status == OrderStatus.FAILED, 1), else_=0)).label("failed_count"),
+            func.sum(
+                case((Order.status == OrderStatus.DELIVERED, Order.payment_amount), else_=0)
+            ).label("earnings_inr"),
+        )
+        .outerjoin(
+            Order,
+            and_(Order.agent_id == User.id, Order.created_at >= period_start),
+        )
+        .filter(User.role == UserRole.AGENT, User.is_active == True)  # noqa: E712
+        .group_by(User.id, User.name, User.area)
+        .all()
+    )
+
+    max_orders = max((r.order_count or 0 for r in agent_rows), default=1) or 1
+    agents = []
+    for r in agent_rows:
+        cnt     = r.order_count or 0
+        deliv   = r.delivered_count or 0
+        failed  = r.failed_count or 0
+        earn    = round(float(r.earnings_inr or 0), 2)
+        sr      = round(deliv / cnt, 4) if cnt else 0.0
+        perf    = round(0.7 * sr + 0.3 * (cnt / max_orders), 4)
+        agents.append({
+            "agent_id":         r.agent_id,
+            "agent_name":       r.agent_name,
+            "area":             r.area,
+            "order_count":      cnt,
+            "delivered_count":  deliv,
+            "failed_count":     failed,
+            "success_rate":     sr,
+            "performance_score": perf,
+            "earnings_inr":     earn,
+        })
+
+    agents.sort(key=lambda x: x["performance_score"], reverse=True)
+    for i, a in enumerate(agents):
+        a["rank"] = i + 1
+
+    return {"period": period, "agents": agents}
+
+
+# ── 9. Daily AI Summary ───────────────────────────────────────────────────────
+
+def get_daily_summary() -> dict:
+    from app.services import gemini_service, weather_service
+
+    today_start = _utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    # Today's order stats
+    stats = (
+        db.session.query(
+            func.count(Order.id).label("total"),
+            func.sum(case((Order.status == OrderStatus.DELIVERED, 1), else_=0)).label("delivered"),
+            func.sum(case((Order.status == OrderStatus.FAILED, 1), else_=0)).label("failed"),
+        )
+        .filter(Order.created_at >= today_start)
+        .one()
+    )
+    total_today = stats.total or 0
+    delivered   = stats.delivered or 0
+    failed      = stats.failed or 0
+
+    # High-risk orders (latest decision = high risk)
+    latest_subq = (
+        db.session.query(Decision.order_id, func.max(Decision.id).label("max_id"))
+        .group_by(Decision.order_id).subquery()
+    )
+    high_risk_count = (
+        db.session.query(func.count(Decision.id))
+        .join(latest_subq, and_(
+            Decision.order_id == latest_subq.c.order_id,
+            Decision.id == latest_subq.c.max_id,
+        ))
+        .filter(Decision.risk_level == RiskLevel.HIGH)
+        .scalar() or 0
+    )
+
+    # Area with highest all-time failure rate
+    area_rows = (
+        db.session.query(
+            Order.area,
+            func.count(Order.id).label("total"),
+            func.sum(case((Order.status.in_([OrderStatus.FAILED, OrderStatus.POSTPONED]), 1), else_=0)).label("failures"),
+        )
+        .group_by(Order.area).all()
+    )
+    worst_area = max(
+        area_rows,
+        key=lambda r: (r.failures / r.total) if r.total else 0,
+        default=None,
+    )
+    worst_area_name = worst_area.area if worst_area else "N/A"
+    worst_area_rate = round((worst_area.failures / worst_area.total) * 100, 1) if worst_area and worst_area.total else 0.0
+
+    # Pending high-risk orders (candidates to postpone)
+    postpone_count = (
+        db.session.query(func.count(Order.id))
+        .join(latest_subq, Order.id == latest_subq.c.order_id)
+        .join(Decision, and_(Decision.order_id == Order.id, Decision.id == latest_subq.c.max_id))
+        .filter(
+            Order.status == OrderStatus.PENDING,
+            Decision.risk_level == RiskLevel.HIGH,
+        )
+        .scalar() or 0
+    )
+
+    # Weather
+    weather = weather_service.get_current_weather()
+    weather_blurb = ""
+    if weather:
+        weather_blurb = (
+            f"Current weather in Chennai: {weather['description']} "
+            f"({weather['temp_c']}°C, wind {weather['wind_kmh']} km/h). "
+            f"Delivery risk level: {weather['risk_level']}."
+        )
+
+    context = {
+        "total_orders_today": total_today,
+        "delivered_today": delivered,
+        "failed_today": failed,
+        "high_risk_orders": high_risk_count,
+        "worst_area": worst_area_name,
+        "worst_area_failure_rate_pct": worst_area_rate,
+        "postpone_candidates": postpone_count,
+        "weather": weather_blurb,
+    }
+
+    prompt = (
+        "You are a smart operations assistant for a last-mile delivery company in Chennai, India.\n"
+        "Generate a concise morning briefing (3–5 sentences) for the operations manager based on this data:\n\n"
+        f"- Total orders today: {total_today}\n"
+        f"- Delivered: {delivered}, Failed: {failed}\n"
+        f"- High-risk orders: {high_risk_count}\n"
+        f"- Area with highest failure rate: {worst_area_name} ({worst_area_rate}%)\n"
+        f"- Pending orders recommended for postponement: {postpone_count}\n"
+        f"- {weather_blurb}\n\n"
+        "Keep it professional and actionable. Reference actual numbers. "
+        "Do not use bullet points — write in flowing sentences."
+    )
+
+    try:
+        from app.config import Config
+        import google.generativeai as genai
+        api_key = Config.GEMINI_API_KEY
+        if api_key:
+            genai.configure(api_key=api_key)
+            model = genai.GenerativeModel("gemini-2.5-flash")
+            response = model.generate_content(prompt)
+            summary_text = response.text.strip()
+        else:
+            raise ValueError("no key")
+    except Exception:
+        # Deterministic fallback
+        summary_text = (
+            f"Good morning! Today you have {total_today} orders — "
+            f"{delivered} delivered and {failed} failed so far. "
+            f"There are {high_risk_count} high-risk orders to watch, with "
+            f"{worst_area_name} showing the highest failure rate at {worst_area_rate}%. "
+            f"{postpone_count} pending orders are flagged for postponement."
+        )
+        if weather_blurb:
+            summary_text += f" {weather_blurb}"
+
+    return {
+        "summary": summary_text,
+        "context": context,
+        "generated_at": _utcnow().isoformat(),
+    }
+
+
 # ── 7. Weather impact ─────────────────────────────────────────────────────────
 
 def get_weather_impact(period: str) -> dict:

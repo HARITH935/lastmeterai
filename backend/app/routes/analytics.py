@@ -143,3 +143,46 @@ def weather_impact():
     if period not in ("week", "month"):
         return _err("VALIDATION_ERROR", "period must be week or month.", 400)
     return jsonify(analytics_service.get_weather_impact(period)), 200
+
+
+# ── GET /api/analytics/leaderboard ───────────────────────────────────────────
+
+@bp.get("/leaderboard")
+@jwt_required()
+def leaderboard():
+    user = _current_user()
+    if err := _require_manager(user):
+        return err
+    period = request.args.get("period", "week")
+    if period not in ("today", "week", "month"):
+        return _err("VALIDATION_ERROR", "period must be today, week, or month.", 400)
+    return jsonify(analytics_service.get_leaderboard(period)), 200
+
+
+# ── GET /api/analytics/daily-summary ─────────────────────────────────────────
+
+@bp.get("/daily-summary")
+@jwt_required()
+def daily_summary():
+    user = _current_user()
+    if err := _require_manager(user):
+        return err
+    return jsonify(analytics_service.get_daily_summary()), 200
+
+
+# ── GET /api/weather/current ─────────────────────────────────────────────────
+
+from flask import Blueprint as _BP  # noqa: E402  (already imported above — re-used here)
+
+weather_bp = Blueprint("weather", __name__, url_prefix="/api/weather")
+
+
+@weather_bp.get("/current")
+@jwt_required()
+def current_weather():
+    from app.services import weather_service
+    data = weather_service.get_current_weather()
+    if data is None:
+        return jsonify({"error": "WEATHER_UNAVAILABLE",
+                        "message": "Weather data is currently unavailable."}), 503
+    return jsonify(data), 200

@@ -11,7 +11,14 @@ import {
   Tooltip,
 } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
-import { getDashboard, type DashboardResponse } from '../api/analytics'
+import {
+  getDashboard,
+  getDailySummary,
+  getCurrentWeather,
+  type DashboardResponse,
+  type DailySummaryResponse,
+  type WeatherCurrent,
+} from '../api/analytics'
 import { MetricCard } from '../components/ui/MetricCard'
 import { AgentDashboard } from './AgentDashboard'
 import { Placeholder } from './Placeholder'
@@ -64,9 +71,105 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
   )
 }
 
+// ── Weather widget ─────────────────────────────────────────────────────────────
+
+const RISK_BG: Record<string, string> = {
+  low:    'bg-green-50 border-green-200 text-green-700',
+  medium: 'bg-amber-50 border-amber-200 text-amber-700',
+  high:   'bg-red-50 border-red-200 text-red-600',
+}
+
+function WeatherWidget({ accessToken }: { accessToken: string }) {
+  const [weather, setWeather] = useState<WeatherCurrent | null>(null)
+
+  useEffect(() => {
+    getCurrentWeather(accessToken).then(setWeather).catch(() => {})
+  }, [accessToken])
+
+  if (!weather) return null
+
+  const riskClass = RISK_BG[weather.risk_level] ?? RISK_BG.low
+
+  return (
+    <div className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border text-sm ${riskClass}`}>
+      <img
+        src={`https://openweathermap.org/img/wn/${weather.icon_code}.png`}
+        alt={weather.description}
+        className="w-8 h-8"
+      />
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold capitalize">{weather.description}</p>
+        <p className="text-xs opacity-75">
+          {weather.temp_c}°C · Wind {weather.wind_kmh} km/h · Humidity {weather.humidity_pct}%
+        </p>
+      </div>
+      <span className="text-xs font-bold uppercase tracking-wide shrink-0">
+        {weather.risk_level} risk
+      </span>
+    </div>
+  )
+}
+
+// ── AI Daily Summary Card ──────────────────────────────────────────────────────
+
+function AISummaryCard({ accessToken }: { accessToken: string }) {
+  const [state, setState] = useState<
+    | { status: 'loading' }
+    | { status: 'error' }
+    | { status: 'success'; data: DailySummaryResponse }
+  >({ status: 'loading' })
+
+  const load = () => {
+    setState({ status: 'loading' })
+    getDailySummary(accessToken)
+      .then(data => setState({ status: 'success', data }))
+      .catch(() => setState({ status: 'error' }))
+  }
+
+  useEffect(() => { load() }, [accessToken])
+
+  if (state.status === 'loading') {
+    return <div className="animate-pulse h-24 bg-slate-200 rounded-2xl" />
+  }
+
+  if (state.status === 'error') return null
+
+  const { data } = state
+  const time = new Date(data.generated_at).toLocaleTimeString('en-IN', {
+    hour: '2-digit', minute: '2-digit',
+  })
+
+  return (
+    <div className="card bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3 flex-1 min-w-0">
+          <span className="text-2xl mt-0.5">🤖</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">
+              AI Morning Briefing
+            </p>
+            <p className="text-sm text-slate-700 leading-relaxed">{data.summary}</p>
+            <p className="text-[10px] text-slate-400 mt-1.5">Generated at {time}</p>
+          </div>
+        </div>
+        <button
+          onClick={load}
+          title="Refresh briefing"
+          className="text-blue-400 hover:text-blue-600 shrink-0 mt-0.5 transition-colors"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" />
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── Dashboard content ──────────────────────────────────────────────────────────
 
-function DashboardContent({ data }: { data: DashboardResponse }) {
+function DashboardContent({ data, accessToken }: { data: DashboardResponse; accessToken: string }) {
   const { cards, trends } = data
 
   const srData = trends.success_rate_over_time.map(d => ({
@@ -97,6 +200,13 @@ function DashboardContent({ data }: { data: DashboardResponse }) {
       </div>
 
       <div className="px-4 md:px-6 pb-8 space-y-6">
+
+      {/* AI Summary + Weather row */}
+      <div className="space-y-3">
+        <AISummaryCard accessToken={accessToken} />
+        <WeatherWidget accessToken={accessToken} />
+      </div>
+
       {/* Metric cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <MetricCard label="Total Orders Today" value={cards.total_orders_today} />
@@ -231,5 +341,5 @@ function DashboardFetcher({ accessToken }: { accessToken: string }) {
     )
   }
 
-  return <DashboardContent data={state.data} />
+  return <DashboardContent data={state.data} accessToken={accessToken} />
 }

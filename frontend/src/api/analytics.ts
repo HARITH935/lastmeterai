@@ -233,3 +233,85 @@ export async function getCustomerInsights(
   if (!res.ok) throw body
   return body as CustomerInsightResponse
 }
+
+// ── Leaderboard ────────────────────────────────────────────────────────────────
+
+export interface LeaderboardAgent {
+  rank: number
+  agent_id: number
+  agent_name: string
+  area: string | null
+  order_count: number
+  delivered_count: number
+  failed_count: number
+  success_rate: number
+  performance_score: number
+  earnings_inr: number
+}
+
+export interface LeaderboardResponse {
+  period: string
+  agents: LeaderboardAgent[]
+}
+
+export async function getLeaderboard(
+  accessToken: string,
+  period: 'today' | 'week' | 'month' = 'week',
+): Promise<LeaderboardResponse> {
+  const res = await authFetch(`${API_BASE}/api/analytics/leaderboard?period=${period}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  const body = await res.json()
+  if (!res.ok) throw body
+  return body as LeaderboardResponse
+}
+
+// ── Daily AI Summary ───────────────────────────────────────────────────────────
+
+export interface DailySummaryResponse {
+  summary: string
+  context: {
+    total_orders_today: number
+    delivered_today: number
+    failed_today: number
+    high_risk_orders: number
+    worst_area: string
+    worst_area_failure_rate_pct: number
+    postpone_candidates: number
+    weather: string
+  }
+  generated_at: string
+}
+
+export async function getDailySummary(accessToken: string): Promise<DailySummaryResponse> {
+  const res = await authFetch(`${API_BASE}/api/analytics/daily-summary`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  const body = await res.json()
+  if (!res.ok) throw body
+  return body as DailySummaryResponse
+}
+
+// ── Live Weather ───────────────────────────────────────────────────────────────
+
+export interface WeatherCurrent {
+  condition: string
+  description: string
+  temp_c: number
+  humidity_pct: number
+  wind_kmh: number
+  rain_1h_mm: number
+  cloud_pct: number
+  risk_score: number
+  risk_level: 'low' | 'medium' | 'high'
+  icon_code: string
+}
+
+export async function getCurrentWeather(accessToken: string): Promise<WeatherCurrent> {
+  const res = await authFetch(`${API_BASE}/api/weather/current`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  const body = await res.json()
+  if (!res.ok) throw body
+  return body as WeatherCurrent
+}
