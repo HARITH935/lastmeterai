@@ -81,9 +81,69 @@ function LayerPanel({
           style={showHeatmap ? { backgroundColor: '#EF4444' } : undefined}
           className={`px-3 py-1.5 text-xs font-semibold rounded-lg shadow-lg border backdrop-blur-sm transition-colors ${showHeatmap ? active : inactive}`}
         >
-          Heatmap
+          {showHeatmap ? '🔥 Heatmap ON' : 'Heatmap'}
         </button>
       )}
+    </div>
+  )
+}
+
+// ── Heatmap legend ─────────────────────────────────────────────────────────────
+
+function HeatmapLegend() {
+  return (
+    <div className="absolute bottom-6 left-3 z-[1000] bg-slate-900/90 backdrop-blur-sm rounded-xl px-3 py-2.5 shadow-xl text-white">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Failure Risk</p>
+      {[
+        { color: '#10B981', label: 'Low  (< 20%)' },
+        { color: '#F59E0B', label: 'Medium (20–40%)' },
+        { color: '#EF4444', label: 'High  (> 40%)' },
+      ].map(({ color, label }) => (
+        <div key={label} className="flex items-center gap-2 mb-1 last:mb-0">
+          <div className="w-3 h-3 rounded-full opacity-80" style={{ backgroundColor: color }} />
+          <span className="text-[11px] text-slate-200">{label}</span>
+        </div>
+      ))}
+      <p className="text-[10px] text-slate-500 mt-2">Circle size = order volume</p>
+    </div>
+  )
+}
+
+// ── Zone stats panel ───────────────────────────────────────────────────────────
+
+function ZoneStatsPanel({ zones, onClose }: { zones: HeatmapZone[]; onClose: () => void }) {
+  const sorted = [...zones].sort((a, b) => b.failure_rate - a.failure_rate)
+
+  return (
+    <div className="absolute top-3 left-3 z-[1000] bg-slate-900/92 backdrop-blur-sm rounded-xl shadow-xl text-white w-56">
+      <div className="flex items-center justify-between px-3 pt-2.5 pb-1.5 border-b border-slate-700">
+        <p className="text-xs font-semibold text-white">Zone Risk Ranking</p>
+        <button onClick={onClose} className="text-slate-400 hover:text-white text-xs px-1">×</button>
+      </div>
+      <div className="p-2 space-y-1.5">
+        {sorted.map((z, i) => {
+          const pct = Math.round(z.failure_rate * 100)
+          const color = RISK_COLOR[z.risk_band] ?? '#94A3B8'
+          return (
+            <div key={z.area} className="flex items-center gap-2">
+              <span className="text-[10px] text-slate-400 w-4 shrink-0">#{i + 1}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-xs font-medium text-slate-200 truncate">{z.area}</span>
+                  <span className="text-[10px] font-bold ml-1 shrink-0" style={{ color }}>{pct}%</span>
+                </div>
+                <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{ width: `${pct}%`, backgroundColor: color }}
+                  />
+                </div>
+                <p className="text-[10px] text-slate-500 mt-0.5">{z.order_count} orders · {z.risk_band} risk</p>
+              </div>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -107,14 +167,23 @@ interface MapViewProps {
 }
 
 function MapView({ orders, zones, isManager, route, agentPos, agentMarkers }: MapViewProps) {
-  const [showPins,    setShowPins]    = useState(true)
-  const [showHeatmap, setShowHeatmap] = useState(false)
-  const [showRoute,   setShowRoute]   = useState(true)
+  const [showPins,      setShowPins]      = useState(true)
+  const [showHeatmap,   setShowHeatmap]   = useState(isManager)  // ON by default for managers
+  const [showRoute,     setShowRoute]     = useState(true)
+  const [showZonePanel, setShowZonePanel] = useState(isManager)
 
   const hasRoute = route && route.stops.length > 0
 
-  // IDs of orders already shown as route stop markers — skip duplicate pins for these.
   const routeOrderIds = new Set((route?.stops ?? []).map(s => s.order_id))
+
+  // Toggle heatmap + zone panel together
+  function toggleHeatmap() {
+    setShowHeatmap(h => {
+      if (h) setShowZonePanel(false)
+      else   setShowZonePanel(true)
+      return !h
+    })
+  }
 
   return (
     <div className="relative" style={{ height: 'calc(100vh - 64px)' }}>
@@ -127,28 +196,45 @@ function MapView({ orders, zones, isManager, route, agentPos, agentMarkers }: Ma
         <TileLayer url={DARK_TILE_URL} attribution={DARK_TILE_ATTR} />
 
         {/* ── Heatmap circles (manager only) ── */}
-        {isManager && showHeatmap && zones.map(z => (
-          <Circle
-            key={z.area}
-            center={[z.lat, z.lon]}
-            radius={1500 + z.failure_rate * 4000}
-            pathOptions={{
-              color:       riskColor(z.risk_band),
-              fillColor:   riskColor(z.risk_band),
-              fillOpacity: 0.22,
-              weight:      1.5,
-            }}
-          >
-            <Popup>
-              <div style={{ fontSize: 12, lineHeight: 1.6 }}>
-                <strong style={{ fontSize: 13 }}>{z.area}</strong>
-                <br />Failure rate: {Math.round(z.failure_rate * 100)}%
-                <br />Risk band: <strong>{z.risk_band}</strong>
-                <br />Orders tracked: {z.order_count}
-              </div>
-            </Popup>
-          </Circle>
-        ))}
+        {isManager && showHeatmap && zones.map(z => {
+          const color = RISK_COLOR[z.risk_band] ?? '#94A3B8'
+          const pct   = Math.round(z.failure_rate * 100)
+          const livePct = Math.round((z.live_failure_rate ?? z.failure_rate) * 100)
+          return (
+            <Circle
+              key={z.area}
+              center={[z.lat, z.lon]}
+              radius={1800 + z.failure_rate * 5000}
+              pathOptions={{
+                color,
+                fillColor:   color,
+                fillOpacity: 0.25,
+                weight:      2,
+              }}
+            >
+              <Popup>
+                <div style={{ fontFamily: 'system-ui', minWidth: 180 }}>
+                  <p style={{ fontWeight: 700, fontSize: 14, marginBottom: 6 }}>{z.area}</p>
+                  {/* Failure rate bar */}
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 3 }}>
+                      <span style={{ color: '#64748b' }}>ML predicted failure</span>
+                      <strong style={{ color }}>{pct}%</strong>
+                    </div>
+                    <div style={{ height: 6, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 4 }} />
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#475569', lineHeight: 1.8 }}>
+                    <div>Live failure rate: <strong>{livePct}%</strong></div>
+                    <div>Risk band: <strong style={{ color }}>{z.risk_band}</strong></div>
+                    <div>Orders tracked: <strong>{z.order_count}</strong></div>
+                  </div>
+                </div>
+              </Popup>
+            </Circle>
+          )
+        })}
 
         {/* ── Order pins ──
             For agents: skip pins that are already shown as route stop markers.
@@ -299,9 +385,17 @@ function MapView({ orders, zones, isManager, route, agentPos, agentMarkers }: Ma
         showRoute={showRoute}
         isManager={isManager}
         onTogglePins={() => setShowPins(p => !p)}
-        onToggleHeatmap={() => setShowHeatmap(h => !h)}
+        onToggleHeatmap={toggleHeatmap}
         onToggleRoute={() => setShowRoute(r => !r)}
       />
+
+      {/* Heatmap legend — bottom left */}
+      {isManager && showHeatmap && <HeatmapLegend />}
+
+      {/* Zone stats panel — top left */}
+      {isManager && showZonePanel && zones.length > 0 && (
+        <ZoneStatsPanel zones={zones} onClose={() => setShowZonePanel(false)} />
+      )}
 
       {/* Route summary bar (agent only) */}
       {!isManager && hasRoute && (
