@@ -611,12 +611,19 @@ export function OrderDetail() {
         <ShareTrackingCard token={order.tracking_token} />
       )}
 
-      {/* Failure reason */}
+      {/* Failure / reschedule reason — label depends on status */}
       {order.failure_reason && (
-        <div className="card border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900">
-          <h2 className="text-xs font-semibold text-red-600 uppercase tracking-wide mb-1">Failure Reason</h2>
-          <p className="text-sm text-red-700 dark:text-red-400">{order.failure_reason}</p>
-        </div>
+        order.status === 'postponed' ? (
+          <div className="card border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900">
+            <h2 className="text-xs font-semibold text-amber-600 uppercase tracking-wide mb-1">Reschedule Reason</h2>
+            <p className="text-sm text-amber-700 dark:text-amber-400">{order.failure_reason}</p>
+          </div>
+        ) : (
+          <div className="card border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900">
+            <h2 className="text-xs font-semibold text-red-600 uppercase tracking-wide mb-1">Failure Reason</h2>
+            <p className="text-sm text-red-700 dark:text-red-400">{order.failure_reason}</p>
+          </div>
+        )
       )}
 
       {/* Status update (agent only, active orders) */}
