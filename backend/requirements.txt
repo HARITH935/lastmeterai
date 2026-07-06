@@ -27,5 +27,8 @@ google-generativeai==0.8.3
 python-dotenv==1.0.1
 python-dateutil==2.9.0
 
+# Rate limiting
+Flask-Limiter==3.9.4
+
 # Validation (used in backend/app/schemas/ and routes/orders.py)
 marshmallow==3.23.2

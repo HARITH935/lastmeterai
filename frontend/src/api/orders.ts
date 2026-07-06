@@ -140,6 +140,28 @@ export async function getOptimizedRoute(accessToken: string): Promise<OptimizedR
   return body as OptimizedRoute
 }
 
+export interface OrderDetail extends OrderListItem {
+  latest_decision: {
+    id: number
+    decision: string
+    risk_score: number
+    risk_level: string
+    explanation: string | null
+    top_shap_factors: { factor: string; contribution: number }[]
+    created_at: string
+    model_version: string | null
+  } | null
+}
+
+export async function getOrder(accessToken: string, orderId: number): Promise<OrderDetail> {
+  const res = await authFetch(`${API_BASE}/api/orders/${orderId}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  const body = await res.json()
+  if (!res.ok) throw body
+  return body as OrderDetail
+}
+
 export async function updateOrderStatus(
   accessToken: string,
   orderId: number,

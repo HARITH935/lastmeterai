@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { io, type Socket } from 'socket.io-client'
 import { useAuth } from './AuthContext'
+import { useToast } from './ToastContext'
 import { getNotifications } from '../api/notifications'
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:5001'
@@ -19,6 +20,7 @@ const SocketContext = createContext<SocketContextValue>({
 
 export function SocketProvider({ children }: { children: ReactNode }) {
   const { user, access_token } = useAuth()
+  const { addToast } = useToast()
   const [unreadCount, setUnreadCount] = useState(0)
   const [socket, setSocket] = useState<Socket | null>(null)
 
@@ -51,8 +53,13 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       console.debug('[Socket] connected — room:', data.room)
     })
 
-    s.on('new_notification', () => {
+    s.on('new_notification', (data?: { title?: string; message?: string }) => {
       setUnreadCount(prev => prev + 1)
+      addToast('info', data?.title ?? 'New notification', data?.message)
+    })
+
+    s.on('new_order_assigned', (data?: { order_number?: string }) => {
+      addToast('success', 'New order assigned', data?.order_number ? `Order ${data.order_number} added to your route` : undefined)
     })
 
     s.on('disconnect', (reason) => {
@@ -63,7 +70,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       s.disconnect()
       setSocket(null)
     }
-  }, [access_token, user])
+  }, [access_token, user, addToast])
 
   return (
     <SocketContext.Provider value={{ socket, unreadCount, setUnreadCount }}>

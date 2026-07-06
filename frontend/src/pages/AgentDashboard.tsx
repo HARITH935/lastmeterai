@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { getCostSavings, type CostSavingsResponse } from '../api/analytics'
 import { getAgentOrders, getOptimizedRoute, type OrderListItem, type OrderListResponse, type OptimizedRoute } from '../api/orders'
@@ -67,13 +67,17 @@ const RISK_DOT: Record<string, string> = {
 }
 
 function OrderRow({ order }: { order: OrderListItem }) {
+  const navigate = useNavigate()
   const colorClass = STATUS_COLORS[order.status] ?? 'bg-slate-100 text-slate-600'
   const deadline = new Date(order.deadline).toLocaleTimeString('en-IN', {
     hour: '2-digit', minute: '2-digit', hour12: true,
   })
 
   return (
-    <div className="flex items-center justify-between py-2.5 border-b border-slate-100 last:border-0 gap-3">
+    <div
+      onClick={() => navigate(`/orders/${order.id}`)}
+      className="flex items-center justify-between py-2.5 border-b border-slate-100 last:border-0 gap-3 cursor-pointer hover:bg-slate-50 active:bg-slate-100 -mx-1 px-1 rounded-lg transition-colors"
+    >
       <div className="flex items-center gap-2.5 min-w-0">
         <div className={`w-2 h-2 rounded-full shrink-0 ${RISK_DOT[order.risk_level ?? ''] ?? 'bg-slate-300'}`} />
         <div className="min-w-0">
@@ -88,9 +92,12 @@ function OrderRow({ order }: { order: OrderListItem }) {
           <p className="text-xs text-slate-400 truncate">{order.customer_name} · by {deadline}</p>
         </div>
       </div>
-      <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0 ${colorClass}`}>
-        {order.status.replace('_', ' ')}
-      </span>
+      <div className="flex items-center gap-1.5 shrink-0">
+        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${colorClass}`}>
+          {order.status.replace('_', ' ')}
+        </span>
+        <span className="text-slate-300 text-xs">›</span>
+      </div>
     </div>
   )
 }
@@ -101,9 +108,9 @@ function QuickLink({ to, label, icon, color }: { to: string; label: string; icon
   return (
     <Link
       to={to}
-      className={`flex flex-col items-center gap-1.5 px-4 py-3 rounded-xl border font-medium text-xs transition-colors ${color}`}
+      className={`flex flex-col items-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-2.5 sm:py-3 rounded-xl border font-medium text-[11px] sm:text-xs transition-colors ${color}`}
     >
-      <span className="text-xl">{icon}</span>
+      <span className="text-lg sm:text-xl">{icon}</span>
       {label}
     </Link>
   )
@@ -293,7 +300,7 @@ function AgentContent({ orders, savings, route }: AgentContentProps) {
         </div>
 
         {/* ── Quick links ── */}
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-4 gap-2 sm:gap-3">
           <QuickLink to="/map"      label="My Route"    icon="🗺️"  color="bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100" />
           <QuickLink to="/orders"   label="Orders"      icon="📦"  color="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100" />
           <QuickLink to="/chat"     label="AI Chat"     icon="🤖"  color="bg-green-50 text-green-700 border-green-200 hover:bg-green-100" />

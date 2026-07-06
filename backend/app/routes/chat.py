@@ -9,7 +9,7 @@ Role-based data scoping is applied inside chat_service (agents see own area).
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
-from app.extensions import db
+from app.extensions import db, limiter
 from app.models import User
 from app.services import chat_service
 
@@ -28,6 +28,7 @@ def _current_user() -> User:
 
 @bp.post("/message")
 @jwt_required()
+@limiter.limit("10 per minute")
 def send_message():
     """
     Send a chat message and receive a classified, context-enriched reply.

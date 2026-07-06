@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useState, type KeyboardEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import {
   getAllOrders, getAgentOrders, updateOrderStatus,
@@ -115,6 +116,7 @@ function ErrorCard({ message }: { message: string }) {
 type SortBy = 'created_at' | 'deadline' | 'risk_score' | 'payment_amount'
 
 function ManagerOrders({ accessToken }: { accessToken: string }) {
+  const navigate = useNavigate()
   // Filter state
   const [searchInput, setSearchInput] = useState('')
   const [search,      setSearch]      = useState('')
@@ -311,6 +313,12 @@ function ManagerOrders({ accessToken }: { accessToken: string }) {
                       </div>
                     )}
                   </div>
+                  <button
+                    onClick={() => navigate(`/orders/${order.id}`)}
+                    className="mt-3 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+                  >
+                    View full detail →
+                  </button>
                 </div>
               )}
             </div>
@@ -415,9 +423,12 @@ function ManagerOrders({ accessToken }: { accessToken: string }) {
                             </div>
                           )}
                         </div>
-                        <p className="text-xs text-slate-400 mt-3 italic">
-                          Full SHAP breakdown and decision history available in the Order Detail page (upcoming milestone).
-                        </p>
+                        <button
+                          onClick={() => navigate(`/orders/${order.id}`)}
+                          className="mt-3 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+                        >
+                          View full detail →
+                        </button>
                       </td>
                     </tr>
                   )}

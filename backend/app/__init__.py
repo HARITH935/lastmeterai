@@ -1,6 +1,6 @@
 import os
 from flask import Flask, jsonify
-from .extensions import db, jwt, socketio, bcrypt, migrate
+from .extensions import db, jwt, socketio, bcrypt, migrate, limiter
 from .config import config
 
 
@@ -17,6 +17,7 @@ def create_app(config_name: str | None = None) -> Flask:
     jwt.init_app(app)
     bcrypt.init_app(app)
     migrate.init_app(app, db)
+    limiter.init_app(app)
 
     # ── CORS ──────────────────────────────────────────────────────────────────
     # Parse once, reuse for both Flask-CORS (REST) and Flask-SocketIO (WebSocket).
@@ -43,6 +44,16 @@ def create_app(config_name: str | None = None) -> Flask:
         methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         max_age=3600,
     )
+
+    # ── Rate limit error handler ──────────────────────────────────────────────
+    from flask_limiter.errors import RateLimitExceeded
+
+    @app.errorhandler(RateLimitExceeded)
+    def handle_rate_limit(e):
+        return jsonify({
+            "error": "RATE_LIMIT_EXCEEDED",
+            "message": "Too many messages. Please wait a moment before sending again.",
+        }), 429
 
     # ── JWT callbacks ─────────────────────────────────────────────────────────
     from app.services.auth_service import is_token_revoked

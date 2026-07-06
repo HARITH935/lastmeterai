@@ -13,6 +13,86 @@ import {
 } from '../api/analytics'
 import { MetricCard } from '../components/ui/MetricCard'
 
+// ── CSV export ─────────────────────────────────────────────────────────────────
+
+function buildCSV(data: ReportData, period: string): string {
+  const rows: string[][] = []
+  const ts = new Date().toLocaleString('en-IN')
+  const label = period === 'week' ? 'Last 7 Days' : 'Last 30 Days'
+
+  rows.push([`LastMeter AI — Report Export (${label})`, '', `Generated: ${ts}`])
+  rows.push([])
+
+  // Summary
+  const s = data.kpi.summary
+  rows.push(['SUMMARY'])
+  rows.push(['Metric', 'Value'])
+  rows.push(['Total Orders', String(s.total_orders)])
+  rows.push(['Delivered', String(s.total_delivered)])
+  rows.push(['Failed Delivery %', `${(s.failed_delivery_pct * 100).toFixed(1)}%`])
+  rows.push(['Avg Delivery Time (min)', String(s.avg_delivery_time_minutes)])
+  rows.push([])
+
+  // Agent performance
+  rows.push(['AGENT PERFORMANCE'])
+  rows.push(['Agent', 'Area', 'Orders', 'Delivered', 'Success Rate', 'Performance Score'])
+  for (const a of data.kpi.agent_performance) {
+    rows.push([
+      a.agent_name,
+      a.area,
+      String(a.order_count),
+      String(a.delivered_count),
+      `${(a.success_rate * 100).toFixed(1)}%`,
+      String(a.performance_score),
+    ])
+  }
+  rows.push([])
+
+  // Area performance
+  rows.push(['AREA PERFORMANCE'])
+  rows.push(['Area', 'Total Orders', 'Successful', 'Failed', 'Avg Risk Score'])
+  for (const a of data.kpi.area_performance) {
+    rows.push([
+      a.area,
+      String(a.total_orders),
+      String(a.success_count),
+      String(a.failure_count),
+      String(a.avg_risk_score),
+    ])
+  }
+  rows.push([])
+
+  // Cost savings
+  const m = data.savings.metrics
+  rows.push(['COST SAVINGS (ALL TIME)'])
+  rows.push(['Metric', 'Value'])
+  rows.push(['Total Orders', String(m.total_orders)])
+  rows.push(['GO Decisions', String(m.go_count)])
+  rows.push(['NO-GO Decisions', String(m.no_go_count)])
+  rows.push(['Deliveries Avoided', String(m.deliveries_avoided)])
+  rows.push(['Fuel Saved (litres)', String(m.fuel_saved_litres)])
+  rows.push(['Fuel Saved (INR)', `₹${m.fuel_saved_inr.toFixed(2)}`])
+  rows.push(['Failed Cost Avoided (INR)', `₹${m.failed_cost_avoided_inr.toFixed(2)}`])
+  rows.push(['Total Savings (INR)', `₹${m.total_savings_inr.toFixed(2)}`])
+  rows.push(['Success Rate with AI', `${(m.success_rate_with_ai * 100).toFixed(1)}%`])
+  rows.push(['Baseline Success Rate', `${(m.baseline_success_rate * 100).toFixed(1)}%`])
+  rows.push(['Improvement', `+${m.improvement_pct.toFixed(1)}%`])
+
+  return rows
+    .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    .join('\n')
+}
+
+function downloadCSV(csv: string, filename: string) {
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  a.href     = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 type Period = 'week' | 'month'
@@ -345,22 +425,36 @@ export function Reports() {
   return (
     <div>
       {/* Header + period selector */}
-      <div className="px-4 md:px-6 pt-6 pb-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-slate-900">Reports &amp; Analytics</h1>
-        <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
-          {(['week', 'month'] as Period[]).map(p => (
+      <div className="px-4 md:px-6 pt-6 pb-4 flex items-center justify-between gap-3 flex-wrap">
+        <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Reports &amp; Analytics</h1>
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
+            {(['week', 'month'] as Period[]).map(p => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={`text-xs font-semibold px-3 py-1.5 rounded-md transition-colors ${
+                  period === p
+                    ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                }`}
+              >
+                {p === 'week' ? 'This Week' : 'This Month'}
+              </button>
+            ))}
+          </div>
+          {state.status === 'success' && (
             <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={`text-xs font-semibold px-3 py-1.5 rounded-md transition-colors ${
-                period === p
-                  ? 'bg-white text-slate-800 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
+              onClick={() => {
+                const csv = buildCSV(state.data, period)
+                const label = period === 'week' ? '7d' : '30d'
+                downloadCSV(csv, `lastmeter-report-${label}-${new Date().toISOString().slice(0, 10)}.csv`)
+              }}
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-1.5"
             >
-              {p === 'week' ? 'This Week' : 'This Month'}
+              ↓ Export CSV
             </button>
-          ))}
+          )}
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useTheme } from '../contexts/ThemeContext'
 import {
   getMe, updateProfile, changePassword,
   type UserProfile,
@@ -99,6 +100,7 @@ type NotifPrefs = UserProfile['notification_prefs']
 
 export function Settings() {
   const { access_token, logout } = useAuth()
+  const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
 
   // ── Page-level load ─────────────────────────────────────────────────────────
@@ -466,16 +468,15 @@ export function Settings() {
           )}
         </Section>
 
-        {/* ── Spec-only features not yet implemented ───────────────────────── */}
-        <div className="card bg-slate-50 border-slate-100">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">
-            Coming soon
-          </p>
-          <p className="text-xs text-slate-400 leading-relaxed">
-            Model threshold configuration and API integration status require backend
-            endpoints that are not yet implemented.
-          </p>
-        </div>
+        {/* ── Appearance section ────────────────────────────────────────────── */}
+        <Section title="Appearance">
+          <p className="text-xs text-slate-400 mb-3">Choose your preferred theme.</p>
+          <Toggle
+            checked={theme === 'dark'}
+            onChange={toggleTheme}
+            label="Dark Mode"
+          />
+        </Section>
 
       </div>
     </div>

@@ -15,9 +15,9 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="hidden md:flex flex-col w-56 shrink-0 bg-white border-r border-slate-200 h-full">
+    <aside className="hidden md:flex flex-col w-56 shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 h-full">
       {/* Brand */}
-      <div className="px-4 py-5 border-b border-slate-100">
+      <div className="px-4 py-5 border-b border-slate-100 dark:border-slate-800">
         <span className="text-lg font-bold text-primary tracking-tight">LastMeter AI</span>
         <p className="text-xs text-slate-400 mt-0.5 truncate">{user?.name ?? user?.username}</p>
       </div>
@@ -32,7 +32,7 @@ export function Sidebar() {
               `flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium rounded-lg mx-2 my-0.5 transition-colors ${
                 isActive
                   ? 'bg-primary/10 text-primary'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'
               }`
             }
           >
@@ -48,10 +48,10 @@ export function Sidebar() {
       </nav>
 
       {/* Logout */}
-      <div className="p-3 border-t border-slate-100">
+      <div className="p-3 border-t border-slate-100 dark:border-slate-800">
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-500 hover:text-nogo hover:bg-red-50 rounded-lg transition-colors"
+          className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-nogo hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
         >
           <span>↩</span>
           Logout

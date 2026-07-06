@@ -15,6 +15,7 @@ import { Settings } from '../pages/Settings'
 import { Profile } from '../pages/Profile'
 import { CustomerInsights } from '../pages/CustomerInsights'
 import { AreaIntelligence } from '../pages/AreaIntelligence'
+import { OrderDetail } from '../pages/OrderDetail'
 
 export const router = createBrowserRouter([
   {
@@ -32,6 +33,7 @@ export const router = createBrowserRouter([
       { path: '/map',               element: <Map /> },
       { path: '/chat',              element: <Chat /> },
       { path: '/orders',            element: <Orders /> },
+      { path: '/orders/:id',        element: <OrderDetail /> },
       { path: '/earnings',          element: <Earnings /> },
       { path: '/reports',           element: <Reports /> },
       { path: '/agents',            element: <Agents /> },

@@ -60,12 +60,15 @@ function SendIcon() {
 
 // ── Intent badge ───────────────────────────────────────────────────────────────
 
+const CONFIDENCE_THRESHOLD = 0.40
+
 function IntentBadge({ intent, confidence }: { intent: string; confidence?: number }) {
-  const label = INTENT_LABELS[intent] ?? intent
+  const label     = INTENT_LABELS[intent] ?? intent
   const isGeneral = intent === 'general'
+  const isLow     = confidence !== undefined && confidence < CONFIDENCE_THRESHOLD
 
   return (
-    <div className="flex items-center gap-1.5 mt-1.5 ml-1">
+    <div className="flex items-center gap-1.5 mt-1.5 ml-1 flex-wrap">
       <span
         className={`text-xs font-medium px-2 py-0.5 rounded-full ${
           isGeneral
@@ -76,8 +79,14 @@ function IntentBadge({ intent, confidence }: { intent: string; confidence?: numb
         {label}
       </span>
       {confidence !== undefined && confidence > 0 && (
-        <span className="text-xs text-slate-400">
-          {Math.round(confidence * 100)}% confidence
+        <span
+          className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+            isLow
+              ? 'bg-amber-50 text-amber-600'
+              : 'bg-slate-100 text-slate-500'
+          }`}
+        >
+          {isLow ? `Low confidence · ${Math.round(confidence * 100)}%` : `${Math.round(confidence * 100)}%`}
         </span>
       )}
     </div>
@@ -252,8 +261,8 @@ export function Chat() {
 
   return (
     <div className="flex flex-col" style={{ height: 'calc(100vh - 64px)' }}>
-      {/* Message list */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-slate-50">
+      {/* Message list — extra bottom padding on mobile so input doesn't cover messages */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 pb-24 md:pb-4 space-y-3 bg-slate-50 dark:bg-slate-950">
         {messages.length === 0 && !pending ? (
           <EmptyState isManager={isManager} onSuggest={text => void send(text)} />
         ) : (
@@ -268,7 +277,7 @@ export function Chat() {
       </div>
 
       {/* Input row */}
-      <div className="border-t border-slate-200 bg-white px-4 py-3">
+      <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3">
         <div className="flex gap-2 max-w-3xl mx-auto">
           <input
             ref={inputRef}
@@ -278,17 +287,17 @@ export function Chat() {
             onKeyDown={handleKeyDown}
             disabled={pending}
             placeholder="Ask me anything…"
-            className="flex-1 text-sm border border-slate-200 rounded-xl px-4 py-2.5 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 disabled:opacity-50 bg-slate-50"
+            className="flex-1 text-sm border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 disabled:opacity-50 bg-slate-50 dark:bg-slate-800 dark:text-slate-100"
           />
           <button
             onClick={() => void send(input)}
             disabled={pending || !input.trim()}
             aria-label="Send message"
-            className="px-4 py-2.5 text-white rounded-xl disabled:opacity-40 transition-opacity flex items-center gap-1.5 text-sm font-semibold"
+            className="px-4 py-2.5 text-white rounded-xl disabled:opacity-40 transition-opacity flex items-center gap-1.5 text-sm font-semibold shrink-0"
             style={{ backgroundColor: '#2563EB' }}
           >
             <SendIcon />
-            Send
+            <span className="hidden sm:inline">Send</span>
           </button>
         </div>
       </div>
