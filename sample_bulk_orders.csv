@@ -1,0 +1,6 @@
+customer_name,customer_phone,customer_address,area,residence_type,package_size,time_window,deadline,payment_amount,latitude,longitude,is_urgent
+Harith Kumar,9876543210,45 Main Street,Anna Nagar,apartment,medium,morning,2026-07-12T10:00:00,250.00,13.0865,80.2101,false
+Harith Raj,9823456710,12 Second Avenue,T Nagar,independent,small,afternoon,2026-07-12T14:00:00,180.50,13.0418,80.2341,true
+Harith Vijay,9791234560,88 Lake View Road,Velachery,apartment,large,evening,2026-07-13T18:00:00,540.00,12.9791,80.2210,false
+Harith Suresh,9840012345,7 Gandhi Nagar,Adyar,independent,medium,morning,2026-07-13T09:30:00,320.75,13.0067,80.2570,false
+Harith Invalid,12,3 Mount Road,Chennai,apartment,jumbo,noon,not-a-date,-50,999,999,maybe

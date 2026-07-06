@@ -157,6 +157,9 @@ function validateBulkRow(data: Record<string, string>, rowNum: number): ParsedRo
   const errors: string[] = []
   if (!data.customer_name?.trim())           errors.push('customer_name required')
   if (!data.customer_address?.trim())         errors.push('customer_address required')
+  const phone = data.customer_phone?.trim()
+  if (phone && (!/^\d+$/.test(phone) || phone.length < 10 || phone.length > 15))
+    errors.push('customer_phone: 10–15 digits only (no + or -)')
   if (!VALID_AREAS_B.includes(data.area))     errors.push(`area: ${VALID_AREAS_B.join(' | ')}`)
   if (!VALID_RESIDENCE_B.includes(data.residence_type)) errors.push('residence_type: apartment | independent')
   if (!VALID_PACKAGES_B.includes(data.package_size))    errors.push('package_size: small | medium | large')
@@ -173,7 +176,7 @@ function validateBulkRow(data: Record<string, string>, rowNum: number): ParsedRo
 
 function downloadCSVTemplate() {
   const sample = [
-    'Raj Kumar', '+91-9876543210', '45 Main Street', 'Anna Nagar',
+    'Raj Kumar', '9876543210', '45 Main Street', 'Anna Nagar',
     'apartment', 'medium', 'morning', '2026-07-10T10:00:00',
     '250.00', '13.0827', '80.2707', 'false',
   ]
