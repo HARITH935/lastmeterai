@@ -179,3 +179,51 @@ export async function updateOrderStatus(
   if (!res.ok) throw body
   return body as UpdateStatusResponse
 }
+
+// ── Reassign suggestion ───────────────────────────────────────────────────────
+
+export interface ReassignSuggestion {
+  agent_id: number
+  agent_name: string
+  area: string | null
+  pending_orders: number
+  area_delivered: number
+  success_rate: number
+  score: number
+  reason: string
+}
+
+export interface ReassignSuggestionsResponse {
+  order_id: number
+  area: string
+  suggestions: ReassignSuggestion[]
+}
+
+export async function getReassignSuggestions(
+  accessToken: string,
+  orderId: number,
+): Promise<ReassignSuggestionsResponse> {
+  const res = await authFetch(`${API_BASE}/api/orders/${orderId}/reassign-suggestion`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  const body = await res.json()
+  if (!res.ok) throw body
+  return body as ReassignSuggestionsResponse
+}
+
+export async function reassignOrder(
+  accessToken: string,
+  orderId: number,
+  agentId: number,
+): Promise<void> {
+  const res = await authFetch(`${API_BASE}/api/orders/${orderId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ agent_id: agentId }),
+  })
+  const body = await res.json()
+  if (!res.ok) throw body
+}

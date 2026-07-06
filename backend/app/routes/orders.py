@@ -223,6 +223,83 @@ def update_status(order_id: int):
     return jsonify(result), 200
 
 
+# ── GET /api/orders/:id/reassign-suggestion ───────────────────────────────────
+
+@bp.get("/<int:order_id>/reassign-suggestion")
+@jwt_required()
+def reassign_suggestion(order_id: int):
+    """👔 Manager only. Returns top 3 agent suggestions for reassigning a failed order."""
+    current_user = _current_user()
+    if err := _require_manager(current_user):
+        return err
+
+    order = db.session.get(Order, order_id)
+    if not order:
+        return _err("ORDER_NOT_FOUND", f"Order {order_id} not found.", 404)
+
+    from app.models.user import UserRole
+    from sqlalchemy import func, case
+    from app.models.order import OrderStatus
+
+    # Score every active agent
+    agents = (
+        db.session.query(User)
+        .filter(User.role == UserRole.AGENT, User.is_active == True)  # noqa: E712
+        .all()
+    )
+
+    suggestions = []
+    for agent in agents:
+        # Pending order workload (fewer = better)
+        pending_count = (
+            db.session.query(func.count(Order.id))
+            .filter(Order.agent_id == agent.id, Order.status == OrderStatus.PENDING)
+            .scalar() or 0
+        )
+
+        # Area familiarity: delivered in same area
+        area_delivered = (
+            db.session.query(func.count(Order.id))
+            .filter(
+                Order.agent_id == agent.id,
+                Order.area == order.area,
+                Order.status == OrderStatus.DELIVERED,
+            )
+            .scalar() or 0
+        )
+
+        # Overall success rate
+        total = db.session.query(func.count(Order.id)).filter(Order.agent_id == agent.id).scalar() or 0
+        delivered = db.session.query(func.count(Order.id)).filter(
+            Order.agent_id == agent.id, Order.status == OrderStatus.DELIVERED
+        ).scalar() or 0
+        success_rate = round(delivered / total, 3) if total else 0.5
+
+        # Score: 50% success rate + 30% area familiarity (capped) + 20% availability (inverse workload)
+        familiarity = min(area_delivered / 5.0, 1.0)          # cap at 5 orders
+        availability = max(0, 1.0 - pending_count / 10.0)     # 0 workload = 1.0
+
+        score = round(0.50 * success_rate + 0.30 * familiarity + 0.20 * availability, 3)
+
+        suggestions.append({
+            "agent_id":       agent.id,
+            "agent_name":     agent.name,
+            "area":           agent.area,
+            "pending_orders": pending_count,
+            "area_delivered": area_delivered,
+            "success_rate":   success_rate,
+            "score":          score,
+            "reason": (
+                f"{round(success_rate * 100)}% success rate"
+                + (f", {area_delivered} prior deliveries in {order.area}" if area_delivered else "")
+                + (f", {pending_count} pending order{'s' if pending_count != 1 else ''} today" if pending_count else ", free today")
+            ),
+        })
+
+    suggestions.sort(key=lambda x: x["score"], reverse=True)
+    return jsonify({"order_id": order_id, "area": order.area, "suggestions": suggestions[:3]}), 200
+
+
 # ── GET /api/orders/:id/decision ──────────────────────────────────────────────
 
 @bp.get("/<int:order_id>/decision")

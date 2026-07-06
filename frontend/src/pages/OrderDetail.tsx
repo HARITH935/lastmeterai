@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { getOrder, updateOrderStatus, type OrderDetail } from '../api/orders'
+import {
+  getOrder, updateOrderStatus, getReassignSuggestions, reassignOrder,
+  type OrderDetail, type ReassignSuggestion,
+} from '../api/orders'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -162,6 +165,138 @@ function StatusUpdateForm({
   )
 }
 
+// ── Reassign panel (manager only, shown when order is failed) ──────────────────
+
+function ReassignPanel({
+  orderId,
+  accessToken,
+  onReassigned,
+}: {
+  orderId: number
+  accessToken: string
+  onReassigned: () => void
+}) {
+  const [open, setOpen]       = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [applying, setApplying] = useState<number | null>(null)
+  const [suggestions, setSuggestions] = useState<ReassignSuggestion[]>([])
+  const [error, setError]     = useState<string | null>(null)
+  const [done, setDone]       = useState(false)
+
+  function fetchSuggestions() {
+    setOpen(true)
+    setLoading(true)
+    setError(null)
+    getReassignSuggestions(accessToken, orderId)
+      .then(res => { setSuggestions(res.suggestions); setLoading(false) })
+      .catch(() => { setError('Could not load suggestions.'); setLoading(false) })
+  }
+
+  async function handleReassign(agentId: number, agentName: string) {
+    setApplying(agentId)
+    setError(null)
+    try {
+      await reassignOrder(accessToken, orderId, agentId)
+      setDone(true)
+      setTimeout(onReassigned, 1000)
+    } catch {
+      setError(`Failed to reassign to ${agentName}.`)
+    } finally {
+      setApplying(null)
+    }
+  }
+
+  if (done) {
+    return (
+      <div className="card border-green-200 bg-green-50">
+        <p className="text-sm font-semibold text-green-700">✓ Order reassigned successfully</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="card dark:bg-slate-900 dark:border-slate-800">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+          Smart Reassignment
+        </h2>
+        {!open && (
+          <button
+            onClick={fetchSuggestions}
+            className="text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            🤖 Suggest Agent
+          </button>
+        )}
+      </div>
+
+      {!open && (
+        <p className="text-sm text-slate-500">
+          AI will rank available agents by success rate, area familiarity, and current workload.
+        </p>
+      )}
+
+      {open && loading && (
+        <div className="space-y-2">
+          {[1,2,3].map(i => <div key={i} className="animate-pulse h-16 bg-slate-100 dark:bg-slate-800 rounded-xl" />)}
+        </div>
+      )}
+
+      {open && !loading && error && (
+        <p className="text-xs font-semibold text-red-600">{error}</p>
+      )}
+
+      {open && !loading && suggestions.length > 0 && (
+        <div className="space-y-2">
+          {suggestions.map((s, i) => (
+            <div
+              key={s.agent_id}
+              className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${
+                i === 0
+                  ? 'bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800'
+                  : 'bg-slate-50 border-slate-200 dark:bg-slate-800 dark:border-slate-700'
+              }`}
+            >
+              <div className="text-xl">{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{s.agent_name}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">{s.reason}</p>
+                <div className="flex items-center gap-3 mt-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-1.5 w-20 bg-slate-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-green-500"
+                        style={{ width: `${Math.round(s.success_rate * 100)}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] text-slate-500">{Math.round(s.success_rate * 100)}% success</span>
+                  </div>
+                  <span className="text-[10px] text-blue-600 font-bold">
+                    Score: {Math.round(s.score * 100)}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => handleReassign(s.agent_id, s.agent_name)}
+                disabled={applying !== null}
+                className="text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-3 py-1.5 rounded-lg transition-colors shrink-0"
+              >
+                {applying === s.agent_id ? 'Assigning…' : 'Assign'}
+              </button>
+            </div>
+          ))}
+          <button
+            onClick={() => setOpen(false)}
+            className="text-xs text-slate-400 hover:text-slate-600 mt-1"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Main export ────────────────────────────────────────────────────────────────
 
 export function OrderDetail() {
@@ -209,6 +344,7 @@ export function OrderDetail() {
 
   const { order } = state
   const d = order.latest_decision
+  const isManager = user?.role === 'manager'
 
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-2xl">
@@ -332,6 +468,15 @@ export function OrderDetail() {
             onUpdated={load}
           />
         </div>
+      )}
+
+      {/* Smart Reassign (manager only, failed orders) */}
+      {isManager && order.status === 'failed' && (
+        <ReassignPanel
+          orderId={order.id}
+          accessToken={access_token!}
+          onReassigned={load}
+        />
       )}
 
       {/* Timestamps */}
