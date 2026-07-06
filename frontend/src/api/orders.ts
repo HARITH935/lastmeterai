@@ -211,6 +211,53 @@ export async function getReassignSuggestions(
   return body as ReassignSuggestionsResponse
 }
 
+// ── Bulk create ───────────────────────────────────────────────────────────────
+
+export interface BulkOrderRow {
+  customer_name: string
+  customer_phone: string | null
+  customer_address: string
+  area: string
+  residence_type: string
+  package_size: string
+  time_window: string
+  deadline: string
+  payment_amount: number
+  latitude: number
+  longitude: number
+  is_urgent: boolean
+}
+
+export interface BulkResultRow {
+  row: number
+  status: 'created' | 'error'
+  order_number?: string
+  errors?: Record<string, string>
+}
+
+export interface BulkCreateResponse {
+  results: BulkResultRow[]
+  created: number
+  total: number
+}
+
+export async function bulkCreateOrders(
+  accessToken: string,
+  orders: BulkOrderRow[],
+): Promise<BulkCreateResponse> {
+  const res = await authFetch(`${API_BASE}/api/orders/bulk`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ orders }),
+  })
+  const body = await res.json()
+  if (!res.ok) throw body
+  return body as BulkCreateResponse
+}
+
 export async function reassignOrder(
   accessToken: string,
   orderId: number,

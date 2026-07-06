@@ -100,6 +100,43 @@ def create_order():
     return jsonify(order_dict), 201
 
 
+# ── POST /api/orders/bulk ─────────────────────────────────────────────────────
+
+@bp.post("/bulk")
+@jwt_required()
+def bulk_create_orders():
+    """👔 Manager only. Create up to 200 orders in a single request."""
+    current_user = _current_user()
+    if err := _require_manager(current_user):
+        return err
+
+    body = request.get_json(silent=True) or {}
+    rows = body.get("orders", [])
+    if not isinstance(rows, list) or not rows:
+        return _err("VALIDATION_ERROR", "orders must be a non-empty array.", 400)
+    if len(rows) > 200:
+        return _err("VALIDATION_ERROR", "Maximum 200 orders per bulk upload.", 400)
+
+    results = []
+    for i, row in enumerate(rows):
+        try:
+            data = _create_schema.load(row)
+            order_dict, _ = order_service.create_order(current_user, data)
+            results.append({
+                "row": i + 1,
+                "status": "created",
+                "order_number": order_dict["order_number"],
+            })
+        except ValidationError as exc:
+            flat = {k: (v[0] if isinstance(v, list) else str(v)) for k, v in exc.messages.items()}
+            results.append({"row": i + 1, "status": "error", "errors": flat})
+        except Exception as exc:
+            results.append({"row": i + 1, "status": "error", "errors": {"_": str(exc)}})
+
+    created = sum(1 for r in results if r["status"] == "created")
+    return jsonify({"results": results, "created": created, "total": len(rows)}), 200
+
+
 # ── GET /api/orders/optimized-route ──────────────────────────────────────────
 
 @bp.get("/optimized-route")
