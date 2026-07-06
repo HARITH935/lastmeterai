@@ -1,0 +1,25 @@
+{
+  "name": "LastMeter AI",
+  "short_name": "LastMeter",
+  "description": "AI-powered last-mile delivery intelligence for Chennai operations.",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#2563EB",
+  "icons": [
+    {
+      "src": "/pwa-icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "maskable"
+    }
+  ]
+}

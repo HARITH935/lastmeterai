@@ -4,6 +4,7 @@ import { SocketProvider } from './contexts/SocketContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { ToastProvider } from './contexts/ToastContext'
 import { router } from './router'
+import { OfflineBanner } from './components/ui/OfflineBanner'
 
 export default function App() {
   return (
@@ -12,6 +13,7 @@ export default function App() {
         <AuthProvider>
           <SocketProvider>
             <RouterProvider router={router} />
+            <OfflineBanner />
           </SocketProvider>
         </AuthProvider>
       </ToastProvider>
