@@ -82,6 +82,8 @@ def _order_detail_dict(order: Order) -> dict:
     base["created_by"]       = order.created_by
     latest = order.latest_decision
     base["latest_decision"]  = _decision_to_detail(latest) if latest else None
+    from app.services import tracking_service
+    base["tracking_token"]   = tracking_service.make_token(order.id)
     return base
 
 

@@ -141,6 +141,7 @@ export async function getOptimizedRoute(accessToken: string): Promise<OptimizedR
 }
 
 export interface OrderDetail extends OrderListItem {
+  tracking_token: string
   latest_decision: {
     id: number
     decision: string
@@ -209,6 +210,37 @@ export async function getReassignSuggestions(
   const body = await res.json()
   if (!res.ok) throw body
   return body as ReassignSuggestionsResponse
+}
+
+// ── Public tracking (no auth) ─────────────────────────────────────────────────
+
+export interface TrackingInfo {
+  order_number: string
+  customer_name: string
+  area: string
+  city: string
+  status: 'pending' | 'in_transit' | 'delivered' | 'failed' | 'postponed'
+  status_title: string
+  status_message: string
+  time_window: string
+  package_size: string
+  is_urgent: boolean
+  agent_name: string | null
+  timeline: string[]
+  eta: {
+    predicted_min: number
+    eta_low_min: number
+    eta_high_min: number
+    eta_time: string
+    distance_km: number
+  } | null
+}
+
+export async function getTracking(token: string): Promise<TrackingInfo> {
+  const res = await fetch(`${API_BASE}/api/track/${encodeURIComponent(token)}`)
+  const body = await res.json()
+  if (!res.ok) throw body
+  return body as TrackingInfo
 }
 
 // ── ETA prediction ────────────────────────────────────────────────────────────

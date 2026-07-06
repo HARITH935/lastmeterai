@@ -395,6 +395,59 @@ function EtaCard({ orderId, accessToken }: { orderId: number; accessToken: strin
   )
 }
 
+// ── Share tracking link (manager) ───────────────────────────────────────────────
+
+function ShareTrackingCard({ token }: { token: string }) {
+  const [copied, setCopied] = useState(false)
+  const link = `${window.location.origin}/track/${token}`
+
+  function copy() {
+    navigator.clipboard?.writeText(link).then(
+      () => { setCopied(true); setTimeout(() => setCopied(false), 2000) },
+      () => {},
+    )
+  }
+
+  return (
+    <div className="card dark:bg-slate-900 dark:border-slate-800">
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+          🔗 Customer Tracking Link
+        </h2>
+        <a
+          href={link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs font-semibold text-blue-600 hover:text-blue-700"
+        >
+          Preview ↗
+        </a>
+      </div>
+      <p className="text-xs text-slate-500 mb-3">
+        Share this public link — the customer can track status and live ETA without logging in.
+      </p>
+      <div className="flex items-center gap-2">
+        <input
+          readOnly
+          value={link}
+          onFocus={e => e.target.select()}
+          className="flex-1 min-w-0 text-xs font-mono bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-600 dark:text-slate-400 outline-none"
+        />
+        <button
+          onClick={copy}
+          className={`shrink-0 text-xs font-semibold px-3 py-2 rounded-lg transition-colors ${
+            copied
+              ? 'bg-green-600 text-white'
+              : 'bg-blue-600 hover:bg-blue-700 text-white'
+          }`}
+        >
+          {copied ? '✓ Copied' : 'Copy'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── Main export ────────────────────────────────────────────────────────────────
 
 export function OrderDetail() {
@@ -551,6 +604,11 @@ export function OrderDetail() {
       {/* ETA prediction (active orders only) */}
       {(order.status === 'pending' || order.status === 'in_transit') && (
         <EtaCard orderId={order.id} accessToken={access_token!} />
+      )}
+
+      {/* Customer tracking link (manager only) */}
+      {isManager && order.tracking_token && (
+        <ShareTrackingCard token={order.tracking_token} />
       )}
 
       {/* Failure reason */}

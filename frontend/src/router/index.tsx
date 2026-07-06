@@ -16,11 +16,16 @@ import { Profile } from '../pages/Profile'
 import { CustomerInsights } from '../pages/CustomerInsights'
 import { AreaIntelligence } from '../pages/AreaIntelligence'
 import { OrderDetail } from '../pages/OrderDetail'
+import { Track } from '../pages/Track'
 
 export const router = createBrowserRouter([
   {
     path: '/login',
     element: <Login />,
+  },
+  {
+    path: '/track/:token',
+    element: <Track />,
   },
   {
     element: (

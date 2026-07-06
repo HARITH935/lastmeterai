@@ -5,6 +5,7 @@ def register_blueprints(app):
     from app.routes.analytics     import bp as analytics_bp, weather_bp
     from app.routes.notifications import bp as notifications_bp
     from app.routes.chat          import bp as chat_bp
+    from app.routes.tracking      import bp as tracking_bp
     app.register_blueprint(auth_bp)
     app.register_blueprint(orders_bp)
     app.register_blueprint(decisions_bp)
@@ -12,3 +13,4 @@ def register_blueprints(app):
     app.register_blueprint(weather_bp)
     app.register_blueprint(notifications_bp)
     app.register_blueprint(chat_bp)
+    app.register_blueprint(tracking_bp)
