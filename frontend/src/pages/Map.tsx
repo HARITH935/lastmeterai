@@ -9,6 +9,7 @@ import {
   type OrderListItem, type OptimizedRoute, type RouteStop,
 } from '../api/orders'
 import { MapboxManager } from './MapboxManager'
+import { MapboxAgent } from './MapboxAgent'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -590,19 +591,10 @@ export function Map() {
     )
   }
 
-  // Phase 1: Manager map runs on Mapbox GL. Agent map stays on Leaflet until Phase 2.
+  // Map now runs on Mapbox GL for both roles.
   if (isManager) {
     return <MapboxManager orders={state.orders} zones={state.zones} />
   }
 
-  return (
-    <MapView
-      orders={state.orders}
-      zones={state.zones}
-      isManager={isManager}
-      route={route}
-      agentPos={agentPos}
-      agentMarkers={agentMarkers}
-    />
-  )
+  return <MapboxAgent orders={state.orders} route={route} agentPos={agentPos} />
 }
