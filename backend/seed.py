@@ -20,6 +20,7 @@ Idempotent: drops and recreates all tables on each run (dev only).
 """
 
 import os
+import random
 import sys
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
@@ -258,6 +259,22 @@ def seed():
 
         db.session.flush()
         print(f"  Created {len(all_orders)} orders")
+
+        # Customer ratings on delivered orders (feeds the agent leaderboard).
+        _rating_comments = {
+            5: ["Super fast, very polite!", "Perfect delivery, thank you!", "On time and friendly."],
+            4: ["Good service.", "Smooth delivery.", "Happy with it."],
+            3: ["It was okay.", "Average experience.", "Could be quicker."],
+        }
+        rng = random.Random(42)  # deterministic seed for reproducible demos
+        rated = 0
+        for o in all_orders:
+            if o.status == OrderStatus.DELIVERED and rng.random() < 0.85:
+                stars = rng.choices([5, 4, 3], weights=[5, 3, 2])[0]
+                o.rating = stars
+                o.rating_comment = rng.choice(_rating_comments[stars])
+                rated += 1
+        print(f"  Rated {rated} delivered orders")
 
         # One Decision per order.
         for i, order in enumerate(all_orders):
