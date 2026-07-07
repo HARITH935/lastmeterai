@@ -47,6 +47,64 @@ function lerp(a: [number, number], b: [number, number], t: number): [number, num
   return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]
 }
 
+// Maneuver-type → icon for the instruction banner.
+const MANEUVER_ICON: Record<string, string> = {
+  turn: '↱', 'turn-left': '↰', 'turn-right': '↱', 'sharp left': '⬅', 'sharp right': '➡',
+  merge: '⤵', 'roundabout': '↻', 'depart': '▲', 'arrive': '🏁', continue: '↑',
+  'new name': '↑', 'end of road': '↱', fork: 'Y',
+}
+function maneuverIcon(type: string, modifier?: string): string {
+  if (type === 'arrive') return '🏁'
+  if (type === 'depart') return '▲'
+  if (modifier?.includes('left')) return '↰'
+  if (modifier?.includes('right')) return '↱'
+  if (modifier === 'straight' || type === 'continue') return '↑'
+  return MANEUVER_ICON[type] ?? '↑'
+}
+
+interface NavStep { dist: number; instruction: string; type: string; modifier?: string }
+
+// Fetch real driving directions (with turn-by-turn steps) from the Mapbox Directions API.
+async function fetchDirections(
+  waypoints: [number, number][],
+): Promise<{ line: [number, number][]; steps: NavStep[]; duration: number; distance: number } | null> {
+  const coordStr = waypoints.map(([lng, lat]) => `${lng},${lat}`).join(';')
+  const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coordStr}` +
+    `?steps=true&geometries=geojson&overview=full&access_token=${MAPBOX_TOKEN}`
+  const res = await fetch(url)
+  if (!res.ok) return null
+  const data = await res.json()
+  const route = data.routes?.[0]
+  if (!route?.geometry?.coordinates) return null
+
+  const line = route.geometry.coordinates as [number, number][]
+  // Cumulative distance of each line vertex.
+  const cum: number[] = [0]
+  for (let i = 0; i < line.length - 1; i++) cum.push(cum[i] + haversineM(line[i], line[i + 1]))
+
+  const nearestCum = (loc: [number, number]) => {
+    let best = 0, bd = Infinity
+    for (let i = 0; i < line.length; i++) {
+      const d = haversineM(line[i], loc)
+      if (d < bd) { bd = d; best = i }
+    }
+    return cum[best]
+  }
+
+  const steps: NavStep[] = []
+  for (const leg of route.legs ?? []) {
+    for (const s of leg.steps ?? []) {
+      steps.push({
+        dist: nearestCum(s.maneuver.location),
+        instruction: s.maneuver.instruction,
+        type: s.maneuver.type,
+        modifier: s.maneuver.modifier,
+      })
+    }
+  }
+  return { line, steps, duration: route.duration, distance: route.distance }
+}
+
 // ── GeoJSON builders ────────────────────────────────────────────────────────────
 
 function pinsGeoJSON(orders: OrderListItem[]): GeoJSON.FeatureCollection {
@@ -120,6 +178,9 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
   const [showRoute,   setShowRoute]   = useState(true)
   const [showWeather, setShowWeather] = useState(false)
   const [navMode,     setNavMode]     = useState(false)
+  const [nav,         setNav]         = useState<
+    { icon: string; instruction: string; distToNext: number; remainMin: number; remainKm: number } | null
+  >(null)
 
   // ── Init once ────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -240,86 +301,112 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
   useEffect(() => { setVis('route-line', showRoute); setVis('stop-circles', showRoute); setVis('stop-labels', showRoute) }, [showRoute])
   useEffect(() => { setVis('owm-clouds', showWeather); setVis('owm-precip', showWeather) }, [showWeather])
 
-  // ── Uber-style navigation engine ──────────────────────────────────────────────
+  // ── Uber-style navigation engine (with turn-by-turn) ───────────────────────────
   useEffect(() => {
     const map = mapRef.current
     if (!map || !loadedRef.current) return
+    let cancelled = false
 
-    // Build the polyline in [lng, lat].
-    const line = (route?.route_geometry ?? []).map(([lat, lon]) => [lon, lat] as [number, number])
-
-    if (!navMode || line.length < 2) {
-      // Stop navigation: cancel loop, drop vehicle, restore top-down view + dot.
+    const stop = () => {
       navRef.current = false
       if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null }
       if (vehicleRef.current) { vehicleRef.current.remove(); vehicleRef.current = null }
       setVis('agent-dot', true); setVis('agent-halo', true)
-      if (navMode && line.length < 2) setNavMode(false)  // nothing to navigate
+    }
+
+    if (!navMode) {
+      stop()
+      setNav(null)
       map.easeTo({ pitch: 0, bearing: 0, duration: 800 })
       return
     }
 
-    // Cumulative distances along the line.
-    const segLen: number[] = []
-    const cum: number[] = [0]
-    for (let i = 0; i < line.length - 1; i++) {
-      const d = haversineM(line[i], line[i + 1])
-      segLen.push(d)
-      cum.push(cum[i] + d)
-    }
-    const total = cum[cum.length - 1]
-    if (total < 1) { setNavMode(false); return }
+    // Ordered waypoints: [start, ...stops] in [lng, lat].
+    const wp: [number, number][] = []
+    if (route?.start_location) wp.push([route.start_location.lon, route.start_location.lat])
+    for (const s of route?.stops ?? []) wp.push([s.longitude, s.latitude])
+    if (wp.length < 2) { setNavMode(false); return }
 
-    // Speed so the trip plays in ~70s (clamped to a believable 8–22 m/s).
-    const speed = Math.min(22, Math.max(8, total / 70))
+    const run = (line: [number, number][], steps: NavStep[], totalDurationS: number) => {
+      if (cancelled || line.length < 2) { setNavMode(false); return }
 
-    // Vehicle marker: a rotating navigation arrow.
-    const el = document.createElement('div')
-    el.innerHTML =
-      `<svg width="36" height="36" viewBox="0 0 24 24" style="filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))">
-        <circle cx="12" cy="12" r="11" fill="#2563EB"/>
-        <path d="M12 5 L17 18 L12 15 L7 18 Z" fill="#ffffff"/>
-      </svg>`
-    const vehicle = new mapboxgl.Marker({ element: el, rotationAlignment: 'viewport' })
-      .setLngLat(line[0]).addTo(map)
-    vehicleRef.current = vehicle
+      const segLen: number[] = []
+      const cum: number[] = [0]
+      for (let i = 0; i < line.length - 1; i++) {
+        const d = haversineM(line[i], line[i + 1])
+        segLen.push(d); cum.push(cum[i] + d)
+      }
+      const total = cum[cum.length - 1]
+      if (total < 1) { setNavMode(false); return }
 
-    // Hide the static dot while navigating.
-    setVis('agent-dot', false); setVis('agent-halo', false)
+      const speed = Math.min(22, Math.max(8, total / 70)) // ~70s trip
 
-    // Enter driver view.
-    map.easeTo({ center: line[0], zoom: 16.2, pitch: 60, bearing: bearingDeg(line[0], line[1]), duration: 900 })
+      const el = document.createElement('div')
+      el.innerHTML =
+        `<svg width="36" height="36" viewBox="0 0 24 24" style="filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))">
+          <circle cx="12" cy="12" r="11" fill="#2563EB"/><path d="M12 5 L17 18 L12 15 L7 18 Z" fill="#ffffff"/>
+        </svg>`
+      const vehicle = new mapboxgl.Marker({ element: el, rotationAlignment: 'viewport' }).setLngLat(line[0]).addTo(map)
+      vehicleRef.current = vehicle
+      setVis('agent-dot', false); setVis('agent-halo', false)
+      map.easeTo({ center: line[0], zoom: 16.2, pitch: 60, bearing: bearingDeg(line[0], line[1]), duration: 900 })
 
-    navRef.current = true
-    let traveled = 0
-    let last = performance.now()
+      navRef.current = true
+      let traveled = 0
+      let last = performance.now()
+      let lastPanel = 0
 
-    const frame = (now: number) => {
-      if (!navRef.current) return
-      const dt = (now - last) / 1000
-      last = now
-      traveled = (traveled + speed * dt) % total
+      const frame = (now: number) => {
+        if (!navRef.current) return
+        const dt = (now - last) / 1000
+        last = now
+        traveled = (traveled + speed * dt) % total
 
-      // Locate current segment by cumulative distance.
-      let i = 0
-      while (i < segLen.length && cum[i + 1] < traveled) i++
-      const segStart = cum[i]
-      const t = segLen[i] > 0 ? (traveled - segStart) / segLen[i] : 0
-      const pos = lerp(line[i], line[i + 1], t)
-      const brg = bearingDeg(line[i], line[i + 1])
+        let i = 0
+        while (i < segLen.length && cum[i + 1] < traveled) i++
+        const t = segLen[i] > 0 ? (traveled - cum[i]) / segLen[i] : 0
+        const pos = lerp(line[i], line[i + 1], t)
+        const brg = bearingDeg(line[i], line[i + 1])
 
-      vehicle.setLngLat(pos)
-      map.jumpTo({ center: pos, bearing: brg, pitch: 60, zoom: 16.2 })
+        vehicle.setLngLat(pos)
+        map.jumpTo({ center: pos, bearing: brg, pitch: 60, zoom: 16.2 })
 
+        // Update the instruction panel a few times/sec.
+        if (now - lastPanel > 350) {
+          lastPanel = now
+          const next = steps.find(s => s.dist > traveled + 1)
+          const remain = total - traveled
+          setNav({
+            icon: next ? maneuverIcon(next.type, next.modifier) : '🏁',
+            instruction: next ? next.instruction : 'Arriving at destination',
+            distToNext: Math.max(0, Math.round((next ? next.dist - traveled : remain))),
+            remainMin: Math.max(1, Math.round((remain / total) * (totalDurationS / 60))),
+            remainKm: Math.round((remain / 1000) * 10) / 10,
+          })
+        }
+        rafRef.current = requestAnimationFrame(frame)
+      }
       rafRef.current = requestAnimationFrame(frame)
     }
-    rafRef.current = requestAnimationFrame(frame)
 
-    return () => {
-      navRef.current = false
-      if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null }
-      if (vehicleRef.current) { vehicleRef.current.remove(); vehicleRef.current = null }
-    }
+    // Try real turn-by-turn directions; fall back to backend geometry with no steps.
+    fetchDirections(wp)
+      .then(dir => {
+        if (cancelled) return
+        if (dir && dir.line.length > 1) {
+          run(dir.line, dir.steps, dir.duration)
+        } else {
+          const line = (route?.route_geometry ?? []).map(([lat, lon]) => [lon, lat] as [number, number])
+          run(line, [], (route?.total_duration_min ?? 10) * 60)
+        }
+      })
+      .catch(() => {
+        if (cancelled) return
+        const line = (route?.route_geometry ?? []).map(([lat, lon]) => [lon, lat] as [number, number])
+        run(line, [], (route?.total_duration_min ?? 10) * 60)
+      })
+
+    return () => { cancelled = true; stop() }
   }, [navMode, route])
 
   if (!MAPBOX_TOKEN) {
@@ -342,7 +429,26 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
     <div className="relative" style={{ height: 'calc(100vh - 64px)' }}>
       <div ref={containerRef} style={{ height: '100%', width: '100%' }} />
 
-      {/* Route optimization mode — top-left segmented control */}
+      {/* Turn-by-turn banner (navigation mode) */}
+      {navMode && nav && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[20] w-[92%] max-w-md">
+          <div className="bg-violet-700 text-white rounded-2xl shadow-2xl px-4 py-3 flex items-center gap-4">
+            <span className="text-4xl leading-none shrink-0">{nav.icon}</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-lg font-bold leading-tight">
+                {nav.distToNext >= 1000 ? `${(nav.distToNext / 1000).toFixed(1)} km` : `${nav.distToNext} m`}
+              </p>
+              <p className="text-sm text-violet-100 truncate">{nav.instruction}</p>
+            </div>
+          </div>
+          <div className="mt-1.5 mx-auto w-max bg-slate-900/90 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full shadow-lg">
+            <strong>{nav.remainMin} min</strong> · {nav.remainKm} km to destination
+          </div>
+        </div>
+      )}
+
+      {/* Corner controls — hidden while navigating for a clean driver view */}
+      {!navMode && (<>
       <div className="absolute top-3 left-3 z-[10] bg-slate-900/90 backdrop-blur-sm rounded-lg shadow-lg p-1 flex gap-1">
         {([
           { key: 'time',     label: '⚡ Fastest' },
@@ -378,6 +484,7 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
           </button>
         ))}
       </div>
+      </>)}
 
       {/* Route summary + navigation control */}
       {hasRoute && (
