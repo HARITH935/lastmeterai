@@ -9,6 +9,14 @@ import {
 import { MapboxManager } from './MapboxManager'
 import { MapboxAgent } from './MapboxAgent'
 
+// Live agent position pushed over Socket.IO (manager view).
+export interface AgentMarker {
+  agent_id: number
+  agent_name: string | null
+  lat: number
+  lon: number
+}
+
 // ── Main export ────────────────────────────────────────────────────────────────
 
 export function Map() {
@@ -23,9 +31,10 @@ export function Map() {
     | { status: 'success'; orders: OrderListItem[]; zones: HeatmapZone[] }
   >({ status: 'loading' })
 
-  const [route,    setRoute]    = useState<OptimizedRoute | null>(null)
-  const [agentPos, setAgentPos] = useState<[number, number] | null>(null)
-  const [optimize, setOptimize] = useState<'time' | 'distance'>('time')
+  const [route,        setRoute]        = useState<OptimizedRoute | null>(null)
+  const [agentPos,     setAgentPos]     = useState<[number, number] | null>(null)
+  const [optimize,     setOptimize]     = useState<'time' | 'distance'>('time')
+  const [agentMarkers, setAgentMarkers] = useState<Record<number, AgentMarker>>({})
 
   // ── Fetch orders + heatmap ──────────────────────────────────────────────────
   useEffect(() => {
@@ -73,18 +82,29 @@ export function Map() {
     return () => { cancelled = true }
   }, [isAgent, access_token, optimize])
 
-  // ── Socket: route_updated (agent) ──────────────────────────────────────────
+  // ── Socket: route_updated (agent) + agent_location (manager) ───────────────
   useEffect(() => {
-    if (!socket || !isAgent) return
-    const onRouteUpdated = (data: OptimizedRoute) => {
-      setRoute(data)
-      if (data.start_location) {
-        setAgentPos([data.start_location.lat, data.start_location.lon])
+    if (!socket) return
+
+    if (isAgent) {
+      const onRouteUpdated = (data: OptimizedRoute) => {
+        setRoute(data)
+        if (data.start_location) {
+          setAgentPos([data.start_location.lat, data.start_location.lon])
+        }
       }
+      socket.on('route_updated', onRouteUpdated)
+      return () => { socket.off('route_updated', onRouteUpdated) }
     }
-    socket.on('route_updated', onRouteUpdated)
-    return () => { socket.off('route_updated', onRouteUpdated) }
-  }, [socket, isAgent])
+
+    if (isManager) {
+      const onAgentLocation = (data: AgentMarker) => {
+        setAgentMarkers(prev => ({ ...prev, [data.agent_id]: data }))
+      }
+      socket.on('agent_location', onAgentLocation)
+      return () => { socket.off('agent_location', onAgentLocation) }
+    }
+  }, [socket, isAgent, isManager])
 
   // ── Simulated moving GPS along the route (agent only) ─────────────────────
   // Walks the agent position through the route polyline so managers see it
@@ -137,7 +157,7 @@ export function Map() {
   }
 
   if (isManager) {
-    return <MapboxManager orders={state.orders} zones={state.zones} />
+    return <MapboxManager orders={state.orders} zones={state.zones} agentMarkers={agentMarkers} />
   }
 
   return (

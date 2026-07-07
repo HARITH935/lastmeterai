@@ -134,12 +134,31 @@ function ZoneStatsPanel({ zones, onClose }: { zones: HeatmapZone[]; onClose: () 
 
 // ── Main component ───────────────────────────────────────────────────────────────
 
+interface AgentMarker {
+  agent_id: number
+  agent_name: string | null
+  lat: number
+  lon: number
+}
+
+function agentsToGeoJSON(markers: Record<number, AgentMarker>): GeoJSON.FeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    features: Object.values(markers).map(a => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [a.lon, a.lat] },
+      properties: { agent_name: a.agent_name ?? `Agent ${a.agent_id}` },
+    })),
+  }
+}
+
 interface Props {
   orders: OrderListItem[]
   zones:  HeatmapZone[]
+  agentMarkers: Record<number, AgentMarker>
 }
 
-export function MapboxManager({ orders, zones }: Props) {
+export function MapboxManager({ orders, zones, agentMarkers }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef       = useRef<mapboxgl.Map | null>(null)
   const loadedRef    = useRef(false)
@@ -147,6 +166,7 @@ export function MapboxManager({ orders, zones }: Props) {
   const [showPins,      setShowPins]      = useState(true)
   const [showHeatmap,   setShowHeatmap]   = useState(true)
   const [showWeather,   setShowWeather]   = useState(false)
+  const [showAgents,    setShowAgents]    = useState(true)
   const [showZonePanel, setShowZonePanel] = useState(true)
 
   // ── Init map once ──────────────────────────────────────────────────────────
@@ -205,6 +225,25 @@ export function MapboxManager({ orders, zones }: Props) {
         },
       })
 
+      // Live agent positions (halo + dot + name label)
+      map.addSource('agents', { type: 'geojson', data: agentsToGeoJSON(agentMarkers) })
+      map.addLayer({
+        id: 'agent-halo', type: 'circle', source: 'agents',
+        paint: { 'circle-radius': 16, 'circle-color': '#2563EB', 'circle-opacity': 0.22 },
+      })
+      map.addLayer({
+        id: 'agent-dots', type: 'circle', source: 'agents',
+        paint: { 'circle-radius': 7, 'circle-color': '#2563EB', 'circle-stroke-width': 2.5, 'circle-stroke-color': '#ffffff' },
+      })
+      map.addLayer({
+        id: 'agent-names', type: 'symbol', source: 'agents',
+        layout: {
+          'text-field': ['get', 'agent_name'], 'text-size': 11, 'text-offset': [0, 1.4],
+          'text-anchor': 'top', 'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Regular'],
+        },
+        paint: { 'text-color': '#e2e8f0', 'text-halo-color': '#0f172a', 'text-halo-width': 1.5 },
+      })
+
       loadedRef.current = true
 
       // Popups
@@ -256,6 +295,12 @@ export function MapboxManager({ orders, zones }: Props) {
     ;(map.getSource('zones') as mapboxgl.GeoJSONSource | undefined)?.setData(zonesToGeoJSON(zones))
   }, [zones])
 
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !loadedRef.current) return
+    ;(map.getSource('agents') as mapboxgl.GeoJSONSource | undefined)?.setData(agentsToGeoJSON(agentMarkers))
+  }, [agentMarkers])
+
   // ── Layer visibility toggles ─────────────────────────────────────────────────
   function setVis(id: string, visible: boolean) {
     const map = mapRef.current
@@ -265,6 +310,9 @@ export function MapboxManager({ orders, zones }: Props) {
   useEffect(() => setVis('order-pins', showPins),   [showPins])
   useEffect(() => setVis('zone-circles', showHeatmap), [showHeatmap])
   useEffect(() => { setVis('owm-clouds', showWeather); setVis('owm-precip', showWeather) }, [showWeather])
+  useEffect(() => {
+    setVis('agent-halo', showAgents); setVis('agent-dots', showAgents); setVis('agent-names', showAgents)
+  }, [showAgents])
 
   if (!MAPBOX_TOKEN) {
     return (
@@ -293,6 +341,9 @@ export function MapboxManager({ orders, zones }: Props) {
         </LayerButton>
         <LayerButton active={showWeather} color="#0EA5E9" onClick={() => setShowWeather(w => !w)}>
           {showWeather ? '🌧 Weather ON' : 'Weather'}
+        </LayerButton>
+        <LayerButton active={showAgents} color="#2563EB" onClick={() => setShowAgents(a => !a)}>
+          {`🚚 Agents (${Object.keys(agentMarkers).length})`}
         </LayerButton>
       </div>
 
