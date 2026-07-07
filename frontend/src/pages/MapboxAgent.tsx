@@ -63,46 +63,36 @@ function maneuverIcon(type: string, modifier?: string): string {
 }
 
 interface NavStep { dist: number; instruction: string; type: string; modifier?: string }
+interface RawStep { location: [number, number]; instruction: string; type: string; modifier?: string }
 
-// Fetch real driving directions (with turn-by-turn steps) from the Mapbox Directions API.
+// Fetch real turn-by-turn maneuvers from the Mapbox Directions API.
+// Only the maneuver LOCATIONS + text are used — the vehicle follows the
+// backend route geometry (which already honors Fastest/Shortest), so
+// instructions are mapped onto that line rather than Mapbox's own path.
 async function fetchDirections(
   waypoints: [number, number][],
-): Promise<{ line: [number, number][]; steps: NavStep[]; duration: number; distance: number } | null> {
+): Promise<{ steps: RawStep[]; duration: number } | null> {
   const coordStr = waypoints.map(([lng, lat]) => `${lng},${lat}`).join(';')
   const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coordStr}` +
-    `?steps=true&geometries=geojson&overview=full&access_token=${MAPBOX_TOKEN}`
+    `?steps=true&geometries=geojson&overview=false&access_token=${MAPBOX_TOKEN}`
   const res = await fetch(url)
   if (!res.ok) return null
   const data = await res.json()
   const route = data.routes?.[0]
-  if (!route?.geometry?.coordinates) return null
+  if (!route) return null
 
-  const line = route.geometry.coordinates as [number, number][]
-  // Cumulative distance of each line vertex.
-  const cum: number[] = [0]
-  for (let i = 0; i < line.length - 1; i++) cum.push(cum[i] + haversineM(line[i], line[i + 1]))
-
-  const nearestCum = (loc: [number, number]) => {
-    let best = 0, bd = Infinity
-    for (let i = 0; i < line.length; i++) {
-      const d = haversineM(line[i], loc)
-      if (d < bd) { bd = d; best = i }
-    }
-    return cum[best]
-  }
-
-  const steps: NavStep[] = []
+  const steps: RawStep[] = []
   for (const leg of route.legs ?? []) {
     for (const s of leg.steps ?? []) {
       steps.push({
-        dist: nearestCum(s.maneuver.location),
+        location: s.maneuver.location,
         instruction: s.maneuver.instruction,
         type: s.maneuver.type,
         modifier: s.maneuver.modifier,
       })
     }
   }
-  return { line, steps, duration: route.duration, distance: route.distance }
+  return { steps, duration: route.duration }
 }
 
 // ── GeoJSON builders ────────────────────────────────────────────────────────────
@@ -327,7 +317,7 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
     for (const s of route?.stops ?? []) wp.push([s.longitude, s.latitude])
     if (wp.length < 2) { setNavMode(false); return }
 
-    const run = (line: [number, number][], steps: NavStep[], totalDurationS: number) => {
+    const run = (line: [number, number][], rawSteps: RawStep[], totalDurationS: number) => {
       if (cancelled || line.length < 2) { setNavMode(false); return }
 
       const segLen: number[] = []
@@ -338,6 +328,17 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
       }
       const total = cum[cum.length - 1]
       if (total < 1) { setNavMode(false); return }
+
+      // Map each Mapbox maneuver onto the backend line by nearest vertex, so the
+      // turn instructions track the exact route the vehicle is driving.
+      const steps: NavStep[] = rawSteps.map(s => {
+        let best = 0, bd = Infinity
+        for (let i = 0; i < line.length; i++) {
+          const d = haversineM(line[i], s.location)
+          if (d < bd) { bd = d; best = i }
+        }
+        return { dist: cum[best], instruction: s.instruction, type: s.type, modifier: s.modifier }
+      }).sort((a, b) => a.dist - b.dist)
 
       const speed = Math.min(22, Math.max(8, total / 70)) // ~70s trip
 
@@ -389,21 +390,19 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
       rafRef.current = requestAnimationFrame(frame)
     }
 
-    // Try real turn-by-turn directions; fall back to backend geometry with no steps.
+    // The vehicle always follows the backend route geometry (which honors the
+    // Fastest/Shortest selection). Mapbox Directions supplies only the turn text.
+    const line = (route?.route_geometry ?? []).map(([lat, lon]) => [lon, lat] as [number, number])
+    const fallbackDur = (route?.total_duration_min ?? 10) * 60
+
     fetchDirections(wp)
       .then(dir => {
         if (cancelled) return
-        if (dir && dir.line.length > 1) {
-          run(dir.line, dir.steps, dir.duration)
-        } else {
-          const line = (route?.route_geometry ?? []).map(([lat, lon]) => [lon, lat] as [number, number])
-          run(line, [], (route?.total_duration_min ?? 10) * 60)
-        }
+        run(line, dir?.steps ?? [], dir?.duration ?? fallbackDur)
       })
       .catch(() => {
         if (cancelled) return
-        const line = (route?.route_geometry ?? []).map(([lat, lon]) => [lon, lat] as [number, number])
-        run(line, [], (route?.total_duration_min ?? 10) * 60)
+        run(line, [], fallbackDur)
       })
 
     return () => { cancelled = true; stop() }
