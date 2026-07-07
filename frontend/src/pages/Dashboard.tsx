@@ -20,6 +20,7 @@ import {
   type WeatherCurrent,
 } from '../api/analytics'
 import { MetricCard } from '../components/ui/MetricCard'
+import { AtRiskBoard } from '../components/AtRiskBoard'
 import { AgentDashboard } from './AgentDashboard'
 import { Placeholder } from './Placeholder'
 
@@ -206,6 +207,9 @@ function DashboardContent({ data, accessToken }: { data: DashboardResponse; acce
         <AISummaryCard accessToken={accessToken} />
         <WeatherWidget accessToken={accessToken} />
       </div>
+
+      {/* Deadline countdown board */}
+      <AtRiskBoard accessToken={accessToken} />
 
       {/* Metric cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
