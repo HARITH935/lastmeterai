@@ -326,7 +326,8 @@ function EtaCard({ orderId, accessToken }: { orderId: number; accessToken: strin
     hour: '2-digit', minute: '2-digit', hour12: true,
   })
   const confPct = Math.round(data.confidence * 100)
-  const maxMin  = Math.max(...data.factors.map(f => f.minutes), 1)
+  const factors = data.factors ?? []
+  const maxMin  = Math.max(...factors.map(f => f.minutes), 1)
 
   return (
     <div className="card dark:bg-slate-900 dark:border-slate-800 space-y-4">
@@ -370,7 +371,7 @@ function EtaCard({ orderId, accessToken }: { orderId: number; accessToken: strin
       {/* Factor breakdown */}
       <div className="space-y-2 pt-1">
         <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Time breakdown</p>
-        {data.factors.map(f => (
+        {factors.map(f => (
           <div key={f.label} className="flex items-center gap-3">
             <span className="text-xs text-slate-600 dark:text-slate-400 w-32 shrink-0">{f.label}</span>
             <div className="flex-1 h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
@@ -385,7 +386,7 @@ function EtaCard({ orderId, accessToken }: { orderId: number; accessToken: strin
           </div>
         ))}
         <div className="pt-1 space-y-0.5">
-          {data.factors.map(f => (
+          {factors.map(f => (
             <p key={f.label} className="text-[10px] text-slate-400">
               <span className="font-semibold text-slate-500 dark:text-slate-400">{f.label}:</span> {f.detail}
             </p>

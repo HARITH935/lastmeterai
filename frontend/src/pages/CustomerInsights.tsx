@@ -111,7 +111,8 @@ function MetricCard({
 // ── Results panel ──────────────────────────────────────────────────────────────
 
 function InsightPanel({ data }: { data: CustomerInsightResponse }) {
-  const { summary, preferred_delivery_time, recent_orders } = data
+  const { summary, preferred_delivery_time } = data
+  const recent_orders = data.recent_orders ?? []
 
   const srColor =
     summary.success_rate >= 0.7 ? 'text-go' :

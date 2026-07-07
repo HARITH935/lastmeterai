@@ -26,7 +26,7 @@ function fmtWindow(w: string): string {
 
 function Timeline({ info }: { info: TrackingInfo }) {
   // Determine current step index. failed/postponed shown as stalled at in_transit.
-  const order = info.timeline // ['pending','in_transit','delivered']
+  const order = info.timeline ?? ['pending', 'in_transit', 'delivered']
   let activeIdx = order.indexOf(info.status)
   if (info.status === 'failed' || info.status === 'postponed') activeIdx = 1
 

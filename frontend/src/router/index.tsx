@@ -17,17 +17,21 @@ import { CustomerInsights } from '../pages/CustomerInsights'
 import { AreaIntelligence } from '../pages/AreaIntelligence'
 import { OrderDetail } from '../pages/OrderDetail'
 import { Track } from '../pages/Track'
+import { RouteError } from '../components/layout/RouteError'
 
 export const router = createBrowserRouter([
   {
     path: '/login',
     element: <Login />,
+    errorElement: <RouteError />,
   },
   {
     path: '/track/:token',
     element: <Track />,
+    errorElement: <RouteError />,
   },
   {
+    errorElement: <RouteError />,
     element: (
       <ProtectedRoute>
         <Shell />
