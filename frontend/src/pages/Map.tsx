@@ -8,6 +8,7 @@ import {
   getAllOrders, getAgentOrders, getOptimizedRoute,
   type OrderListItem, type OptimizedRoute, type RouteStop,
 } from '../api/orders'
+import { MapboxManager } from './MapboxManager'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -587,6 +588,11 @@ export function Map() {
         </div>
       </div>
     )
+  }
+
+  // Phase 1: Manager map runs on Mapbox GL. Agent map stays on Leaflet until Phase 2.
+  if (isManager) {
+    return <MapboxManager orders={state.orders} zones={state.zones} />
   }
 
   return (
