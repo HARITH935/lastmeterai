@@ -8,7 +8,7 @@ internal risk scores).
 
 from datetime import datetime, timezone, timedelta
 
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 
 from app.extensions import db
 from app.models import Order, User, AgentLocation
@@ -80,6 +80,7 @@ def track(token: str):
         "timeline":       _TIMELINE,
         "destination":    destination,
         "agent_location": agent_location,
+        "rating":         order.rating,
         "eta":            None,
     }
 
@@ -98,3 +99,34 @@ def track(token: str):
             payload["eta"] = None
 
     return jsonify(payload), 200
+
+
+@bp.post("/<token>/rating")
+def submit_rating(token: str):
+    """Public. Customer rates the delivery (1–5) once, after it's delivered."""
+    order_id = tracking_service.verify_token(token)
+    if order_id is None:
+        return jsonify({"error": "INVALID_TOKEN", "message": "This tracking link is invalid."}), 404
+
+    order = db.session.get(Order, order_id)
+    if not order:
+        return jsonify({"error": "NOT_FOUND", "message": "Order not found."}), 404
+    if order.status.value != "delivered":
+        return jsonify({"error": "NOT_DELIVERED", "message": "You can rate only after delivery."}), 400
+    if order.rating is not None:
+        return jsonify({"error": "ALREADY_RATED", "message": "This delivery has already been rated."}), 409
+
+    body = request.get_json(silent=True) or {}
+    try:
+        rating = int(body.get("rating"))
+    except (TypeError, ValueError):
+        return jsonify({"error": "VALIDATION_ERROR", "message": "rating must be an integer 1–5."}), 400
+    if not (1 <= rating <= 5):
+        return jsonify({"error": "VALIDATION_ERROR", "message": "rating must be between 1 and 5."}), 400
+
+    order.rating = rating
+    comment = (body.get("comment") or "").strip()
+    order.rating_comment = comment[:500] or None
+    db.session.commit()
+
+    return jsonify({"ok": True, "rating": rating}), 200

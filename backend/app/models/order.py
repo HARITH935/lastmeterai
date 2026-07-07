@@ -97,6 +97,11 @@ class Order(db.Model):
     # The GO/NO-GO card shows "URGENT" instead of just "GO" in this state.
     is_urgent = db.Column(db.Boolean, nullable=False, default=False)
 
+    # ── Customer feedback ─────────────────────────────────────────────────────
+    # Submitted once from the public tracking page after delivery.
+    rating = db.Column(db.Integer, nullable=True)          # 1–5 stars
+    rating_comment = db.Column(db.Text, nullable=True)
+
     # ── Audit ─────────────────────────────────────────────────────────────────
     created_by = db.Column(
         db.Integer,

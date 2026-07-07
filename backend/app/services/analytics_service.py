@@ -820,6 +820,8 @@ def get_leaderboard(period: str = "week") -> dict:
             func.sum(
                 case((Order.status == OrderStatus.DELIVERED, Order.payment_amount), else_=0)
             ).label("earnings_inr"),
+            func.avg(Order.rating).label("avg_rating"),
+            func.count(Order.rating).label("rating_count"),
         )
         .outerjoin(
             Order,
@@ -849,6 +851,8 @@ def get_leaderboard(period: str = "week") -> dict:
             "success_rate":     sr,
             "performance_score": perf,
             "earnings_inr":     earn,
+            "avg_rating":       round(float(r.avg_rating), 2) if r.avg_rating is not None else None,
+            "rating_count":     r.rating_count or 0,
         })
 
     agents.sort(key=lambda x: x["performance_score"], reverse=True)

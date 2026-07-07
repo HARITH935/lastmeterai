@@ -261,6 +261,7 @@ export interface TrackingInfo {
   timeline: string[]
   destination: { lat: number; lon: number }
   agent_location: { lat: number; lon: number } | null
+  rating: number | null
   eta: {
     predicted_min: number
     eta_low_min: number
@@ -275,6 +276,16 @@ export async function getTracking(token: string): Promise<TrackingInfo> {
   const body = await res.json()
   if (!res.ok) throw body
   return body as TrackingInfo
+}
+
+export async function submitRating(token: string, rating: number, comment?: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/track/${encodeURIComponent(token)}/rating`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rating, comment: comment ?? '' }),
+  })
+  const body = await res.json()
+  if (!res.ok) throw body
 }
 
 // ── ETA prediction ────────────────────────────────────────────────────────────

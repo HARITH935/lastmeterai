@@ -1,7 +1,77 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { getTracking, type TrackingInfo } from '../api/orders'
+import { getTracking, submitRating, type TrackingInfo } from '../api/orders'
 import { TrackMap } from './TrackMap'
+
+// ── Rating card (shown after delivery) ──────────────────────────────────────────
+
+function RatingCard({ token, existing }: { token: string; existing: number | null }) {
+  const [rating, setRating] = useState(existing ?? 0)
+  const [hover, setHover]   = useState(0)
+  const [comment, setComment] = useState('')
+  const [done, setDone]     = useState(existing != null)
+  const [saving, setSaving] = useState(false)
+  const [error, setError]   = useState<string | null>(null)
+
+  async function send() {
+    if (rating < 1 || saving) return
+    setSaving(true); setError(null)
+    try {
+      await submitRating(token, rating, comment)
+      setDone(true)
+    } catch {
+      setError('Could not submit your rating.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-6 text-center">
+      {done ? (
+        <>
+          <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Thanks for your feedback! 🙏</p>
+          <div className="flex justify-center gap-1 mt-2">
+            {[1, 2, 3, 4, 5].map(n => (
+              <span key={n} className={`text-2xl ${n <= rating ? 'text-amber-400' : 'text-slate-300 dark:text-slate-700'}`}>★</span>
+            ))}
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="text-sm font-bold text-slate-800 dark:text-slate-200">How was your delivery?</p>
+          <div className="flex justify-center gap-1.5 mt-3">
+            {[1, 2, 3, 4, 5].map(n => (
+              <button
+                key={n}
+                onMouseEnter={() => setHover(n)} onMouseLeave={() => setHover(0)}
+                onClick={() => setRating(n)}
+                className={`text-3xl transition-transform hover:scale-110 ${
+                  n <= (hover || rating) ? 'text-amber-400' : 'text-slate-300 dark:text-slate-700'
+                }`}
+              >★</button>
+            ))}
+          </div>
+          <textarea
+            value={comment}
+            onChange={e => setComment(e.target.value)}
+            placeholder="Add a comment (optional)…"
+            rows={2}
+            className="mt-3 w-full text-sm border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg px-3 py-2 resize-none outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+          <button
+            onClick={send}
+            disabled={rating < 1 || saving}
+            className="mt-3 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-6 py-2 rounded-lg transition-colors"
+          >
+            {saving ? 'Submitting…' : 'Submit Rating'}
+          </button>
+        </>
+      )}
+    </div>
+  )
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -188,6 +258,11 @@ export function Track() {
                 </div>
               )}
             </div>
+
+            {/* Rating (after delivery) */}
+            {info.status === 'delivered' && token && (
+              <RatingCard token={token} existing={info.rating} />
+            )}
 
             <p className="text-center text-[11px] text-slate-400 pt-2">
               Powered by LastMeter AI · Live delivery intelligence

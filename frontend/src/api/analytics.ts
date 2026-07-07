@@ -247,6 +247,8 @@ export interface LeaderboardAgent {
   success_rate: number
   performance_score: number
   earnings_inr: number
+  avg_rating: number | null
+  rating_count: number
 }
 
 export interface LeaderboardResponse {

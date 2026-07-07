@@ -242,9 +242,16 @@ function LeaderboardRow({ agent }: { agent: LeaderboardAgent }) {
       </td>
       <td className="px-4 py-3">
         <p className="font-semibold text-slate-800 text-sm">{agent.agent_name}</p>
-        {agent.area && (
-          <span className="text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full">{agent.area}</span>
-        )}
+        <div className="flex items-center gap-1.5 mt-0.5">
+          {agent.area && (
+            <span className="text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full">{agent.area}</span>
+          )}
+          {agent.avg_rating != null && (
+            <span className="text-xs font-semibold text-amber-500" title={`${agent.rating_count} rating${agent.rating_count !== 1 ? 's' : ''}`}>
+              ★ {agent.avg_rating.toFixed(1)}
+            </span>
+          )}
+        </div>
       </td>
       <td className="px-4 py-3 text-center">
         <p className="text-sm font-bold text-slate-700">{agent.order_count}</p>
