@@ -147,7 +147,8 @@ def get_optimized_route():
     if err := _require_agent(current_user):
         return err
 
-    result = route_service.get_optimized_route(current_user)
+    optimize = request.args.get("optimize", "time")
+    result = route_service.get_optimized_route(current_user, optimize)
     return jsonify(result), 200
 
 

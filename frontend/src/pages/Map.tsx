@@ -462,6 +462,7 @@ export function Map() {
   const [route,        setRoute]        = useState<OptimizedRoute | null>(null)
   const [agentPos,     setAgentPos]     = useState<[number, number] | null>(null)
   const [agentMarkers, setAgentMarkers] = useState<Record<number, AgentMarker>>({})
+  const [optimize,     setOptimize]     = useState<'time' | 'distance'>('time')
 
   // ── Fetch orders + heatmap ──────────────────────────────────────────────────
   useEffect(() => {
@@ -495,7 +496,7 @@ export function Map() {
     if (!isAgent || !access_token) return
     let cancelled = false
 
-    getOptimizedRoute(access_token)
+    getOptimizedRoute(access_token, optimize)
       .then(r => {
         if (!cancelled) {
           setRoute(r)
@@ -507,7 +508,7 @@ export function Map() {
       .catch(() => {}) // non-fatal — map still shows order pins without route
 
     return () => { cancelled = true }
-  }, [isAgent, access_token])
+  }, [isAgent, access_token, optimize])
 
   // ── Socket: route_updated (agent) + agent_location (manager) ───────────────
   // Track socket.id in a ref to detect stale closures on socket reconnect.
@@ -596,5 +597,13 @@ export function Map() {
     return <MapboxManager orders={state.orders} zones={state.zones} />
   }
 
-  return <MapboxAgent orders={state.orders} route={route} agentPos={agentPos} />
+  return (
+    <MapboxAgent
+      orders={state.orders}
+      route={route}
+      agentPos={agentPos}
+      optimize={optimize}
+      onOptimizeChange={setOptimize}
+    />
+  )
 }

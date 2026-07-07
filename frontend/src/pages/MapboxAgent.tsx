@@ -76,9 +76,11 @@ interface Props {
   orders:   OrderListItem[]
   route:    OptimizedRoute | null
   agentPos: [number, number] | null
+  optimize: 'time' | 'distance'
+  onOptimizeChange: (mode: 'time' | 'distance') => void
 }
 
-export function MapboxAgent({ orders, route, agentPos }: Props) {
+export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChange }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef       = useRef<mapboxgl.Map | null>(null)
   const loadedRef    = useRef(false)
@@ -226,6 +228,24 @@ export function MapboxAgent({ orders, route, agentPos }: Props) {
   return (
     <div className="relative" style={{ height: 'calc(100vh - 64px)' }}>
       <div ref={containerRef} style={{ height: '100%', width: '100%' }} />
+
+      {/* Route optimization mode — top-left segmented control */}
+      <div className="absolute top-3 left-3 z-[10] bg-slate-900/90 backdrop-blur-sm rounded-lg shadow-lg p-1 flex gap-1">
+        {([
+          { key: 'time',     label: '⚡ Fastest' },
+          { key: 'distance', label: '📏 Shortest' },
+        ] as const).map(m => (
+          <button
+            key={m.key}
+            onClick={() => onOptimizeChange(m.key)}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+              optimize === m.key ? 'bg-violet-600 text-white' : 'text-slate-300 hover:text-white'
+            }`}
+          >
+            {m.label}
+          </button>
+        ))}
+      </div>
 
       {/* Layer panel */}
       <div className="absolute top-3 right-3 z-[10] flex flex-col gap-2">

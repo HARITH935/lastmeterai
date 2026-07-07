@@ -60,6 +60,7 @@ _EMPTY_ROUTE: dict = {
     "recalculated_at":    None,
     "traffic_factor":     1.0,
     "weather_risk":       0.0,
+    "optimize":           "time",
 }
 
 
@@ -251,7 +252,7 @@ def _two_opt(route: list[int], cost: list[list[float]]) -> list[int]:
 
 # ── Core pipeline ─────────────────────────────────────────────────────────────
 
-def _build_route(agent_id: int) -> dict:
+def _build_route(agent_id: int, optimize: str = "time") -> dict:
     """
     Compute the optimized route for a given agent_id.
     All external API calls are non-fatal — fallbacks ensure a valid dict is always returned.
@@ -302,11 +303,19 @@ def _build_route(agent_id: int) -> dict:
     # ── OSRM distance / duration matrices ─────────────────────────────────────
     durations_s, distances_m = _osrm_table(all_coords)
 
-    # ── Weighted cost: duration × traffic × weather overhead ──────────────────
-    cost = [
-        [durations_s[i][j] * t_factor * w_overhead for j in range(n_all)]
-        for i in range(n_all)
-    ]
+    # ── Cost matrix drives the TSP objective ──────────────────────────────────
+    # "distance" → minimise total kilometres (shortest route).
+    # "time" (default) → minimise travel time, weighted by live traffic + weather.
+    if optimize == "distance":
+        cost = [
+            [distances_m[i][j] for j in range(n_all)]
+            for i in range(n_all)
+        ]
+    else:
+        cost = [
+            [durations_s[i][j] * t_factor * w_overhead for j in range(n_all)]
+            for i in range(n_all)
+        ]
 
     # ── TSP: nearest-neighbor + 2-opt ─────────────────────────────────────────
     if n_all == 2:
@@ -372,15 +381,18 @@ def _build_route(agent_id: int) -> dict:
         "recalculated_at":    now.isoformat(),
         "traffic_factor":     round(t_factor, 2),
         "weather_risk":       round(w_risk, 3),
+        "optimize":           optimize,
     }
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
 
-def get_optimized_route(current_user) -> dict:
+def get_optimized_route(current_user, optimize: str = "time") -> dict:
     """Compute optimized route for the authenticated agent. Never raises."""
+    if optimize not in ("time", "distance"):
+        optimize = "time"
     try:
-        return _build_route(current_user.id)
+        return _build_route(current_user.id, optimize)
     except Exception as exc:
         log.exception("Route optimization failed for user %s: %s", current_user.id, exc)
         return {**_EMPTY_ROUTE, "recalculated_at": datetime.now(timezone.utc).isoformat()}

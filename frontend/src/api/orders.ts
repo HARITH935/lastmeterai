@@ -129,10 +129,14 @@ export interface OptimizedRoute {
   recalculated_at: string | null
   traffic_factor: number
   weather_risk: number
+  optimize?: 'time' | 'distance'
 }
 
-export async function getOptimizedRoute(accessToken: string): Promise<OptimizedRoute> {
-  const res = await authFetch(`${API_BASE}/api/orders/optimized-route`, {
+export async function getOptimizedRoute(
+  accessToken: string,
+  optimize: 'time' | 'distance' = 'time',
+): Promise<OptimizedRoute> {
+  const res = await authFetch(`${API_BASE}/api/orders/optimized-route?optimize=${optimize}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   })
   const body = await res.json()
