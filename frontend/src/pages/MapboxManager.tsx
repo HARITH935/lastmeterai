@@ -4,7 +4,8 @@ import mapboxgl from 'mapbox-gl'
 import type { OrderListItem } from '../api/orders'
 import type { HeatmapZone } from '../api/analytics'
 
-mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN ?? ''
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN ?? ''
+mapboxgl.accessToken = MAPBOX_TOKEN
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -150,7 +151,7 @@ export function MapboxManager({ orders, zones }: Props) {
 
   // ── Init map once ──────────────────────────────────────────────────────────
   useEffect(() => {
-    if (mapRef.current || !containerRef.current) return
+    if (mapRef.current || !containerRef.current || !MAPBOX_TOKEN) return
 
     const map = new mapboxgl.Map({
       container: containerRef.current,
@@ -264,6 +265,21 @@ export function MapboxManager({ orders, zones }: Props) {
   useEffect(() => setVis('order-pins', showPins),   [showPins])
   useEffect(() => setVis('zone-circles', showHeatmap), [showHeatmap])
   useEffect(() => { setVis('owm-clouds', showWeather); setVis('owm-precip', showWeather) }, [showWeather])
+
+  if (!MAPBOX_TOKEN) {
+    return (
+      <div className="flex items-center justify-center p-6" style={{ height: 'calc(100vh - 64px)' }}>
+        <div className="max-w-md text-center card dark:bg-slate-900 dark:border-slate-800">
+          <p className="text-3xl mb-2">🗺️</p>
+          <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Map needs a Mapbox token</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+            Add <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded">VITE_MAPBOX_TOKEN</code> to
+            your Vercel environment variables, then redeploy. The map will load automatically.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="relative" style={{ height: 'calc(100vh - 64px)' }}>
