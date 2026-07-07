@@ -19,6 +19,12 @@ const DARK_TILE_ATTR =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ' +
   '&copy; <a href="https://carto.com/attributions">CARTO</a>'
 
+// OpenWeatherMap overlay tiles (free tier). Key can be overridden via VITE_OWM_KEY.
+const OWM_KEY = import.meta.env.VITE_OWM_KEY ?? '93ffaa6d46b4f1ba233e01d83955e17d'
+const OWM_PRECIP_URL = `https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${OWM_KEY}`
+const OWM_CLOUDS_URL = `https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${OWM_KEY}`
+const OWM_ATTR = '&copy; <a href="https://openweathermap.org/">OpenWeather</a>'
+
 // risk_level / risk_band → hex color (matches design tokens: text-go / text-urgent / text-nogo)
 const RISK_COLOR: Record<string, string> = {
   low:    '#10B981',
@@ -44,15 +50,17 @@ interface LayerPanelProps {
   showPins: boolean
   showHeatmap: boolean
   showRoute: boolean
+  showWeather: boolean
   isManager: boolean
   onTogglePins: () => void
   onToggleHeatmap: () => void
   onToggleRoute: () => void
+  onToggleWeather: () => void
 }
 
 function LayerPanel({
-  showPins, showHeatmap, showRoute, isManager,
-  onTogglePins, onToggleHeatmap, onToggleRoute,
+  showPins, showHeatmap, showRoute, showWeather, isManager,
+  onTogglePins, onToggleHeatmap, onToggleRoute, onToggleWeather,
 }: LayerPanelProps) {
   const active   = 'text-white border-transparent'
   const inactive = 'bg-white/90 text-slate-700 border-slate-200 hover:bg-white'
@@ -84,6 +92,13 @@ function LayerPanel({
           {showHeatmap ? '🔥 Heatmap ON' : 'Heatmap'}
         </button>
       )}
+      <button
+        onClick={onToggleWeather}
+        style={showWeather ? { backgroundColor: '#0EA5E9' } : undefined}
+        className={`px-3 py-1.5 text-xs font-semibold rounded-lg shadow-lg border backdrop-blur-sm transition-colors ${showWeather ? active : inactive}`}
+      >
+        {showWeather ? '🌧 Weather ON' : 'Weather'}
+      </button>
     </div>
   )
 }
@@ -170,6 +185,7 @@ function MapView({ orders, zones, isManager, route, agentPos, agentMarkers }: Ma
   const [showPins,      setShowPins]      = useState(true)
   const [showHeatmap,   setShowHeatmap]   = useState(isManager)  // ON by default for managers
   const [showRoute,     setShowRoute]     = useState(true)
+  const [showWeather,   setShowWeather]   = useState(false)
   const [showZonePanel, setShowZonePanel] = useState(isManager)
 
   const hasRoute = route && route.stops.length > 0
@@ -194,6 +210,14 @@ function MapView({ orders, zones, isManager, route, agentPos, agentMarkers }: Ma
         scrollWheelZoom
       >
         <TileLayer url={DARK_TILE_URL} attribution={DARK_TILE_ATTR} />
+
+        {/* ── Weather overlay tiles (clouds + precipitation) ── */}
+        {showWeather && (
+          <>
+            <TileLayer url={OWM_CLOUDS_URL} attribution={OWM_ATTR} opacity={0.5} />
+            <TileLayer url={OWM_PRECIP_URL} attribution={OWM_ATTR} opacity={0.7} />
+          </>
+        )}
 
         {/* ── Heatmap circles (manager only) ── */}
         {isManager && showHeatmap && zones.map(z => {
@@ -383,10 +407,12 @@ function MapView({ orders, zones, isManager, route, agentPos, agentMarkers }: Ma
         showPins={showPins}
         showHeatmap={showHeatmap}
         showRoute={showRoute}
+        showWeather={showWeather}
         isManager={isManager}
         onTogglePins={() => setShowPins(p => !p)}
         onToggleHeatmap={toggleHeatmap}
         onToggleRoute={() => setShowRoute(r => !r)}
+        onToggleWeather={() => setShowWeather(w => !w)}
       />
 
       {/* Heatmap legend — bottom left */}
@@ -508,22 +534,39 @@ export function Map() {
     }
   }, [socket, isAgent, isManager])
 
-  // ── Emit simulated agent location every 15 s (agent only) ─────────────────
-  // Uses the route's start_location as a fixed position (no real GPS in this app).
-  // In production, replace with navigator.geolocation.watchPosition().
+  // ── Simulated moving GPS along the route (agent only) ─────────────────────
+  // Walks the agent marker through the route polyline so the dot actually moves
+  // and managers see it travel live. In production, replace with
+  // navigator.geolocation.watchPosition().
   useEffect(() => {
-    if (!isAgent || !socket || !agentPos) return
+    if (!isAgent || !socket) return
 
-    const [lat, lon] = agentPos
-
-    socket.emit('agent_location_update', { lat, lon })
-
-    const id = setInterval(() => {
+    const geometry = route?.route_geometry ?? []
+    // Fall back to a static ping if we have no polyline to walk.
+    if (geometry.length < 2) {
+      const start = route?.start_location
+      if (!start) return
+      const { lat, lon } = start
       socket.emit('agent_location_update', { lat, lon })
-    }, 15_000)
+      const id = setInterval(() => socket.emit('agent_location_update', { lat, lon }), 15_000)
+      return () => clearInterval(id)
+    }
 
+    // Advance a few polyline points per tick so the trip completes in ~2–3 min.
+    const stride = Math.max(1, Math.round(geometry.length / 60))
+    let i = 0
+
+    const step = () => {
+      const [lat, lon] = geometry[i]
+      setAgentPos([lat, lon])
+      socket.emit('agent_location_update', { lat, lon })
+      i = (i + stride) % geometry.length  // loop for a continuous demo
+    }
+
+    step()
+    const id = setInterval(step, 3_000)
     return () => clearInterval(id)
-  }, [isAgent, socket, agentPos])
+  }, [isAgent, socket, route])
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
