@@ -7,6 +7,7 @@ breaks the synchronous REST path.
 """
 
 import logging
+import math
 from datetime import datetime, timezone
 
 from flask import request
@@ -21,6 +22,18 @@ log = logging.getLogger(__name__)
 # Chennai bounding box — mirrors CHECK constraints in AgentLocation
 _LAT_MIN, _LAT_MAX = 12.80, 13.25
 _LON_MIN, _LON_MAX = 80.10, 80.35
+
+# Geofencing: auto-detect arrival when an agent comes within this radius of a stop.
+_ARRIVAL_RADIUS_M = 130
+# (agent_id, order_id) already flagged as arrived — prevents duplicate alerts.
+_arrived: set[tuple[int, int]] = set()
+
+
+def _haversine_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    dlat, dlon = math.radians(lat2 - lat1), math.radians(lon2 - lon1)
+    h = (math.sin(dlat / 2) ** 2 +
+         math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2) ** 2)
+    return 6371000 * 2 * math.asin(math.sqrt(h))
 
 # sid → {"user_id": int, "role": str}  — populated on connect, cleared on disconnect
 _sessions: dict[str, dict] = {}
@@ -148,8 +161,70 @@ def on_location_update(data):
             "is_online":  True,
         })
 
+        # Geofencing: auto-flag arrival at nearby delivery stops.
+        if user:
+            _check_geofence(user, lat, lon)
+
     except Exception as exc:
         log.warning("agent_location_update error for user %s: %s", user_id, exc)
+
+
+def _check_geofence(agent: User, lat: float, lon: float) -> None:
+    """
+    If the agent is within _ARRIVAL_RADIUS_M of one of their active orders,
+    flag arrival once: advance a pending order to in_transit, notify the agent,
+    and emit an order_arrival event to the agent + managers.
+    """
+    from app.models import Order, OrderStatus
+    from app.services import notification_service
+
+    active = (
+        db.session.query(Order)
+        .filter(
+            Order.agent_id == agent.id,
+            Order.status.in_([OrderStatus.PENDING, OrderStatus.IN_TRANSIT]),
+        )
+        .all()
+    )
+
+    for o in active:
+        key = (agent.id, o.id)
+        if key in _arrived:
+            continue
+        if _haversine_m(lat, lon, o.latitude, o.longitude) > _ARRIVAL_RADIUS_M:
+            continue
+
+        _arrived.add(key)
+        if o.status == OrderStatus.PENDING:
+            o.status = OrderStatus.IN_TRANSIT
+        notif = notification_service.create_notification(
+            user_id=agent.id,
+            category="delivery_alert",
+            title="Arrived at delivery location",
+            message=f"You've arrived at {o.customer_name} for order {o.order_number}.",
+            order_id=o.id,
+            extra={"event": "geofence_arrival"},
+        )
+        db.session.commit()
+        try:
+            emit_new_notification(notif)
+        except Exception:
+            pass
+
+        payload = {
+            "order_id":      o.id,
+            "order_number":  o.order_number,
+            "agent_id":      agent.id,
+            "agent_name":    agent.name,
+            "customer_name": o.customer_name,
+        }
+        _safe_emit("order_arrival", payload, room=f"user_{agent.id}")
+        _safe_emit("order_arrival", payload, room="managers")
+        try:
+            emit_order_updated(o)
+        except Exception:
+            pass
+        log.info("Geofence arrival: agent %s at order %s", agent.id, o.order_number)
 
 
 # ── Client → Server: room management ─────────────────────────────────────────
