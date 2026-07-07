@@ -22,6 +22,31 @@ function fmtEta(iso: string): string {
   return new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })
 }
 
+// ── Geo math (coords are [lng, lat]) ────────────────────────────────────────────
+
+const R = 6371000
+const toRad = (d: number) => (d * Math.PI) / 180
+const toDeg = (r: number) => (r * 180) / Math.PI
+
+function haversineM(a: [number, number], b: [number, number]): number {
+  const [lon1, lat1] = a, [lon2, lat2] = b
+  const dlat = toRad(lat2 - lat1), dlon = toRad(lon2 - lon1)
+  const h = Math.sin(dlat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dlon / 2) ** 2
+  return R * 2 * Math.asin(Math.sqrt(h))
+}
+
+function bearingDeg(a: [number, number], b: [number, number]): number {
+  const [lon1, lat1] = a, [lon2, lat2] = b
+  const y = Math.sin(toRad(lon2 - lon1)) * Math.cos(toRad(lat2))
+  const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) -
+            Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(toRad(lon2 - lon1))
+  return (toDeg(Math.atan2(y, x)) + 360) % 360
+}
+
+function lerp(a: [number, number], b: [number, number], t: number): [number, number] {
+  return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]
+}
+
 // ── GeoJSON builders ────────────────────────────────────────────────────────────
 
 function pinsGeoJSON(orders: OrderListItem[]): GeoJSON.FeatureCollection {
@@ -86,9 +111,15 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
   const loadedRef    = useRef(false)
   const fittedRef    = useRef(false)
 
+  // Navigation engine refs
+  const vehicleRef   = useRef<mapboxgl.Marker | null>(null)
+  const rafRef       = useRef<number | null>(null)
+  const navRef       = useRef(false)
+
   const [showPins,    setShowPins]    = useState(true)
   const [showRoute,   setShowRoute]   = useState(true)
   const [showWeather, setShowWeather] = useState(false)
+  const [navMode,     setNavMode]     = useState(false)
 
   // ── Init once ────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -209,6 +240,88 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
   useEffect(() => { setVis('route-line', showRoute); setVis('stop-circles', showRoute); setVis('stop-labels', showRoute) }, [showRoute])
   useEffect(() => { setVis('owm-clouds', showWeather); setVis('owm-precip', showWeather) }, [showWeather])
 
+  // ── Uber-style navigation engine ──────────────────────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !loadedRef.current) return
+
+    // Build the polyline in [lng, lat].
+    const line = (route?.route_geometry ?? []).map(([lat, lon]) => [lon, lat] as [number, number])
+
+    if (!navMode || line.length < 2) {
+      // Stop navigation: cancel loop, drop vehicle, restore top-down view + dot.
+      navRef.current = false
+      if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null }
+      if (vehicleRef.current) { vehicleRef.current.remove(); vehicleRef.current = null }
+      setVis('agent-dot', true); setVis('agent-halo', true)
+      if (navMode && line.length < 2) setNavMode(false)  // nothing to navigate
+      map.easeTo({ pitch: 0, bearing: 0, duration: 800 })
+      return
+    }
+
+    // Cumulative distances along the line.
+    const segLen: number[] = []
+    const cum: number[] = [0]
+    for (let i = 0; i < line.length - 1; i++) {
+      const d = haversineM(line[i], line[i + 1])
+      segLen.push(d)
+      cum.push(cum[i] + d)
+    }
+    const total = cum[cum.length - 1]
+    if (total < 1) { setNavMode(false); return }
+
+    // Speed so the trip plays in ~70s (clamped to a believable 8–22 m/s).
+    const speed = Math.min(22, Math.max(8, total / 70))
+
+    // Vehicle marker: a rotating navigation arrow.
+    const el = document.createElement('div')
+    el.innerHTML =
+      `<svg width="36" height="36" viewBox="0 0 24 24" style="filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))">
+        <circle cx="12" cy="12" r="11" fill="#2563EB"/>
+        <path d="M12 5 L17 18 L12 15 L7 18 Z" fill="#ffffff"/>
+      </svg>`
+    const vehicle = new mapboxgl.Marker({ element: el, rotationAlignment: 'viewport' })
+      .setLngLat(line[0]).addTo(map)
+    vehicleRef.current = vehicle
+
+    // Hide the static dot while navigating.
+    setVis('agent-dot', false); setVis('agent-halo', false)
+
+    // Enter driver view.
+    map.easeTo({ center: line[0], zoom: 16.2, pitch: 60, bearing: bearingDeg(line[0], line[1]), duration: 900 })
+
+    navRef.current = true
+    let traveled = 0
+    let last = performance.now()
+
+    const frame = (now: number) => {
+      if (!navRef.current) return
+      const dt = (now - last) / 1000
+      last = now
+      traveled = (traveled + speed * dt) % total
+
+      // Locate current segment by cumulative distance.
+      let i = 0
+      while (i < segLen.length && cum[i + 1] < traveled) i++
+      const segStart = cum[i]
+      const t = segLen[i] > 0 ? (traveled - segStart) / segLen[i] : 0
+      const pos = lerp(line[i], line[i + 1], t)
+      const brg = bearingDeg(line[i], line[i + 1])
+
+      vehicle.setLngLat(pos)
+      map.jumpTo({ center: pos, bearing: brg, pitch: 60, zoom: 16.2 })
+
+      rafRef.current = requestAnimationFrame(frame)
+    }
+    rafRef.current = requestAnimationFrame(frame)
+
+    return () => {
+      navRef.current = false
+      if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null }
+      if (vehicleRef.current) { vehicleRef.current.remove(); vehicleRef.current = null }
+    }
+  }, [navMode, route])
+
   if (!MAPBOX_TOKEN) {
     return (
       <div className="flex items-center justify-center p-6" style={{ height: 'calc(100vh - 64px)' }}>
@@ -266,20 +379,30 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
         ))}
       </div>
 
-      {/* Route summary bar */}
+      {/* Route summary + navigation control */}
       {hasRoute && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[10] bg-slate-900/90 backdrop-blur-sm text-white text-xs px-4 py-2 rounded-full shadow-lg flex gap-4 items-center">
-          <span><strong>{route.stops.length}</strong> stops</span>
-          <span>·</span>
-          <span><strong>{route.total_distance_km} km</strong></span>
-          <span>·</span>
-          <span><strong>{route.total_duration_min} min</strong></span>
-          {route.traffic_factor > 1.1 && (
-            <>
-              <span>·</span>
-              <span style={{ color: '#F59E0B' }}>Traffic ×{route.traffic_factor.toFixed(1)}</span>
-            </>
-          )}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[10] flex flex-col items-center gap-2">
+          <div className="bg-slate-900/90 backdrop-blur-sm text-white text-xs px-4 py-2 rounded-full shadow-lg flex gap-4 items-center">
+            <span><strong>{route.stops.length}</strong> stops</span>
+            <span>·</span>
+            <span><strong>{route.total_distance_km} km</strong></span>
+            <span>·</span>
+            <span><strong>{route.total_duration_min} min</strong></span>
+            {route.traffic_factor > 1.1 && (
+              <>
+                <span>·</span>
+                <span style={{ color: '#F59E0B' }}>Traffic ×{route.traffic_factor.toFixed(1)}</span>
+              </>
+            )}
+          </div>
+          <button
+            onClick={() => setNavMode(n => !n)}
+            className={`px-6 py-2.5 text-sm font-bold rounded-full shadow-xl transition-colors ${
+              navMode ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-violet-600 hover:bg-violet-700 text-white'
+            }`}
+          >
+            {navMode ? '■ Exit Navigation' : '▶ Start Navigation'}
+          </button>
         </div>
       )}
     </div>
