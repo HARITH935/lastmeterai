@@ -6,10 +6,12 @@ Exposes only customer-safe fields (never phone, exact address, payment, or
 internal risk scores).
 """
 
+from datetime import datetime, timezone, timedelta
+
 from flask import Blueprint, jsonify
 
 from app.extensions import db
-from app.models import Order, User
+from app.models import Order, User, AgentLocation
 from app.services import tracking_service, eta_service
 
 bp = Blueprint("tracking", __name__, url_prefix="/api/track")
@@ -49,6 +51,20 @@ def track(token: str):
         agent = db.session.get(User, order.agent_id)
         agent_name = agent.name if agent else None
 
+    # Customer destination coordinates (they know their own address).
+    destination = {"lat": order.latitude, "lon": order.longitude}
+
+    # Live agent vehicle position — only while en route and recently seen.
+    agent_location = None
+    if order.agent_id is not None and status in ("pending", "in_transit"):
+        loc = db.session.query(AgentLocation).filter_by(agent_id=order.agent_id).first()
+        if loc and loc.is_online and loc.last_updated:
+            last = loc.last_updated
+            if last.tzinfo is None:
+                last = last.replace(tzinfo=timezone.utc)
+            if datetime.now(timezone.utc) - last < timedelta(minutes=10):
+                agent_location = {"lat": loc.latitude, "lon": loc.longitude}
+
     payload = {
         "order_number":   order.order_number,
         "customer_name":  _first_name(order.customer_name),
@@ -62,6 +78,8 @@ def track(token: str):
         "is_urgent":      order.is_urgent,
         "agent_name":     agent_name,
         "timeline":       _TIMELINE,
+        "destination":    destination,
+        "agent_location": agent_location,
         "eta":            None,
     }
 

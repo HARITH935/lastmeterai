@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { getTracking, type TrackingInfo } from '../api/orders'
+import { TrackMap } from './TrackMap'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -78,15 +79,23 @@ export function Track() {
   useEffect(() => {
     if (!token) { setState({ status: 'error', message: 'No tracking token provided.' }); return }
     let cancelled = false
-    getTracking(token)
-      .then(info => { if (!cancelled) setState({ status: 'success', info }) })
-      .catch((err: unknown) => {
-        const msg = typeof err === 'object' && err && 'message' in err
-          ? String((err as { message: unknown }).message)
-          : 'This tracking link is invalid or expired.'
-        if (!cancelled) setState({ status: 'error', message: msg })
-      })
-    return () => { cancelled = true }
+
+    const load = (initial: boolean) => {
+      getTracking(token)
+        .then(info => { if (!cancelled) setState({ status: 'success', info }) })
+        .catch((err: unknown) => {
+          if (!initial) return  // keep showing last-known data on a failed poll
+          const msg = typeof err === 'object' && err && 'message' in err
+            ? String((err as { message: unknown }).message)
+            : 'This tracking link is invalid or expired.'
+          if (!cancelled) setState({ status: 'error', message: msg })
+        })
+    }
+
+    load(true)
+    // Poll every 5s so the live vehicle + ETA stay current.
+    const id = setInterval(() => load(false), 5000)
+    return () => { cancelled = true; clearInterval(id) }
   }, [token])
 
   return (
@@ -141,6 +150,11 @@ export function Track() {
                 </div>
               )}
             </div>
+
+            {/* Live driver map (while en route) */}
+            {(info.status === 'pending' || info.status === 'in_transit') && info.destination && (
+              <TrackMap destination={info.destination} agentLocation={info.agent_location} />
+            )}
 
             {/* Timeline */}
             <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-6">

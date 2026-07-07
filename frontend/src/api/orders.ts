@@ -259,6 +259,8 @@ export interface TrackingInfo {
   is_urgent: boolean
   agent_name: string | null
   timeline: string[]
+  destination: { lat: number; lon: number }
+  agent_location: { lat: number; lon: number } | null
   eta: {
     predicted_min: number
     eta_low_min: number
