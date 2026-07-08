@@ -168,11 +168,17 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
   const vehicleRef   = useRef<mapboxgl.Marker | null>(null)
   const rafRef       = useRef<number | null>(null)
   const navRef       = useRef(false)
+  // Camera-follow: while true the camera tracks the vehicle (Gmap-style). A user
+  // pan sets it false so the map can be explored; the Re-center button restores it.
+  const followRef    = useRef(true)
+  const lastPosRef   = useRef<[number, number] | null>(null)
+  const lastBrgRef   = useRef(0)
 
   const [showPins,    setShowPins]    = useState(true)
   const [showRoute,   setShowRoute]   = useState(true)
   const [showWeather, setShowWeather] = useState(false)
   const [navMode,     setNavMode]     = useState(false)
+  const [following,   setFollowing]   = useState(true)
   const [nav,         setNav]         = useState<
     { icon: string; instruction: string; distToNext: number; remainMin: number; remainKm: number } | null
   >(null)
@@ -302,10 +308,19 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
     if (!map || !loadedRef.current) return
     let cancelled = false
 
+    // Any user pan/zoom (originalEvent present) breaks camera-follow so the map
+    // can be explored freely; programmatic jumpTo has no originalEvent.
+    let onUserGesture: ((e: { originalEvent?: unknown }) => void) | null = null
+
     const stop = () => {
       navRef.current = false
       if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null }
       if (vehicleRef.current) { vehicleRef.current.remove(); vehicleRef.current = null }
+      if (onUserGesture) {
+        map.off('dragstart', onUserGesture)
+        map.off('zoomstart', onUserGesture)
+        onUserGesture = null
+      }
       setVis('agent-dot', true); setVis('agent-halo', true)
     }
 
@@ -374,6 +389,18 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
       setVis('agent-dot', false); setVis('agent-halo', false)
       map.easeTo({ center: line[0], zoom: 16.2, pitch: 60, bearing: bearingDeg(line[0], line[1]), duration: 900 })
 
+      // Start in follow mode; a user pan/zoom releases it (Re-center to resume).
+      followRef.current = true
+      setFollowing(true)
+      onUserGesture = (e) => {
+        if (e.originalEvent && followRef.current) {
+          followRef.current = false
+          setFollowing(false)
+        }
+      }
+      map.on('dragstart', onUserGesture)
+      map.on('zoomstart', onUserGesture)
+
       navRef.current = true
       let traveled = 0
       let last = performance.now()
@@ -392,7 +419,13 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
         const brg = bearingDeg(line[i], line[i + 1])
 
         vehicle.setLngLat(pos)
-        map.jumpTo({ center: pos, bearing: brg, pitch: 60, zoom: 16.2 })
+        lastPosRef.current = pos
+        lastBrgRef.current = brg
+        // Only drive the camera while following — otherwise the user is free to
+        // pan/zoom and the vehicle keeps moving underneath.
+        if (followRef.current) {
+          map.jumpTo({ center: pos, bearing: brg, pitch: 60, zoom: 16.2 })
+        }
 
         // Update the instruction panel a few times/sec.
         if (now - lastPanel > 350) {
@@ -439,6 +472,17 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
     if (focusOrderId != null && route) setNavMode(true)
   }, [focusOrderId, route])
 
+  // Re-center button: resume camera-follow and snap back to the vehicle.
+  function recenter() {
+    const map = mapRef.current
+    followRef.current = true
+    setFollowing(true)
+    const pos = lastPosRef.current
+    if (map && pos) {
+      map.easeTo({ center: pos, bearing: lastBrgRef.current, pitch: 60, zoom: 16.2, duration: 500 })
+    }
+  }
+
   if (!MAPBOX_TOKEN) {
     return (
       <div className="flex items-center justify-center p-6" style={{ height: 'calc(100vh - 64px)' }}>
@@ -458,6 +502,20 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
   return (
     <div className="relative" style={{ height: 'calc(100vh - 64px)' }}>
       <div ref={containerRef} style={{ height: '100%', width: '100%' }} />
+
+      {/* Re-center (Gmap-style) — appears when the user has panned away mid-nav */}
+      {navMode && !following && (
+        <button
+          onClick={recenter}
+          className="absolute bottom-28 right-4 z-[21] flex items-center gap-2 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 text-sm font-semibold px-4 py-2.5 rounded-full shadow-2xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+          </svg>
+          Re-center
+        </button>
+      )}
 
       {/* Turn-by-turn banner (navigation mode) */}
       {navMode && nav && (
