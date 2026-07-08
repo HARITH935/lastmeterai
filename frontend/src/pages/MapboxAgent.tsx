@@ -173,6 +173,9 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
   const followRef    = useRef(true)
   const lastPosRef   = useRef<[number, number] | null>(null)
   const lastBrgRef   = useRef(0)
+  // Timestamp until which no new camera ease should be issued — prevents the
+  // edge-follow from restarting easeTo every frame (which freezes the camera).
+  const easeUntilRef = useRef(0)
 
   const [showPins,    setShowPins]    = useState(true)
   const [showRoute,   setShowRoute]   = useState(true)
@@ -427,12 +430,13 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
         lastBrgRef.current = brg
         // Gentle follow: let the arrow travel across the view and only ease the
         // camera when it nears an edge. Skipped entirely once the user has panned.
-        if (followRef.current) {
+        if (followRef.current && now > easeUntilRef.current) {
           const p = map.project(pos)
           const c = map.getContainer()
           const mx = c.clientWidth * 0.28
           const my = c.clientHeight * 0.28
           if (p.x < mx || p.x > c.clientWidth - mx || p.y < my || p.y > c.clientHeight - my) {
+            easeUntilRef.current = now + 700   // let this ease finish before the next
             map.easeTo({ center: pos, duration: 700, essential: true })
           }
         }
@@ -489,6 +493,8 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
     setFollowing(true)
     const pos = lastPosRef.current
     if (map && pos) {
+      // Hold off the frame-loop edge-follow so this recenter ease isn't stomped.
+      easeUntilRef.current = performance.now() + 550
       map.easeTo({ center: pos, bearing: 0, pitch: 0, zoom: 15.5, duration: 500 })
     }
   }
