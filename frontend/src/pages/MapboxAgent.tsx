@@ -495,7 +495,8 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
     if (map && pos) {
       // Hold off the frame-loop edge-follow so this recenter ease isn't stomped.
       easeUntilRef.current = performance.now() + 550
-      map.easeTo({ center: pos, bearing: 0, pitch: 0, zoom: 15.5, duration: 500 })
+      // Orient along the arrow's heading (facing the direction of travel), Gmap-style.
+      map.easeTo({ center: pos, bearing: lastBrgRef.current, pitch: 0, zoom: 15.5, duration: 500 })
     }
   }
 
