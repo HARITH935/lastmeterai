@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useSocket } from '../contexts/SocketContext'
 import { getHeatmap, type HeatmapZone } from '../api/analytics'
@@ -22,8 +23,13 @@ export interface AgentMarker {
 export function Map() {
   const { user, access_token } = useAuth()
   const { socket } = useSocket()
+  const [searchParams] = useSearchParams()
   const isManager = user?.role === 'manager'
   const isAgent   = user?.role === 'agent'
+
+  // /map?order=<id> → navigate straight to that one order (from OrderDetail).
+  const orderParam = searchParams.get('order')
+  const focusOrderId = orderParam ? Number(orderParam) : null
 
   const [state, setState] = useState<
     | { status: 'loading' }
@@ -167,6 +173,7 @@ export function Map() {
       agentPos={agentPos}
       optimize={optimize}
       onOptimizeChange={setOptimize}
+      focusOrderId={focusOrderId}
     />
   )
 }

@@ -606,6 +606,16 @@ export function OrderDetail() {
         <p className="text-xs text-slate-400">Deadline: {fmtDate(order.deadline)}</p>
       </div>
 
+      {/* Navigate to this order (agent, active orders) */}
+      {isAgent && (order.status === 'pending' || order.status === 'in_transit') && (
+        <button
+          onClick={() => navigate(`/map?order=${order.id}`)}
+          className="w-full flex items-center justify-center gap-2 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-700 px-4 py-3 rounded-xl transition-colors shadow-sm"
+        >
+          🧭 Navigate to this order
+        </button>
+      )}
+
       {/* Agent */}
       {order.agent_name && (
         <div className="card dark:bg-slate-900 dark:border-slate-800">

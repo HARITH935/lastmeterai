@@ -71,10 +71,10 @@ interface RawStep { location: [number, number]; instruction: string; type: strin
 // instructions are mapped onto that line rather than Mapbox's own path.
 async function fetchDirections(
   waypoints: [number, number][],
-): Promise<{ steps: RawStep[]; duration: number } | null> {
+): Promise<{ steps: RawStep[]; duration: number; geometry: [number, number][] } | null> {
   const coordStr = waypoints.map(([lng, lat]) => `${lng},${lat}`).join(';')
   const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coordStr}` +
-    `?steps=true&geometries=geojson&overview=false&access_token=${MAPBOX_TOKEN}`
+    `?steps=true&geometries=geojson&overview=full&access_token=${MAPBOX_TOKEN}`
   const res = await fetch(url)
   if (!res.ok) return null
   const data = await res.json()
@@ -92,7 +92,9 @@ async function fetchDirections(
       })
     }
   }
-  return { steps, duration: route.duration }
+  // geojson geometry coordinates are already [lng, lat].
+  const geometry: [number, number][] = route.geometry?.coordinates ?? []
+  return { steps, duration: route.duration, geometry }
 }
 
 // ── GeoJSON builders ────────────────────────────────────────────────────────────
@@ -151,9 +153,12 @@ interface Props {
   agentPos: [number, number] | null
   optimize: 'time' | 'distance'
   onOptimizeChange: (mode: 'time' | 'distance') => void
+  // When set (via /map?order=<id> deep-link), auto-navigate to just this one
+  // order instead of following the full optimized multi-stop route.
+  focusOrderId?: number | null
 }
 
-export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChange }: Props) {
+export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChange, focusOrderId }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef       = useRef<mapboxgl.Map | null>(null)
   const loadedRef    = useRef(false)
@@ -311,10 +316,27 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
       return
     }
 
-    // Ordered waypoints: [start, ...stops] in [lng, lat].
+    // Determine navigation target:
+    //   focusOrderId set → single-order nav (agent start → that one order)
+    //   otherwise        → full optimized multi-stop route
+    const focusOrder = focusOrderId != null
+      ? orders.find(o => o.id === focusOrderId && o.longitude != null && o.latitude != null)
+      : null
+
+    // Origin is the stable agent start (depot), not the live GPS dot — avoids
+    // restarting navigation every time the simulated position ticks.
+    const origin: [number, number] | null = route?.start_location
+      ? [route.start_location.lon, route.start_location.lat]
+      : null
+
+    // Ordered waypoints in [lng, lat].
     const wp: [number, number][] = []
-    if (route?.start_location) wp.push([route.start_location.lon, route.start_location.lat])
-    for (const s of route?.stops ?? []) wp.push([s.longitude, s.latitude])
+    if (origin) wp.push(origin)
+    if (focusOrder) {
+      wp.push([focusOrder.longitude, focusOrder.latitude])
+    } else {
+      for (const s of route?.stops ?? []) wp.push([s.longitude, s.latitude])
+    }
     if (wp.length < 2) { setNavMode(false); return }
 
     const run = (line: [number, number][], rawSteps: RawStep[], totalDurationS: number) => {
@@ -390,23 +412,32 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
       rafRef.current = requestAnimationFrame(frame)
     }
 
-    // The vehicle always follows the backend route geometry (which honors the
-    // Fastest/Shortest selection). Mapbox Directions supplies only the turn text.
-    const line = (route?.route_geometry ?? []).map(([lat, lon]) => [lon, lat] as [number, number])
+    // Full-route nav follows the backend geometry (which honors Fastest/Shortest);
+    // single-order nav has no backend line, so it drives Mapbox's own path.
+    const backendLine = (route?.route_geometry ?? []).map(([lat, lon]) => [lon, lat] as [number, number])
     const fallbackDur = (route?.total_duration_min ?? 10) * 60
 
     fetchDirections(wp)
       .then(dir => {
         if (cancelled) return
+        const line = focusOrder
+          ? (dir?.geometry?.length ? dir.geometry : wp) // straight-line fallback
+          : backendLine
         run(line, dir?.steps ?? [], dir?.duration ?? fallbackDur)
       })
       .catch(() => {
         if (cancelled) return
-        run(line, [], fallbackDur)
+        run(focusOrder ? wp : backendLine, [], fallbackDur)
       })
 
     return () => { cancelled = true; stop() }
-  }, [navMode, route])
+  }, [navMode, route, focusOrderId, orders])
+
+  // Arriving via a per-order deep-link (/map?order=<id>) auto-starts navigation
+  // to that order, once the route (agent start location) has loaded.
+  useEffect(() => {
+    if (focusOrderId != null && route) setNavMode(true)
+  }, [focusOrderId, route])
 
   if (!MAPBOX_TOKEN) {
     return (
