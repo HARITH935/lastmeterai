@@ -44,7 +44,7 @@ def send_message():
         intent_confidence: float — raw classifier confidence [0, 1]
         threshold_applied: bool  — True if low confidence forced fallback to "general"
         context_data     : dict  — backend data fetched for this intent
-        reply            : str   — [STUB] reply; Gemini pending (A9)
+        reply            : str   — Gemini-generated reply, or intent fallback template
         model_loaded     : bool  — whether the intent classifier was available
     """
     body = request.get_json(silent=True) or {}

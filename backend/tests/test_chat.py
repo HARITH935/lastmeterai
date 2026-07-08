@@ -41,10 +41,15 @@ os.environ.setdefault("FLASK_ENV", "development")
 logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
 
 from app import create_app
-from app.extensions import db as _db
+from app.extensions import db as _db, limiter
 from app.models.chat_history import ChatHistory, MessageRole
 
 app = create_app("development")
+
+# The smoke test fires far more than 10 messages/minute as a single user, which
+# would trip the production "10 per minute" limit on /api/chat/message. Disable
+# rate limiting for the test run only — the limit itself is exercised in prod.
+limiter.enabled = False
 
 PASS = "\033[92m✓\033[0m"
 FAIL = "\033[91m✗\033[0m"
