@@ -384,10 +384,13 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
         `<svg width="36" height="36" viewBox="0 0 24 24" style="filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))">
           <circle cx="12" cy="12" r="11" fill="#2563EB"/><path d="M12 5 L17 18 L12 15 L7 18 Z" fill="#ffffff"/>
         </svg>`
-      const vehicle = new mapboxgl.Marker({ element: el, rotationAlignment: 'viewport' }).setLngLat(line[0]).addTo(map)
+      const vehicle = new mapboxgl.Marker({ element: el, rotationAlignment: 'map' }).setLngLat(line[0]).addTo(map)
+      vehicle.setRotation(bearingDeg(line[0], line[1]))
       vehicleRef.current = vehicle
       setVis('agent-dot', false); setVis('agent-halo', false)
-      map.easeTo({ center: line[0], zoom: 16.2, pitch: 60, bearing: bearingDeg(line[0], line[1]), duration: 900 })
+      // North-up so the arrow visibly travels across the map (the arrow itself
+      // rotates to the heading, instead of the map pinning itself to the arrow).
+      map.easeTo({ center: line[0], zoom: 15.5, pitch: 0, bearing: 0, duration: 900 })
 
       // Start in follow mode; a user pan/zoom releases it (Re-center to resume).
       followRef.current = true
@@ -419,12 +422,19 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
         const brg = bearingDeg(line[i], line[i + 1])
 
         vehicle.setLngLat(pos)
+        vehicle.setRotation(brg)          // arrow points in the direction of travel
         lastPosRef.current = pos
         lastBrgRef.current = brg
-        // Only drive the camera while following — otherwise the user is free to
-        // pan/zoom and the vehicle keeps moving underneath.
+        // Gentle follow: let the arrow travel across the view and only ease the
+        // camera when it nears an edge. Skipped entirely once the user has panned.
         if (followRef.current) {
-          map.jumpTo({ center: pos, bearing: brg, pitch: 60, zoom: 16.2 })
+          const p = map.project(pos)
+          const c = map.getContainer()
+          const mx = c.clientWidth * 0.28
+          const my = c.clientHeight * 0.28
+          if (p.x < mx || p.x > c.clientWidth - mx || p.y < my || p.y > c.clientHeight - my) {
+            map.easeTo({ center: pos, duration: 700, essential: true })
+          }
         }
 
         // Update the instruction panel a few times/sec.
@@ -479,7 +489,7 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
     setFollowing(true)
     const pos = lastPosRef.current
     if (map && pos) {
-      map.easeTo({ center: pos, bearing: lastBrgRef.current, pitch: 60, zoom: 16.2, duration: 500 })
+      map.easeTo({ center: pos, bearing: 0, pitch: 0, zoom: 15.5, duration: 500 })
     }
   }
 
