@@ -8,7 +8,7 @@ mapboxgl.accessToken = MAPBOX_TOKEN
 
 const CHENNAI_CENTER: [number, number] = [80.220, 13.040] // [lng, lat]
 const INITIAL_ZOOM = 12
-const MAP_STYLE = 'mapbox://styles/mapbox/dark-v11'
+const MAP_STYLE = 'mapbox://styles/mapbox/standard'
 
 const RISK_COLOR: Record<string, string> = { low: '#10B981', medium: '#F59E0B', high: '#EF4444' }
 const OWM_KEY = import.meta.env.VITE_OWM_KEY ?? '93ffaa6d46b4f1ba233e01d83955e17d'
