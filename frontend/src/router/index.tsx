@@ -15,6 +15,7 @@ import { Settings } from '../pages/Settings'
 import { Profile } from '../pages/Profile'
 import { CustomerInsights } from '../pages/CustomerInsights'
 import { AreaIntelligence } from '../pages/AreaIntelligence'
+import { Analytics } from '../pages/Analytics'
 import { OrderDetail } from '../pages/OrderDetail'
 import { Track } from '../pages/Track'
 import { RouteError } from '../components/layout/RouteError'
@@ -45,6 +46,7 @@ export const router = createBrowserRouter([
       { path: '/orders/:id',        element: <OrderDetail /> },
       { path: '/earnings',          element: <Earnings /> },
       { path: '/reports',           element: <Reports /> },
+      { path: '/analytics',         element: <Analytics /> },
       { path: '/agents',            element: <Agents /> },
       { path: '/notifications',     element: <Notifications /> },
       { path: '/profile',           element: <Profile /> },

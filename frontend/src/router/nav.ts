@@ -9,6 +9,7 @@ export const MANAGER_NAV: NavItem[] = [
   { label: 'AI Chat',           path: '/chat' },
   { label: 'All Orders',        path: '/orders' },
   { label: 'Reports',           path: '/reports' },
+  { label: 'Analytics',         path: '/analytics' },
   { label: 'Agents',            path: '/agents' },
   { label: 'Notifications',     path: '/notifications' },
   { label: 'Profile',           path: '/profile' },
