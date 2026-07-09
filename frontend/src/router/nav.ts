@@ -10,6 +10,7 @@ export const MANAGER_NAV: NavItem[] = [
   { label: 'All Orders',        path: '/orders' },
   { label: 'Reports',           path: '/reports' },
   { label: 'Analytics',         path: '/analytics' },
+  { label: 'Power BI',          path: '/power-bi' },
   { label: 'Agents',            path: '/agents' },
   { label: 'Notifications',     path: '/notifications' },
   { label: 'Profile',           path: '/profile' },
