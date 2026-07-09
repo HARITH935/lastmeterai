@@ -57,8 +57,32 @@ frontend/src/
   **Analytics** page ("Download all"), then File → Publish to web → paste that
   link into `VITE_POWERBI_EMBED_URL` (Vercel + `.env.local`).
 
+## Known gaps & priorities for the next developer
+These are the weak points evaluators/judges will press on. Ranked by how
+addressable they are:
+
+1. **No CI/CD** (addressable now) — there's no automated pipeline. Add a GitHub
+   Actions workflow that, on every push/PR, runs the backend smoke tests and the
+   frontend typecheck + build. This is the fastest credibility win.
+2. **No formal security review** (addressable now) — run a security pass over the
+   auth/JWT flow, input validation, CORS (`CORS_ORIGINS` is currently `*` in
+   places), and secrets handling. Document findings even if minor.
+3. **Assumption-based business logic** (document + refine) — cost-savings and fuel
+   calculations use *stated assumptions* (e.g. `AVG_FAILED_DELIVERY_COST_INR`,
+   fuel-per-km). Some are cited (baseline success rate = RedSeer India 2023).
+   Action: put every assumption + its source in one place, and add a short
+   sensitivity note ("if cost were ₹X instead, savings change by Y%").
+4. **Synthetic data throughout** (validate when possible) — models train on
+   generated data with no real-world validation. Document the data-generation
+   methodology and why it's representative; if any real delivery data becomes
+   available, validate against it and report the delta.
+5. **Solo-project origin** — *this handoff itself starts fixing that.* Work via
+   feature branches + pull requests (not direct commits to `main`) so there's a
+   visible collaboration/review trail for evaluators.
+
 ## Tests
 Backend smoke tests run directly, e.g. `python3 backend/tests/test_chat.py`.
+(No CI yet — see gap #1 above.)
 
 ## Deploy
 Push to `main` → Vercel auto-deploys the frontend; Render auto-deploys the backend
