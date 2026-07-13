@@ -14,10 +14,10 @@ evaluators and the next developer — grep the "Used in" path to see it live.
 
 | Constant | Value | Meaning | Confidence | Source |
 |---|---|---|---|---|
-| `AVG_FAILED_DELIVERY_COST_INR` | ₹300.00 | Cost of one failed delivery attempt | 🟡 | Internal estimate: agent time (~1.5h) + return-trip fuel + re-scheduling overhead + customer-dissatisfaction allowance. Not independently benchmarked. |
-| `BASELINE_SUCCESS_RATE` | 73% | First-attempt success rate *without* AI triage | 🟢 | RedSeer India E-commerce Logistics Report 2023 — urban Chennai, 2-wheeler last-mile. |
-| `FUEL_COST_PER_LITRE_INR` | ₹104.00 | Petrol price used for fuel-cost math | 🟡 | Approximate Chennai price, June 2026. Will drift — petrol prices move monthly. |
-| `FUEL_CONSUMPTION_PER_KM_LITRES` | 0.035 L/km | 2-wheeler fuel efficiency | 🟡 | Typical published spec for delivery 2-wheelers, not measured on this fleet. |
+| `AVG_FAILED_DELIVERY_COST_INR` | ₹300.00 | Cost of one failed delivery attempt | 🟡 | Internal estimate: agent time (~1.5h) + return-trip fuel + re-scheduling overhead + customer-dissatisfaction allowance. Not independently benchmarked — no public source gives a per-failed-attempt cost breakdown at this granularity. |
+| `BASELINE_SUCCESS_RATE` | 73% | First-attempt success rate *without* AI triage | 🟡 | Cited to RedSeer India E-commerce Logistics Report 2023. **Verification note (2026-07-13): the specific 73% figure could not be independently located via public search** — RedSeer is a real, credible research firm, but this exact statistic may be from a paid/full report not publicly indexed. Downgraded from 🟢 to 🟡 pending independent confirmation; not removed, since the original citation may still be accurate. |
+| `FUEL_COST_PER_LITRE_INR` | ₹109.45 | Petrol price used for fuel-cost math | 🟢 | **Verified 2026-07-13** against a live Chennai fuel-price tracker (Goodreturns) — updated from a stale ₹104.00 "June 2026" estimate. Will drift again — petrol prices move monthly; re-verify periodically. |
+| `FUEL_CONSUMPTION_PER_KM_LITRES` | 0.035 L/km | 2-wheeler fuel efficiency | 🟢 | **Verified 2026-07-13**: matches real-world city fuel economy for standard 100–125cc commuter bikes under delivery stop-and-go conditions. Published claimed mileage is 60–80 km/l for popular delivery bikes (TVS Sport, Bajaj Platina, Hero Splendor Plus), but real-world city/delivery riding reduces this 10–20% — netting to ≈24–27 km/l (0.037–0.042 L/km), consistent with this constant. |
 | `AVG_DISTANCE_PER_ORDER_KM` | 4.5 km | Average last-mile distance per order | 🔴 | "Internal GPS trace estimate" per code comment — no trace data actually backs this in the current (synthetic) dataset. |
 
 **Formula chain** (`get_cost_savings()`):
@@ -47,8 +47,8 @@ other code changes needed.
 ## 2. GO / NO-GO decision threshold
 `backend/app/config.py`, `backend/app/services/decision_service.py`
 
-| Constant | Value | Meaning | Confidence |
-|---|---|---|---|
+| Constant | Value | Meaning | Confidence | Source |
+|---|---|---|---|---|
 | `GONOGO_THRESHOLD` | 0.5 | Model output probability above which a delivery is marked GO | 🔴 | Standard default midpoint for a binary classifier — not tuned against a cost-of-error tradeoff (a false GO costs more than a false NO-GO per the ₹300 figure above, which argues for a threshold *above* 0.5 in a real deployment). Env-overridable (`GONOGO_THRESHOLD`) without a code change. |
 | `_MAX_DELIVERY_KM` | 15.0 km | Distance normalization cap for the `distance_score` feature | 🔴 | Round-number cap, not derived from actual service-area boundaries. |
 
@@ -57,9 +57,10 @@ other code changes needed.
 ## 3. ETA prediction
 `backend/app/services/eta_service.py`
 
-| Constant | Value | Meaning | Confidence |
-|---|---|---|---|
-| `_WINDOW_SPEED` | 24 / 20 / 15 km/h (morning/afternoon/evening) | Average city road speed by time-of-day | 🔴 | Reasonable-sounding Chennai traffic pattern, not measured. |
+| Constant | Value | Meaning | Confidence | Source |
+|---|---|---|---|---|
+| `_WINDOW_SPEED` (afternoon) | 20 km/h | Average city road speed, afternoon window | 🟢 | **Verified 2026-07-13**: near-exact match to the published TomTom Traffic Index — Chennai city-wide average is ~20 km/h (10 km in ~29 min). |
+| `_WINDOW_SPEED` (morning/evening) | 24 / 15 km/h | Faster-than-average / slower-than-average adjustment | 🔴 | Relative ordering (morning faster, evening slower than the verified afternoon baseline) is plausible but the specific offsets are not independently measured. |
 | Weather overhead | `× (1 + risk × 0.4)` | Travel-time penalty under weather risk | 🔴 | Round coefficient, not calibrated. |
 | `_HANDLING_MIN` | 3 / 5 / 8 min (small/medium/large) | On-site package handling time | 🔴 | Judgment call. |
 | `_RESIDENCE_MIN` | 4 / 2 min (apartment/independent) | Extra time to locate doorstep | 🔴 | Judgment call. |
@@ -70,8 +71,8 @@ other code changes needed.
 ## 4. Route optimization weighting
 `backend/app/services/route_service.py`
 
-| Constant | Value | Meaning | Confidence |
-|---|---|---|---|
+| Constant | Value | Meaning | Confidence | Source |
+|---|---|---|---|---|
 | Weather overhead weight | `1.0 + weather_risk × 0.3` | How much weather risk inflates the TSP cost matrix (time-based routing) | 🔴 | Round coefficient, not calibrated against real delay data. |
 | Traffic congestion factor | live, from TomTom Traffic Flow API | Real-time congestion multiplier | 🟢 | Live external data when `TOMTOM_API_KEY` is set — not an assumption. Falls back to `1.0` (no adjustment) if the key is absent or the call fails. |
 

@@ -24,8 +24,9 @@ AVG_FAILED_DELIVERY_COST_INR = 300.0
 # Per failed attempt: agent time (≈1.5 h), return-trip fuel, re-scheduling
 # overhead, and customer-dissatisfaction allowance.
 
-FUEL_COST_PER_LITRE_INR = 104.0
-# Approximate Chennai petrol price (June 2026) used for 2-wheeler riders.
+FUEL_COST_PER_LITRE_INR = 109.45
+# Chennai petrol price, verified 2026-07-13 (Goodreturns fuel price tracker).
+# See SYNTHETIC_DATA.md's benchmark cross-check — will drift; re-verify periodically.
 
 FUEL_CONSUMPTION_PER_KM_LITRES = 0.035
 # Typical 2-wheeler fuel consumption (litres/km) for last-mile delivery.

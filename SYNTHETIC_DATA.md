@@ -97,24 +97,66 @@ This is a genuinely well-reasoned simulation, not naive random sampling:
   to occur exactly as often as "other" categories in a real Chennai monsoon
   season.
 
-## Validation status: internally consistent, not externally validated
+## Attempts to source real operational data (2026-07-13)
 
-`verify_dataset.py` proves the generator does what it claims to do (the area
-differences are real, the weekend/festival effects are real, train/val are
-statistically consistent). That is **internal validation of the generation
-process** — it says nothing about whether the process reflects actual Chennai
-delivery operations, because there is nothing real to compare it to yet.
+Two public datasets were evaluated as substitutes for real delivery outcome
+data and **both rejected** rather than forced into use:
 
-**This requires actual delivery outcome data — no amount of further synthetic
-tuning substitutes for it.** When/if that becomes available, the validation to
-run is:
+1. **Delhivery line-haul dataset** (Kaggle) — real data, but measures
+   inter-hub freight trip times, not last-mile customer delivery. No
+   success/failure outcome, no weather, no per-customer granularity. Wrong
+   problem domain entirely.
+2. **"Delivery Logistics Dataset (India – Multi-Partner)"** (Kaggle) — schema
+   matched (delivery_status, weather, region), but proved to be fabricated on
+   inspection: 100% of `delivery_time_hours` values were a broken
+   `1970-01-01 00:00:00.000000008`-style timestamp (a generation bug, not a
+   data quirk), `region`/`weather_condition`/`delivery_partner` distributions
+   were all suspiciously perfectly uniform, and `delivery_id` values repeated
+   identically. Comparing against this would produce a meaningless result —
+   assumption-vs-random-noise, not assumption-vs-reality.
+
+Neither was usable. **For a SaaS product, this is the correct outcome**:
+using fabricated data and labeling it "validated" is a worse position than
+honestly stating "not yet validated" — the latter is normal and expected
+pre-launch; the former is a credibility risk if ever discovered.
+
+## External benchmark cross-check (2026-07-13)
+
+Since a real operational dataset isn't available, several of the *individual*
+assumptions were instead checked against independent, credible **published
+sources** — not a substitute for real operational validation, but a
+legitimate, distinct form of evidence (literature/benchmark corroboration
+rather than raw-data comparison):
+
+| Assumption | Result |
+|---|---|
+| Velachery/Adyar are Chennai's most flood-prone areas (drives `area_risk_bias`, weather Beta params) | ✅ **Confirmed** by an academic comparative study of the 2015/2023 Chennai floods (MDPI, 2024) and multiple flood-risk mapping sources — both areas independently named among the most flood-prone. |
+| `FUEL_CONSUMPTION_PER_KM_LITRES = 0.035` | ✅ **Confirmed** — matches real-world (not claimed-spec) fuel economy for standard delivery bikes under city stop-and-go conditions (≈0.037–0.042 L/km after the real-world 10–20% degradation documented for delivery duty cycles). |
+| `FUEL_COST_PER_LITRE_INR` | 🔧 **Corrected** — was ₹104.00 (stale "June 2026" estimate); updated to ₹109.45, the verified live Chennai price as of 2026-07-13 (`analytics_service.py`). |
+| `_WINDOW_SPEED["afternoon"] = 20 km/h` | ✅ **Confirmed** — near-exact match to the published TomTom Traffic Index Chennai city-wide average (~20 km/h). Morning/evening offsets remain unverified. |
+| `BASELINE_SUCCESS_RATE = 0.73` (cited RedSeer 2023) | ⚠️ **Could not independently verify** — RedSeer is a real, credible research firm, but the specific 73% figure wasn't locatable via public search (may be from a paid report not publicly indexed). Citation kept but downgraded in `ASSUMPTIONS.md` pending confirmation. |
+
+Full detail and updated confidence ratings are in `ASSUMPTIONS.md`.
+
+## Validation status: internally consistent + externally benchmark-checked; not validated against real operations
+
+`verify_dataset.py` proves the generator does what it claims to do internally
+(area differences are real, weekend/festival effects are real, train/val are
+statistically consistent). The benchmark cross-check above adds independent,
+real-world corroboration for several individual assumptions. **Neither
+substitutes for validating against actual Chennai delivery outcomes** —
+that remains genuinely not possible without a real dataset, which does not
+exist in this project and could not be sourced from public data (see above).
+
+This is not a gap to be "worked harder" on — it's a dependency on data that
+doesn't exist yet. When/if real delivery outcome data becomes available
+(a pilot with a real delivery partner, or self-collected records), run:
 
 1. Compare real order volume *and* NO-GO rate by area to
    `generate_dataset.py`'s uniform-volume, geography-weighted-risk assumption
    — likely the single biggest correction needed.
-2. Re-check whether `BASELINE_SUCCESS_RATE = 0.73`
-   (`analytics_service.py`, cited to RedSeer 2023) still holds for this
-   specific operation.
+2. Re-check whether `BASELINE_SUCCESS_RATE = 0.73` still holds for this
+   specific operation (already flagged above as unverified).
 3. Feed real (weather, traffic, order) feature vectors through the trained
    `gonogo_lr`/`gonogo_rf` models and compare predicted vs. actual outcomes —
    report accuracy/precision/recall delta from the synthetic-validation
