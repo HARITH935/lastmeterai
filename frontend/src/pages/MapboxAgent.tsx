@@ -205,21 +205,21 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
       map.addLayer({ id: 'owm-clouds', type: 'raster', source: 'owm-clouds', paint: { 'raster-opacity': 0.5 }, layout: { visibility: 'none' } })
       map.addLayer({ id: 'owm-precip', type: 'raster', source: 'owm-precip', paint: { 'raster-opacity': 0.7 }, layout: { visibility: 'none' } })
 
-      // Live traffic overlay — colors roads across the whole map by congestion
-      // (Mapbox's traffic tileset), like Google Maps: green = clear, red = heavy.
+      // Live traffic overlay — two-tone: neutral for normal flow, red only where
+      // congested. Thin + only rendered where there's a real slowdown, so it
+      // stays out of the way instead of covering the whole map in color.
       map.addSource('mapbox-traffic', { type: 'vector', url: 'mapbox://mapbox.mapbox-traffic-v1' })
       map.addLayer({
         id: 'traffic-flow', type: 'line', source: 'mapbox-traffic', 'source-layer': 'traffic',
+        filter: ['in', ['get', 'congestion'], ['literal', ['moderate', 'heavy', 'severe']]],
         layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: {
-          'line-width': 2.5,
+          'line-width': 2,
+          'line-opacity': 0.7,
           'line-color': [
             'match', ['get', 'congestion'],
-            'low', '#10B981',
-            'moderate', '#F59E0B',
-            'heavy', '#F97316',
-            'severe', '#DC2626',
-            '#94A3B8',
+            'moderate', '#94A3B8',
+            '#DC2626',
           ],
         },
       })
