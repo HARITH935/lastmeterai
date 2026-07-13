@@ -66,11 +66,11 @@ addressable they are:
 2. ~~**No formal security review**~~ — **DONE.** See `SECURITY_REVIEW.md` —
    5 findings (2 HIGH: stored XSS in map popups, no login rate limit; 1 MEDIUM:
    CORS wildcard+credentials; 2 LOW), all fixed and verified live in production.
-3. **Assumption-based business logic** (document + refine) — cost-savings and fuel
-   calculations use *stated assumptions* (e.g. `AVG_FAILED_DELIVERY_COST_INR`,
-   fuel-per-km). Some are cited (baseline success rate = RedSeer India 2023).
-   Action: put every assumption + its source in one place, and add a short
-   sensitivity note ("if cost were ₹X instead, savings change by Y%").
+3. ~~**Assumption-based business logic**~~ — **DONE.** See `ASSUMPTIONS.md` —
+   every cost/fuel/threshold/ETA constant, its source, a confidence rating
+   (cited / internal estimate / judgment call), and a sensitivity note showing
+   exactly how the headline savings figure moves if `AVG_FAILED_DELIVERY_COST_INR`
+   changes. Ranks which constants are weakest-sourced and worth tightening first.
 4. **Synthetic data throughout** (validate when possible) — models train on
    generated data with no real-world validation. Document the data-generation
    methodology and why it's representative; if any real delivery data becomes
