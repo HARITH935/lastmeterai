@@ -180,6 +180,7 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
   const [showPins,    setShowPins]    = useState(true)
   const [showRoute,   setShowRoute]   = useState(true)
   const [showWeather, setShowWeather] = useState(false)
+  const [showTraffic, setShowTraffic] = useState(true)
   const [navMode,     setNavMode]     = useState(false)
   const [following,   setFollowing]   = useState(true)
   const [nav,         setNav]         = useState<
@@ -203,6 +204,25 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
       map.addSource('owm-precip', { type: 'raster', tiles: [`https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${OWM_KEY}`], tileSize: 256 })
       map.addLayer({ id: 'owm-clouds', type: 'raster', source: 'owm-clouds', paint: { 'raster-opacity': 0.5 }, layout: { visibility: 'none' } })
       map.addLayer({ id: 'owm-precip', type: 'raster', source: 'owm-precip', paint: { 'raster-opacity': 0.7 }, layout: { visibility: 'none' } })
+
+      // Live traffic overlay — colors roads across the whole map by congestion
+      // (Mapbox's traffic tileset), like Google Maps: green = clear, red = heavy.
+      map.addSource('mapbox-traffic', { type: 'vector', url: 'mapbox://mapbox.mapbox-traffic-v1' })
+      map.addLayer({
+        id: 'traffic-flow', type: 'line', source: 'mapbox-traffic', 'source-layer': 'traffic',
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: {
+          'line-width': 2.5,
+          'line-color': [
+            'match', ['get', 'congestion'],
+            'low', '#10B981',
+            'moderate', '#F59E0B',
+            'heavy', '#F97316',
+            'severe', '#DC2626',
+            '#94A3B8',
+          ],
+        },
+      })
 
       // Route line
       map.addSource('route', { type: 'geojson', data: routeLineGeoJSON(route) })
@@ -304,6 +324,7 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
   useEffect(() => setVis('order-pins', showPins), [showPins])
   useEffect(() => { setVis('route-line', showRoute); setVis('stop-circles', showRoute); setVis('stop-labels', showRoute) }, [showRoute])
   useEffect(() => { setVis('owm-clouds', showWeather); setVis('owm-precip', showWeather) }, [showWeather])
+  useEffect(() => setVis('traffic-flow', showTraffic), [showTraffic])
 
   // ── Uber-style navigation engine (with turn-by-turn) ───────────────────────────
   useEffect(() => {
@@ -576,6 +597,7 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
         {[
           { on: showPins,    color: '#2563EB', set: () => setShowPins(p => !p),    label: 'Order Pins' },
           { on: showRoute,   color: '#8B5CF6', set: () => setShowRoute(r => !r),   label: showRoute ? 'Route ON' : 'My Route' },
+          { on: showTraffic, color: '#DC2626', set: () => setShowTraffic(t => !t), label: showTraffic ? '🚦 Traffic ON' : 'Traffic' },
           { on: showWeather, color: '#0EA5E9', set: () => setShowWeather(w => !w), label: showWeather ? '🌧 Weather ON' : 'Weather' },
         ].map(b => (
           <button
