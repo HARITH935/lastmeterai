@@ -63,9 +63,9 @@ addressable they are:
 
 1. ~~**No CI/CD**~~ — **DONE.** `.github/workflows/ci.yml` runs backend smoke
    tests + frontend typecheck/build on every push/PR to main.
-2. **No formal security review** (addressable now) — run a security pass over the
-   auth/JWT flow, input validation, CORS (`CORS_ORIGINS` is currently `*` in
-   places), and secrets handling. Document findings even if minor.
+2. ~~**No formal security review**~~ — **DONE.** See `SECURITY_REVIEW.md` —
+   5 findings (2 HIGH: stored XSS in map popups, no login rate limit; 1 MEDIUM:
+   CORS wildcard+credentials; 2 LOW), all fixed and verified live in production.
 3. **Assumption-based business logic** (document + refine) — cost-savings and fuel
    calculations use *stated assumptions* (e.g. `AVG_FAILED_DELIVERY_COST_INR`,
    fuel-per-km). Some are cited (baseline success rate = RedSeer India 2023).
