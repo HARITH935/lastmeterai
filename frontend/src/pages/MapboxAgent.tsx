@@ -18,6 +18,14 @@ function riskColor(level: string | null | undefined): string {
   return RISK_COLOR[level] ?? '#94A3B8'
 }
 
+// Route line: blue in clear traffic, red when congested (same >1.1 threshold
+// already used for the "Traffic ×N" label).
+const ROUTE_COLOR_CLEAR  = '#2563EB'
+const ROUTE_COLOR_TRAFFIC = '#DC2626'
+function routeLineColor(route: OptimizedRoute | null): string {
+  return (route?.traffic_factor ?? 1) > 1.1 ? ROUTE_COLOR_TRAFFIC : ROUTE_COLOR_CLEAR
+}
+
 function fmtEta(iso: string): string {
   return new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })
 }
@@ -209,7 +217,7 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
       map.addLayer({
         id: 'route-line', type: 'line', source: 'route',
         layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: { 'line-color': '#8B5CF6', 'line-width': 5, 'line-opacity': 0.85 },
+        paint: { 'line-color': routeLineColor(route), 'line-width': 5, 'line-opacity': 0.85 },
       })
 
       // Non-route order pins
@@ -279,6 +287,7 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
     if (!map || !loadedRef.current) return
     ;(map.getSource('route') as mapboxgl.GeoJSONSource | undefined)?.setData(routeLineGeoJSON(route))
     ;(map.getSource('stops') as mapboxgl.GeoJSONSource | undefined)?.setData(stopsGeoJSON(route))
+    if (map.getLayer('route-line')) map.setPaintProperty('route-line', 'line-color', routeLineColor(route))
 
     // Fit the map to the route once, when it first arrives.
     const coords = (route?.route_geometry ?? []).map(([lat, lon]) => [lon, lat] as [number, number])
