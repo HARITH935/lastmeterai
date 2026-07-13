@@ -107,10 +107,21 @@ def refresh_tokens(refresh_token_str: str) -> tuple[str, str]:
     if payload.get("type") != "refresh":
         raise ValueError("Not a refresh token.")
 
+    # decode_token() bypasses Flask-JWT-Extended's normal blocklist check
+    # (that machinery only runs inside @jwt_required()) — check manually so a
+    # rotated-out refresh token is actually rejected, not just cosmetically revoked.
+    if is_token_revoked({}, payload):
+        raise ValueError("Refresh token has been revoked.")
+
     user_id = payload.get("sub")
     user = db.session.get(User, int(user_id))
     if not user or not user.is_active:
         raise ValueError("User not found or account is disabled.")
+
+    # Rotation: this refresh token is single-use. Revoke it now so a copy
+    # (e.g. captured in transit, or replayed) can't be used again — only the
+    # newly issued refresh token below remains valid.
+    _revoke(payload.get("jti"))
 
     return _build_tokens(user)
 

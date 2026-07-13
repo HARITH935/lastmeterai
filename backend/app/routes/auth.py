@@ -104,7 +104,12 @@ def refresh():
         access_token, new_refresh = auth_service.refresh_tokens(token_str)
     except ValueError as exc:
         msg = str(exc)
-        code = "TOKEN_INVALID" if "invalid" in msg.lower() else "TOKEN_EXPIRED"
+        if "revoked" in msg.lower():
+            code = "TOKEN_REVOKED"
+        elif "invalid" in msg.lower():
+            code = "TOKEN_INVALID"
+        else:
+            code = "TOKEN_EXPIRED"
         return _err(code, msg, 401)
 
     return jsonify({
