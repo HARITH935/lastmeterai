@@ -17,10 +17,11 @@ services:
       # SQLite path — Flask places this under backend/instance/lastmeter.db
       - key: DATABASE_URL
         value: sqlite:///lastmeter.db
-      # After Vercel deploy, replace this with your actual Vercel URL.
-      # You can keep * initially and tighten it after.
+      # Pinned to the live Vercel frontend. This only sets the value on first
+      # provisioning — if the service already exists, update CORS_ORIGINS in
+      # the Render dashboard directly (this file won't retroactively change it).
       - key: CORS_ORIGINS
-        value: "*"
+        value: "https://lastmeterai-lq6p.vercel.app"
       # Set these manually in the Render dashboard if you have the keys.
       - key: GEMINI_API_KEY
         sync: false

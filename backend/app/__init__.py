@@ -36,10 +36,16 @@ def create_app(config_name: str | None = None) -> Flask:
         async_mode="eventlet",
     )
 
+    # supports_credentials is intentionally omitted: auth is Bearer-token-only
+    # (JWT in the Authorization header, stored in localStorage — no cookies,
+    # frontend never sends `credentials: 'include'`). Combining a wildcard
+    # origin with supports_credentials=True is invalid per the CORS spec and
+    # makes flask-cors reflect the request's Origin instead of sending "*",
+    # effectively allowing any site to receive credentialed responses. Without
+    # it, CORS_ORIGINS="*" behaves as a plain, safe wildcard.
     CORS(
         app,
         origins=cors_origins,
-        supports_credentials=True,
         allow_headers=["Authorization", "Content-Type"],
         methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         max_age=3600,
