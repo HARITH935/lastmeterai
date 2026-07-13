@@ -17,7 +17,15 @@ class User(db.Model):
 
     __tablename__ = "users"
 
-    VALID_AREAS = ["Anna Nagar", "T Nagar", "Velachery", "Adyar", "Porur"]
+    # 20 Chennai areas. Original 5 (index 0-4) plus 15 added 2026-07-13 with
+    # individually researched flood-risk/traffic profiles — see
+    # ml/data/generate_dataset.py AREA_PARAMS for the reasoning behind each.
+    VALID_AREAS = [
+        "Anna Nagar", "T Nagar", "Velachery", "Adyar", "Porur",
+        "Mylapore", "Nungambakkam", "Guindy", "Tambaram", "Sholinganallur",
+        "Thiruvanmiyur", "Besant Nagar", "Kilpauk", "Egmore", "Vadapalani",
+        "Koyambedu", "Ambattur", "Perambur", "Chromepet", "Saidapet",
+    ]
 
     # ── Primary key ──────────────────────────────────────────────────────────
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -108,7 +116,7 @@ class User(db.Model):
     # ── Constraints & composite indexes ───────────────────────────────────────
     __table_args__ = (
         db.CheckConstraint(
-            "area IN ('Anna Nagar','T Nagar','Velachery','Adyar','Porur')"
+            "area IN (" + ",".join(f"'{a}'" for a in VALID_AREAS) + ")"
             " OR area IS NULL",
             name="ck_users_valid_area",
         ),

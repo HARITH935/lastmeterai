@@ -168,7 +168,12 @@ export async function getCostSavings(
 
 // ── Area intelligence ─────────────────────────────────────────────────────────
 
-export const VALID_AREAS = ['Anna Nagar', 'T Nagar', 'Velachery', 'Adyar', 'Porur'] as const
+export const VALID_AREAS = [
+  'Anna Nagar', 'T Nagar', 'Velachery', 'Adyar', 'Porur',
+  'Mylapore', 'Nungambakkam', 'Guindy', 'Tambaram', 'Sholinganallur',
+  'Thiruvanmiyur', 'Besant Nagar', 'Kilpauk', 'Egmore', 'Vadapalani',
+  'Koyambedu', 'Ambattur', 'Perambur', 'Chromepet', 'Saidapet',
+] as const
 export type AreaName = typeof VALID_AREAS[number]
 
 export interface AreaIntelligenceResponse {

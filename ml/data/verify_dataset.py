@@ -23,6 +23,9 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
+sys.path.insert(0, str(Path(__file__).parent))
+from generate_dataset import AREA_PARAMS  # single source of truth for the area list
+
 RAW_DIR    = Path(__file__).parent.parent / "data" / "raw"
 TRAIN_PATH = RAW_DIR / "synthetic_orders.csv"
 VAL_PATH   = RAW_DIR / "synthetic_orders_val.csv"
@@ -78,8 +81,8 @@ def verify(df: pd.DataFrame, name: str) -> None:
         df["true_risk_score"].between(0.0, 100.0).all(),
         f"min={df['true_risk_score'].min():.1f} max={df['true_risk_score'].max():.1f}")
 
-    chk("All 5 Chennai areas present",
-        set(df["area"].unique()) == {"Velachery", "Adyar", "T Nagar", "Anna Nagar", "Porur"})
+    chk(f"All {len(AREA_PARAMS)} Chennai areas present",
+        set(df["area"].unique()) == set(AREA_PARAMS.keys()))
 
     chk("All 3 time windows present",
         set(df["time_window"].unique()) == {"morning", "afternoon", "evening"})

@@ -5,8 +5,8 @@ Loads rf_area_time_v1.0.pkl (RandomForestRegressor) trained in A5.
 Predicts delivery failure rate (0–1) for a given area + contextual conditions.
 
 Feature encoding (must match train_area_model.py FEATURES order):
-  area_velachery, area_adyar, area_t_nagar, area_porur  — one-hot, Anna Nagar = ref
-  time_morning, time_evening                             — one-hot, afternoon = ref
+  19 area one-hot columns (all AREAS except Anna Nagar, the reference/baseline
+  category) + time_morning, time_evening — one-hot, afternoon = ref
   is_weekend        — 0/1
   weather_severity  — float [0, 1]
   is_festival_day   — 0/1
@@ -15,10 +15,10 @@ Feature encoding (must match train_area_model.py FEATURES order):
 Graceful fallback: if the model file is absent, all predict_* functions
 return None and callers fall back to SQL-aggregated live failure rates.
 
-Note on accuracy: R²=0.935 is a synthetic self-consistency result, not a
-real-world generalization result (see docs/progress.md Known Issue #3).
-Predictions are appropriate as a stable ranking/coloring lookup but should
-not be presented as validated field accuracy.
+Note on accuracy: R²=0.879 (20-area retrain, 2026-07-13) is a synthetic
+self-consistency result, not a real-world generalization result (see
+docs/progress.md Known Issue #3). Predictions are appropriate as a stable
+ranking/coloring lookup but should not be presented as validated field accuracy.
 """
 
 from __future__ import annotations
@@ -32,15 +32,20 @@ import numpy as np
 
 log = logging.getLogger(__name__)
 
-AREAS = ["Anna Nagar", "T Nagar", "Velachery", "Adyar", "Porur"]
+AREAS = [
+    "Anna Nagar", "T Nagar", "Velachery", "Adyar", "Porur",
+    "Mylapore", "Nungambakkam", "Guindy", "Tambaram", "Sholinganallur",
+    "Thiruvanmiyur", "Besant Nagar", "Kilpauk", "Egmore", "Vadapalani",
+    "Koyambedu", "Ambattur", "Perambur", "Chromepet", "Saidapet",
+]
 TIME_WINDOWS = ["morning", "afternoon", "evening"]
 
+# All areas except Anna Nagar (the one-hot reference/baseline category) —
+# order must match ml/src/training/train_area_model.py's _NONREF_AREAS exactly.
+_NONREF_AREAS = [a for a in AREAS if a != "Anna Nagar"]
+
 # Must match FEATURES list in ml/src/training/train_area_model.py exactly.
-_FEATURE_ORDER = [
-    "area_velachery",
-    "area_adyar",
-    "area_t_nagar",
-    "area_porur",
+_FEATURE_ORDER = [f"area_{a.lower().replace(' ', '_')}" for a in _NONREF_AREAS] + [
     "time_morning",
     "time_evening",
     "is_weekend",
@@ -85,11 +90,8 @@ def _fvec(
     is_festival_day: int,
     is_monsoon_month: int,
 ) -> list[float]:
-    return [
-        int(area == "Velachery"),
-        int(area == "Adyar"),
-        int(area == "T Nagar"),
-        int(area == "Porur"),
+    area_onehot = [int(area == a) for a in _NONREF_AREAS]
+    return area_onehot + [
         int(time_window == "morning"),
         int(time_window == "evening"),
         is_weekend,

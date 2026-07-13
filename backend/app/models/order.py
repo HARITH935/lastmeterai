@@ -37,7 +37,13 @@ class Order(db.Model):
 
     __tablename__ = "orders"
 
-    VALID_AREAS = ["Anna Nagar", "T Nagar", "Velachery", "Adyar", "Porur"]
+    # Must match User.VALID_AREAS exactly.
+    VALID_AREAS = [
+        "Anna Nagar", "T Nagar", "Velachery", "Adyar", "Porur",
+        "Mylapore", "Nungambakkam", "Guindy", "Tambaram", "Sholinganallur",
+        "Thiruvanmiyur", "Besant Nagar", "Kilpauk", "Egmore", "Vadapalani",
+        "Koyambedu", "Ambattur", "Perambur", "Chromepet", "Saidapet",
+    ]
 
     # ── Primary key ──────────────────────────────────────────────────────────
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -144,7 +150,7 @@ class Order(db.Model):
     # ── Constraints & composite indexes ───────────────────────────────────────
     __table_args__ = (
         db.CheckConstraint(
-            "area IN ('Anna Nagar','T Nagar','Velachery','Adyar','Porur')",
+            "area IN (" + ",".join(f"'{a}'" for a in VALID_AREAS) + ")",
             name="ck_orders_valid_area",
         ),
         db.CheckConstraint(
@@ -152,12 +158,14 @@ class Order(db.Model):
             name="ck_orders_payment_non_negative",
         ),
         # Bounding box for Chennai — rejects obviously wrong coordinates.
+        # Widened 2026-07-13 for the 20-area expansion (Tambaram sits at the
+        # southwestern edge, lon 80.10, right at the old boundary).
         db.CheckConstraint(
-            "latitude BETWEEN 12.80 AND 13.25",
+            "latitude BETWEEN 12.85 AND 13.20",
             name="ck_orders_lat_chennai",
         ),
         db.CheckConstraint(
-            "longitude BETWEEN 80.10 AND 80.35",
+            "longitude BETWEEN 80.05 AND 80.35",
             name="ck_orders_lon_chennai",
         ),
         # Single-column indexes

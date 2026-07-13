@@ -7,7 +7,7 @@ Covers:
   3.  Cost-savings: Agent (Adyar) sees only own-area scope; Manager sees all
   4.  Area analytics: valid area returns 200 with full structure
   5.  Customer: no matching address → 404 NO_HISTORY_FOUND
-  6.  Heatmap: exactly 5 zones with required fields; all 5 area names present
+  6.  Heatmap: one zone per AREAS entry with required fields; all area names present
   7.  Role enforcement: Agent blocked (403) on 6 Manager-only endpoints
   8.  Agent can access /cost-savings (200, own-area scope)
   9.  Weather-impact: period=week returns daily_correlation + summary
@@ -29,6 +29,7 @@ logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(mes
 
 from app import create_app
 from app.extensions import limiter
+from app.services.analytics_service import AREAS
 
 app = create_app("development")
 # Test suites log in multiple times per run, which can trip the
@@ -77,7 +78,7 @@ def run():
         }
         check("cards has 6 keys", set(cards.keys()) == expected_cards,
               f"got {set(cards.keys())}")
-        check("active_agents == 5", cards.get("active_agents") == 5,
+        check(f"active_agents == {len(AREAS)}", cards.get("active_agents") == len(AREAS),
               f"got {cards.get('active_agents')}")
 
         trends = dash.get("trends") or {}
@@ -86,7 +87,7 @@ def run():
         rbd  = trends.get("revenue_by_day") or []
 
         check("success_rate_over_time has 7 items", len(srot) == 7, f"got {len(srot)}")
-        check("failure_rate_by_area has 5 items",   len(frba) == 5, f"got {len(frba)}")
+        check(f"failure_rate_by_area has {len(AREAS)} items", len(frba) == len(AREAS), f"got {len(frba)}")
         check("revenue_by_day has 7 items",          len(rbd)  == 7, f"got {len(rbd)}")
 
         if srot:
@@ -96,8 +97,8 @@ def run():
             check("failure_rate_by_area items have area+failure_rate keys",
                   all("area" in item and "failure_rate" in item for item in frba))
             areas_present = {item["area"] for item in frba}
-            check("all 5 areas in failure_rate_by_area",
-                  areas_present == {"Anna Nagar", "T Nagar", "Velachery", "Adyar", "Porur"},
+            check("all areas in failure_rate_by_area",
+                  areas_present == set(AREAS),
                   str(areas_present))
         if rbd:
             check("revenue_by_day items have date+revenue keys",
@@ -131,7 +132,7 @@ def run():
                   str(scores))
 
         area_perf = kpi.get("area_performance") or []
-        check("area_performance has 5 entries", len(area_perf) == 5, f"got {len(area_perf)}")
+        check(f"area_performance has {len(AREAS)} entries", len(area_perf) == len(AREAS), f"got {len(area_perf)}")
 
         wi = kpi.get("weather_impact") or {}
         check("weather_impact has clear_days_success_rate",
@@ -249,7 +250,7 @@ def run():
         hm = r.get_json() or {}
 
         zones = hm.get("zones") or []
-        check("heatmap has exactly 5 zones", len(zones) == 5, f"got {len(zones)}")
+        check(f"heatmap has exactly {len(AREAS)} zones", len(zones) == len(AREAS), f"got {len(zones)}")
 
         if zones:
             zone_fields = {"area", "lat", "lon", "order_count", "failure_rate", "risk_band"}
@@ -257,8 +258,8 @@ def run():
                   all(zone_fields.issubset(set(z.keys())) for z in zones),
                   str([set(z.keys()) for z in zones if not zone_fields.issubset(set(z.keys()))]))
             zone_areas = {z["area"] for z in zones}
-            check("all 5 areas present in heatmap",
-                  zone_areas == {"Anna Nagar", "T Nagar", "Velachery", "Adyar", "Porur"},
+            check("all areas present in heatmap",
+                  zone_areas == set(AREAS),
                   str(zone_areas))
             check("each zone risk_band is valid",
                   all(z["risk_band"] in ("low", "medium", "high") for z in zones))
@@ -267,8 +268,8 @@ def run():
 
         # With time_slot filter
         r = c.get("/api/analytics/heatmap?time_slot=evening", headers=mgr)
-        check("GET /heatmap?time_slot=evening → 200 with 5 zones",
-              r.status_code == 200 and len((r.get_json() or {}).get("zones", [])) == 5)
+        check(f"GET /heatmap?time_slot=evening → 200 with {len(AREAS)} zones",
+              r.status_code == 200 and len((r.get_json() or {}).get("zones", [])) == len(AREAS))
 
         # ── 7. Weather impact ──────────────────────────────────────────────────
         print("\n── 7. Weather impact ──")

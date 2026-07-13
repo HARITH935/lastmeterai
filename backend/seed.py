@@ -3,10 +3,10 @@ LastMeter AI — Seed Script
 ==========================
 Creates the full database schema and populates it with:
   - 1 manager account
-  - 5 agents (one per Chennai area)
-  - 30 orders (6 per agent, mixed statuses)
-  - 30 decisions (one per order, realistic GO/NO-GO distribution)
-  - 5 agent locations
+  - 20 agents (one per Chennai area)
+  - 120 orders (6 per agent, mixed statuses)
+  - 120 decisions (one per order, realistic GO/NO-GO distribution)
+  - 20 agent locations
   - 10 sample notifications
   - 12 audit log entries
   - 2 model_metadata rows (LR + RF, both trained at the same time)
@@ -60,23 +60,59 @@ def hash_pw(plain: str) -> str:
 
 # ── Seed data definitions ─────────────────────────────────────────────────────
 
-AREAS = ["Anna Nagar", "T Nagar", "Velachery", "Adyar", "Porur"]
+AREAS = [
+    "Anna Nagar", "T Nagar", "Velachery", "Adyar", "Porur",
+    "Mylapore", "Nungambakkam", "Guindy", "Tambaram", "Sholinganallur",
+    "Thiruvanmiyur", "Besant Nagar", "Kilpauk", "Egmore", "Vadapalani",
+    "Koyambedu", "Ambattur", "Perambur", "Chromepet", "Saidapet",
+]
 
 # Approximate centroid coordinates for each area (Chennai).
 AREA_COORDS = {
-    "Anna Nagar":  (13.0850, 80.2101),
-    "T Nagar":     (13.0418, 80.2341),
-    "Velachery":   (12.9815, 80.2180),
-    "Adyar":       (13.0063, 80.2574),
-    "Porur":       (13.0358, 80.1567),
+    "Anna Nagar":     (13.0850, 80.2101),
+    "T Nagar":        (13.0418, 80.2341),
+    "Velachery":      (12.9815, 80.2180),
+    "Adyar":          (13.0063, 80.2574),
+    "Porur":          (13.0358, 80.1567),
+    "Mylapore":       (13.0339, 80.2619),
+    "Nungambakkam":   (13.0604, 80.2418),
+    "Guindy":         (13.0067, 80.2206),
+    "Tambaram":       (12.9249, 80.1000),
+    "Sholinganallur": (12.9010, 80.2279),
+    "Thiruvanmiyur":  (12.9830, 80.2594),
+    "Besant Nagar":   (13.0002, 80.2666),
+    "Kilpauk":        (13.0827, 80.2367),
+    "Egmore":         (13.0732, 80.2609),
+    "Vadapalani":     (13.0503, 80.2121),
+    "Koyambedu":      (13.0694, 80.1948),
+    "Ambattur":       (13.1143, 80.1548),
+    "Perambur":       (13.1179, 80.2419),
+    "Chromepet":      (12.9516, 80.1462),
+    "Saidapet":       (13.0212, 80.2219),
 }
 
 AGENTS = [
-    {"username": "ravi.kumar",   "name": "Ravi Kumar",    "area": "Adyar",       "phone": "9876543210"},
-    {"username": "karthik.raj",  "name": "Karthik Raj",   "area": "T Nagar",     "phone": "9876543211"},
-    {"username": "surya.venkat", "name": "Surya Venkat",  "area": "Velachery",   "phone": "9876543212"},
-    {"username": "priya.lakshmi","name": "Priya Lakshmi", "area": "Anna Nagar",  "phone": "9876543213"},
-    {"username": "deepa.mohan",  "name": "Deepa Mohan",   "area": "Porur",       "phone": "9876543214"},
+    {"username": "ravi.kumar",     "name": "Ravi Kumar",         "area": "Adyar",          "phone": "9876543210"},
+    {"username": "karthik.raj",    "name": "Karthik Raj",        "area": "T Nagar",        "phone": "9876543211"},
+    {"username": "surya.venkat",   "name": "Surya Venkat",       "area": "Velachery",      "phone": "9876543212"},
+    {"username": "priya.lakshmi",  "name": "Priya Lakshmi",      "area": "Anna Nagar",     "phone": "9876543213"},
+    {"username": "deepa.mohan",    "name": "Deepa Mohan",        "area": "Porur",          "phone": "9876543214"},
+    # 15 agents added 2026-07-13 — one per newly added area.
+    {"username": "meena.subramaniam", "name": "Meena Subramaniam", "area": "Mylapore",       "phone": "9876543215"},
+    {"username": "arjun.balaji",      "name": "Arjun Balaji",      "area": "Nungambakkam",   "phone": "9876543216"},
+    {"username": "kavya.ramesh",      "name": "Kavya Ramesh",      "area": "Guindy",         "phone": "9876543217"},
+    {"username": "vignesh.kumar",     "name": "Vignesh Kumar",     "area": "Tambaram",       "phone": "9876543218"},
+    {"username": "divya.prakash",     "name": "Divya Prakash",     "area": "Sholinganallur", "phone": "9876543219"},
+    {"username": "sanjay.iyer",       "name": "Sanjay Iyer",       "area": "Thiruvanmiyur",  "phone": "9876543220"},
+    {"username": "lakshmi.narayan",   "name": "Lakshmi Narayan",   "area": "Besant Nagar",   "phone": "9876543221"},
+    {"username": "mohan.das",         "name": "Mohan Das",         "area": "Kilpauk",        "phone": "9876543222"},
+    {"username": "revathi.krishnan",  "name": "Revathi Krishnan",  "area": "Egmore",         "phone": "9876543223"},
+    {"username": "gokul.anand",       "name": "Gokul Anand",       "area": "Vadapalani",     "phone": "9876543224"},
+    {"username": "nithya.selvam",     "name": "Nithya Selvam",     "area": "Koyambedu",      "phone": "9876543225"},
+    {"username": "prasanna.kumar",    "name": "Prasanna Kumar",    "area": "Ambattur",       "phone": "9876543226"},
+    {"username": "aishwarya.ravi",    "name": "Aishwarya Ravi",    "area": "Perambur",       "phone": "9876543227"},
+    {"username": "karthikeyan.murali","name": "Karthikeyan Murali","area": "Chromepet",      "phone": "9876543228"},
+    {"username": "swathi.ganesan",    "name": "Swathi Ganesan",    "area": "Saidapet",       "phone": "9876543229"},
 ]
 
 # 6 orders per agent — varied statuses, package sizes, time windows, risk profiles.
@@ -204,23 +240,25 @@ def seed():
             print(f"  Created agent: {a.username} (id={a.id}) — area={a.area}")
 
         # ── 3. Agent Locations ────────────────────────────────────────────────
-        location_offsets = [0.001, -0.002, 0.003, -0.001, 0.002]
+        # Deterministic small offset per agent (±0.003°, ~±300m) — scales to any
+        # agent count, unlike a fixed-length list indexed by position.
         for i, agent in enumerate(agents):
             base_lat, base_lon = AREA_COORDS[agent.area]
+            offset = 0.001 * (((i * 7) % 5) - 2)  # cycles through -0.002..0.002
             loc = AgentLocation(
                 agent_id=agent.id,
-                latitude=round(base_lat + location_offsets[i], 6),
-                longitude=round(base_lon + location_offsets[i], 6),
+                latitude=round(base_lat + offset, 6),
+                longitude=round(base_lon + offset, 6),
                 area=agent.area,
                 heading=round(45.0 * (i + 1) % 360, 1),
-                speed_kmh=round(18.5 + i * 2.3, 1),
+                speed_kmh=round(15.0 + (i % 8) * 1.8, 1),  # stays in a realistic 15-27 km/h band
                 is_online=True,
                 current_order_id=None,
                 last_updated=utcnow(),
             )
             db.session.add(loc)
         db.session.flush()
-        print("  Created 5 agent locations")
+        print(f"  Created {len(agents)} agent locations")
 
         # ── 4. Orders + Decisions ─────────────────────────────────────────────
         all_orders: list[Order] = []

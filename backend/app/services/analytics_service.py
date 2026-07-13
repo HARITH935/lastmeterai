@@ -40,14 +40,35 @@ AVG_DISTANCE_PER_ORDER_KM = 4.5
 BASELINE_SUCCESS_RATE = 0.73
 
 # ── Area constants ─────────────────────────────────────────────────────────────
-AREAS = ["Anna Nagar", "T Nagar", "Velachery", "Adyar", "Porur"]
+# 20 Chennai areas — must match User.VALID_AREAS exactly.
+AREAS = [
+    "Anna Nagar", "T Nagar", "Velachery", "Adyar", "Porur",
+    "Mylapore", "Nungambakkam", "Guindy", "Tambaram", "Sholinganallur",
+    "Thiruvanmiyur", "Besant Nagar", "Kilpauk", "Egmore", "Vadapalani",
+    "Koyambedu", "Ambattur", "Perambur", "Chromepet", "Saidapet",
+]
 
 AREA_COORDS: dict[str, tuple[float, float]] = {
-    "Anna Nagar": (13.0850, 80.2101),
-    "T Nagar":    (13.0418, 80.2341),
-    "Velachery":  (12.9815, 80.2180),
-    "Adyar":      (13.0063, 80.2574),
-    "Porur":      (13.0358, 80.1567),
+    "Anna Nagar":     (13.0850, 80.2101),
+    "T Nagar":        (13.0418, 80.2341),
+    "Velachery":      (12.9815, 80.2180),
+    "Adyar":          (13.0063, 80.2574),
+    "Porur":          (13.0358, 80.1567),
+    "Mylapore":       (13.0339, 80.2619),
+    "Nungambakkam":   (13.0604, 80.2418),
+    "Guindy":         (13.0067, 80.2206),
+    "Tambaram":       (12.9249, 80.1000),
+    "Sholinganallur": (12.9010, 80.2279),
+    "Thiruvanmiyur":  (12.9830, 80.2594),
+    "Besant Nagar":   (13.0002, 80.2666),
+    "Kilpauk":        (13.0827, 80.2367),
+    "Egmore":         (13.0732, 80.2609),
+    "Vadapalani":     (13.0503, 80.2121),
+    "Koyambedu":      (13.0694, 80.1948),
+    "Ambattur":       (13.1143, 80.1548),
+    "Perambur":       (13.1179, 80.2419),
+    "Chromepet":      (12.9516, 80.1462),
+    "Saidapet":       (13.0212, 80.2219),
 }
 
 VALID_PERIODS = {"today", "week", "month", "all"}

@@ -17,12 +17,19 @@ Dataset:
   historical delivery-day "bucket": a (area, time_window, weather, context)
   combination with its empirically expected failure rate as the target.
   Area baseline failure rates are derived from the A2 per-order dataset
-  distributions confirmed in verify_dataset.py:
-    Velachery  ~47%  |  Adyar ~36%  |  T Nagar ~28%
-    Porur      ~13%  |  Anna Nagar  ~11%
+  distributions confirmed in verify_dataset.py (2026-07-13, 20-area expansion):
+    Velachery ~47%  |  Sholinganallur ~47%  |  Guindy ~43%  |  Saidapet ~39%
+    Egmore ~37%  |  Adyar ~32%  |  Thiruvanmiyur ~32%  |  Nungambakkam ~30%
+    Koyambedu ~29%  |  T Nagar ~29%  |  Mylapore ~25%  |  Perambur ~26%
+    Chromepet ~23%  |  Vadapalani ~23%  |  Tambaram ~21%  |  Ambattur ~22%
+    Kilpauk ~19%  |  Porur ~13%  |  Besant Nagar ~14%  |  Anna Nagar ~12%
 
 Encoding (all numeric — no strings stored in model input):
-  area_velachery, area_adyar, area_t_nagar, area_porur: one-hot (Anna Nagar = ref)
+  area_t_nagar, area_velachery, area_adyar, area_porur, area_mylapore,
+  area_nungambakkam, area_guindy, area_tambaram, area_sholinganallur,
+  area_thiruvanmiyur, area_besant_nagar, area_kilpauk, area_egmore,
+  area_vadapalani, area_koyambedu, area_ambattur, area_perambur,
+  area_chromepet, area_saidapet: one-hot (Anna Nagar = ref)
   time_morning, time_evening: one-hot (afternoon = ref)
   is_weekend:       0/1
   weather_severity: float [0, 1]  (0=clear, 1=severe storm)
@@ -60,17 +67,37 @@ MODEL_VERSION = "v1.0"
 
 # ── Dataset constants ─────────────────────────────────────────────────────────
 
-AREAS = ["Anna Nagar", "T Nagar", "Velachery", "Adyar", "Porur"]
+AREAS = [
+    "Anna Nagar", "T Nagar", "Velachery", "Adyar", "Porur",
+    "Mylapore", "Nungambakkam", "Guindy", "Tambaram", "Sholinganallur",
+    "Thiruvanmiyur", "Besant Nagar", "Kilpauk", "Egmore", "Vadapalani",
+    "Koyambedu", "Ambattur", "Perambur", "Chromepet", "Saidapet",
+]
 TIME_WINDOWS = ["morning", "afternoon", "evening"]
 
-# Baseline failure rates derived from A2 dataset (verify_dataset.py confirmed):
-#   Velachery NO-GO rate 47.2%, Anna Nagar 11.8%, etc.
+# Baseline failure rates derived from the A2 dataset's actual NO-GO rate per
+# area (verify_dataset.py confirmed, 2026-07-13 20-area regeneration).
 AREA_BASE_FAILURE: dict[str, float] = {
-    "Anna Nagar": 0.11,
-    "T Nagar":    0.28,
-    "Velachery":  0.47,
-    "Adyar":      0.36,
-    "Porur":      0.13,
+    "Anna Nagar":     0.120,
+    "T Nagar":        0.286,
+    "Velachery":      0.472,
+    "Adyar":          0.324,
+    "Porur":          0.134,
+    "Mylapore":       0.251,
+    "Nungambakkam":   0.297,
+    "Guindy":         0.427,
+    "Tambaram":       0.212,
+    "Sholinganallur": 0.468,
+    "Thiruvanmiyur":  0.322,
+    "Besant Nagar":   0.135,
+    "Kilpauk":        0.187,
+    "Egmore":         0.365,
+    "Vadapalani":     0.229,
+    "Koyambedu":      0.288,
+    "Ambattur":       0.215,
+    "Perambur":       0.260,
+    "Chromepet":      0.230,
+    "Saidapet":       0.392,
 }
 
 # Time-window additive modifiers (afternoon/morning lower risk; evening harder)
@@ -80,12 +107,20 @@ TIME_MODIFIER: dict[str, float] = {
     "evening":   +0.06,
 }
 
-N_ROWS   = 1_500
+# Scaled 4x (1,500 → 6,000) to hold ~300 rows/area average with 20 areas
+# instead of 5 — matches the original per-area training density.
+N_ROWS   = 6_000
 SEED     = 42
 
 RF_PARAMS = {
-    "n_estimators":   100,
-    "max_depth":      6,
+    "n_estimators":   200,
+    # max_depth was 6, tuned for 4 area one-hot columns. With 19 (20 areas),
+    # a depth-6 tree can't reach/split on most of them — many areas got
+    # importance=0.0 and identical (wrong) predictions when this was still 6.
+    # 16 (with 4,800 training rows — plenty of headroom) reliably
+    # disambiguates all 19 area dummies without every area collapsing onto
+    # a shared prediction.
+    "max_depth":      16,
     "min_samples_leaf": 5,
     "n_jobs":         -1,
     "random_state":   SEED,
@@ -93,12 +128,12 @@ RF_PARAMS = {
 
 MLFLOW_EXPERIMENT = "area_time_failure_rate"
 
-# Feature column names (matches backend encoding expectation)
-FEATURES = [
-    "area_velachery",
-    "area_adyar",
-    "area_t_nagar",
-    "area_porur",
+# All areas except Anna Nagar (the one-hot reference/baseline category).
+_NONREF_AREAS = [a for a in AREAS if a != "Anna Nagar"]
+
+# Feature column names (matches backend encoding expectation in
+# app/ml/area_predictor.py — keep both files' area ordering identical).
+FEATURES = [f"area_{a.lower().replace(' ', '_')}" for a in _NONREF_AREAS] + [
     "time_morning",
     "time_evening",
     "is_weekend",
@@ -159,7 +194,7 @@ def generate_dataset(n: int = N_ROWS, seed: int = SEED) -> pd.DataFrame:
 def encode_features(df: pd.DataFrame) -> pd.DataFrame:
     """Encode categorical columns into numeric features matching FEATURES list."""
     df = df.copy()
-    for area in ["Velachery", "Adyar", "T Nagar", "Porur"]:
+    for area in _NONREF_AREAS:
         col = f"area_{area.lower().replace(' ', '_')}"
         df[col] = (df["area"] == area).astype(int)
     df["time_morning"] = (df["time_window"] == "morning").astype(int)
@@ -257,35 +292,35 @@ def train() -> None:
     print("  Sample predictions (sanity check):")
     print("─" * 64)
     samples = [
-        # (area,         time_window, is_weekend, weather_sev, is_festival, is_monsoon)
-        ("Anna Nagar", "morning",   0, 0.05, 0, 0),   # best-case scenario
-        ("Anna Nagar", "morning",   1, 0.05, 0, 0),   # weekend, still clear
-        ("T Nagar",    "afternoon", 0, 0.15, 0, 0),   # moderate area
-        ("Adyar",      "evening",   0, 0.30, 0, 0),   # higher risk area, evening
-        ("Velachery",  "evening",   0, 0.10, 0, 0),   # high-risk area, clear sky
-        ("Velachery",  "afternoon", 0, 0.70, 0, 1),   # high-risk + heavy rain + monsoon
-        ("Velachery",  "evening",   0, 0.90, 1, 1),   # worst case
+        # (area,           time_window, is_weekend, weather_sev, is_festival, is_monsoon)
+        ("Anna Nagar",     "morning",   0, 0.05, 0, 0),   # best-case scenario
+        ("Anna Nagar",     "morning",   1, 0.05, 0, 0),   # weekend, still clear
+        ("T Nagar",        "afternoon", 0, 0.15, 0, 0),   # moderate area
+        ("Adyar",          "evening",   0, 0.30, 0, 0),   # higher risk area, evening
+        ("Velachery",      "evening",   0, 0.10, 0, 0),   # high-risk area, clear sky
+        ("Velachery",      "afternoon", 0, 0.70, 0, 1),   # high-risk + heavy rain + monsoon
+        ("Velachery",      "evening",   0, 0.90, 1, 1),   # worst case
+        ("Sholinganallur", "evening",   0, 0.10, 0, 0),   # new area — marsh-basin flood risk
+        ("Guindy",         "afternoon", 0, 0.50, 0, 1),   # new area — industrial hub, monsoon
+        ("Koyambedu",      "afternoon", 0, 0.10, 0, 0),   # new area — traffic hub, dry
     ]
-    print(f"  {'Area':<12} {'Time':>10} {'Wknd':>5} {'Wthr':>5} {'Fest':>5}"
+    print(f"  {'Area':<16} {'Time':>10} {'Wknd':>5} {'Wthr':>5} {'Fest':>5}"
           f" {'Mns':>4}  {'Pred':>8}  {'Narrative'}")
-    print("  " + "─" * 70)
+    print("  " + "─" * 74)
     for area, tw, wknd, wthr, fest, mns in samples:
-        row = {
-            "area_velachery": int(area == "Velachery"),
-            "area_adyar":     int(area == "Adyar"),
-            "area_t_nagar":   int(area == "T Nagar"),
-            "area_porur":     int(area == "Porur"),
+        row = {f"area_{a.lower().replace(' ', '_')}": int(area == a) for a in _NONREF_AREAS}
+        row.update({
             "time_morning":   int(tw == "morning"),
             "time_evening":   int(tw == "evening"),
             "is_weekend":     wknd,
             "weather_severity": wthr,
             "is_festival_day":  fest,
             "is_monsoon_month": mns,
-        }
+        })
         fvec = np.array([[row[f] for f in FEATURES]])
         pred = float(rf.predict(fvec)[0])
         band = "LOW" if pred < 0.20 else ("MED" if pred < 0.40 else "HIGH")
-        print(f"  {area:<12} {tw:>10} {wknd:>5} {wthr:>5.2f} {fest:>5} {mns:>4}"
+        print(f"  {area:<16} {tw:>10} {wknd:>5} {wthr:>5.2f} {fest:>5} {mns:>4}"
               f"  {pred:>7.1%}  [{band}]")
 
     print("─" * 64)

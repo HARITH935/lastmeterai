@@ -1,0 +1,26 @@
+{
+  "features": [
+    "area_velachery",
+    "area_adyar",
+    "area_t_nagar",
+    "area_porur",
+    "time_morning",
+    "time_evening",
+    "is_weekend",
+    "weather_severity",
+    "is_festival_day",
+    "is_monsoon_month"
+  ],
+  "importances": {
+    "area_velachery": 0.469558,
+    "area_adyar": 0.246886,
+    "area_t_nagar": 0.13242,
+    "area_porur": 7.5e-05,
+    "time_morning": 0.004991,
+    "time_evening": 0.037719,
+    "is_weekend": 0.001458,
+    "weather_severity": 0.093296,
+    "is_festival_day": 0.00626,
+    "is_monsoon_month": 0.007336
+  }
+}

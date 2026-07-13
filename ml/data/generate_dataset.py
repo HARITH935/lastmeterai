@@ -118,6 +118,130 @@ AREA_PARAMS: dict[str, dict] = {
         "traffic_alpha": 2.20, "traffic_beta": 3.80,
         "area_risk_bias": 0.02,
     },
+
+    # ── 15 areas added 2026-07-13 — individually researched, not generic fill-in.
+    # Sources: MDPI 2024 comparative study of the 2015/2023 Chennai floods;
+    # Tamil Nadu flood-risk zone mapping (livechennai.com, verified.realestate);
+    # Chennai traffic congestion coverage (Maduravoyal/Koyambedu junction,
+    # Ambattur industrial growth, Perambur-Kolathur corridor).
+
+    "Guindy": {
+        # weather ~ Beta(1.20, 2.65) → mean ≈ 0.31  explicitly named "highly
+        # vulnerable" alongside Velachery/Adyar/Saidapet (Adyar & Cooum river banks)
+        "weather_alpha": 1.20, "weather_beta": 2.65,
+        # traffic_base ~ Beta(3.0, 2.8) → mean ≈ 0.52  major industrial/IT hub
+        "traffic_alpha": 3.00, "traffic_beta": 2.80,
+        "area_risk_bias": 0.075,
+    },
+    "Saidapet": {
+        # weather ~ Beta(1.15, 2.55) → mean ≈ 0.31  named flood-prone: floods
+        # when the Adyar river swells beyond carrying capacity
+        "weather_alpha": 1.15, "weather_beta": 2.55,
+        # traffic_base ~ Beta(2.8, 2.9) → mean ≈ 0.49  central corridor, near Guindy/T Nagar
+        "traffic_alpha": 2.80, "traffic_beta": 2.90,
+        "area_risk_bias": 0.072,
+    },
+    "Sholinganallur": {
+        # weather ~ Beta(1.30, 2.15) → mean ≈ 0.38  Pallikaranai marsh basin;
+        # low elevation (5-12m), frequent/prolonged waterlogging — comparable to Velachery
+        "weather_alpha": 1.30, "weather_beta": 2.15,
+        # traffic_base ~ Beta(2.6, 3.0) → mean ≈ 0.46  OMR IT corridor
+        "traffic_alpha": 2.60, "traffic_beta": 3.00,
+        "area_risk_bias": 0.105,
+    },
+    "Thiruvanmiyur": {
+        # weather ~ Beta(1.20, 2.70) → mean ≈ 0.31  coastal (Ennore→Thiruvanmiyur→ECR
+        # strip), low elevation, cyclone/storm-surge exposure
+        "weather_alpha": 1.20, "weather_beta": 2.70,
+        # traffic_base ~ Beta(2.3, 3.2) → mean ≈ 0.42  coastal residential + some commercial
+        "traffic_alpha": 2.30, "traffic_beta": 3.20,
+        "area_risk_bias": 0.08,
+    },
+    "Egmore": {
+        # weather ~ Beta(1.10, 2.85) → mean ≈ 0.28  Cooum belt — canal backflow,
+        # historically flood-prone (railway station area, low-lying)
+        "weather_alpha": 1.10, "weather_beta": 2.85,
+        # traffic_base ~ Beta(2.7, 2.9) → mean ≈ 0.48  central, railway station traffic
+        "traffic_alpha": 2.70, "traffic_beta": 2.90,
+        "area_risk_bias": 0.06,
+    },
+    "Nungambakkam": {
+        # weather ~ Beta(1.00, 3.20) → mean ≈ 0.24  Teynampet zone, Cooum-adjacent
+        "weather_alpha": 1.00, "weather_beta": 3.20,
+        # traffic_base ~ Beta(2.9, 2.7) → mean ≈ 0.52  central, upscale commercial
+        "traffic_alpha": 2.90, "traffic_beta": 2.70,
+        "area_risk_bias": 0.045,
+    },
+    "Mylapore": {
+        # weather ~ Beta(0.95, 3.30) → mean ≈ 0.22  Teynampet zone, near Adyar
+        # river mouth but an older, traditionally better-drained area
+        "weather_alpha": 0.95, "weather_beta": 3.30,
+        # traffic_base ~ Beta(2.6, 2.9) → mean ≈ 0.47  cultural/commercial hub, temple traffic
+        "traffic_alpha": 2.60, "traffic_beta": 2.90,
+        "area_risk_bias": 0.04,
+    },
+    "Tambaram": {
+        # weather ~ Beta(1.00, 3.30) → mean ≈ 0.23  incomplete drainage network
+        # (moderate flood threat, not top-tier)
+        "weather_alpha": 1.00, "weather_beta": 3.30,
+        # traffic_base ~ Beta(2.1, 3.3) → mean ≈ 0.39  far south, suburban, railway junction
+        "traffic_alpha": 2.10, "traffic_beta": 3.30,
+        "area_risk_bias": 0.045,
+    },
+    "Chromepet": {
+        # weather ~ Beta(1.00, 3.25) → mean ≈ 0.24  adjacent to Tambaram /
+        # Pallikaranai basin, similar moderate drainage profile
+        "weather_alpha": 1.00, "weather_beta": 3.25,
+        # traffic_base ~ Beta(2.2, 3.2) → mean ≈ 0.41  suburban with industrial pockets
+        "traffic_alpha": 2.20, "traffic_beta": 3.20,
+        "area_risk_bias": 0.045,
+    },
+    "Perambur": {
+        # weather ~ Beta(0.95, 3.50) → mean ≈ 0.21  near (not in) the Cooum belt
+        # stagnation zone; railway/industrial north Chennai
+        "weather_alpha": 0.95, "weather_beta": 3.50,
+        # traffic_base ~ Beta(2.6, 3.0) → mean ≈ 0.46  Perambur-Kolathur / Inner Ring Road corridor
+        "traffic_alpha": 2.60, "traffic_beta": 3.00,
+        "area_risk_bias": 0.04,
+    },
+    "Besant Nagar": {
+        # weather ~ Beta(0.90, 3.60) → mean ≈ 0.20  coastal but elevated
+        # stretches — "relatively safer", avoided major waterlogging except extreme events
+        "weather_alpha": 0.90, "weather_beta": 3.60,
+        # traffic_base ~ Beta(2.0, 3.6) → mean ≈ 0.36  residential coastal
+        "traffic_alpha": 2.00, "traffic_beta": 3.60,
+        "area_risk_bias": 0.03,
+    },
+    "Vadapalani": {
+        # weather ~ Beta(0.90, 3.70) → mean ≈ 0.20  west-central, moderate
+        "weather_alpha": 0.90, "weather_beta": 3.70,
+        # traffic_base ~ Beta(2.7, 2.9) → mean ≈ 0.48  commercial/film-industry hub, Koyambedu spillover
+        "traffic_alpha": 2.70, "traffic_beta": 2.90,
+        "area_risk_bias": 0.035,
+    },
+    "Koyambedu": {
+        # weather ~ Beta(0.90, 3.80) → mean ≈ 0.19  not flood-flagged
+        "weather_alpha": 0.90, "weather_beta": 3.80,
+        # traffic_base ~ Beta(3.3, 2.4) → mean ≈ 0.58  HIGHEST traffic of all 20 areas:
+        # CMBT bus terminus + wholesale market + Maduravoyal junction spillover
+        "traffic_alpha": 3.30, "traffic_beta": 2.40,
+        "area_risk_bias": 0.03,
+    },
+    "Ambattur": {
+        # weather ~ Beta(0.85, 4.10) → mean ≈ 0.17  not flood-flagged, northwest
+        "weather_alpha": 0.85, "weather_beta": 4.10,
+        # traffic_base ~ Beta(2.8, 2.9) → mean ≈ 0.49  rapid industrial growth area
+        "traffic_alpha": 2.80, "traffic_beta": 2.90,
+        "area_risk_bias": 0.025,
+    },
+    "Kilpauk": {
+        # weather ~ Beta(0.88, 4.00) → mean ≈ 0.18  central-north, established
+        # residential, not flood-flagged — comparable to Anna Nagar
+        "weather_alpha": 0.88, "weather_beta": 4.00,
+        # traffic_base ~ Beta(2.1, 3.4) → mean ≈ 0.38  moderate residential
+        "traffic_alpha": 2.10, "traffic_beta": 3.40,
+        "area_risk_bias": 0.02,
+    },
 }
 
 AREAS = list(AREA_PARAMS.keys())

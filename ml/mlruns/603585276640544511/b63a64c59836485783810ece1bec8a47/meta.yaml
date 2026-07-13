@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/harith/lastmeter%20ai/ml/mlruns/603585276640544511/b63a64c59836485783810ece1bec8a47/artifacts
+end_time: 1783960640339
+entry_point_name: ''
+experiment_id: '603585276640544511'
+lifecycle_stage: active
+run_id: b63a64c59836485783810ece1bec8a47
+run_name: rf_v1.0
+run_uuid: b63a64c59836485783810ece1bec8a47
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1783960638110
+status: 3
+tags: []
+user_id: harith

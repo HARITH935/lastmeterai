@@ -70,11 +70,11 @@ class AgentLocation(db.Model):
     # ── Constraints & indexes ─────────────────────────────────────────────────
     __table_args__ = (
         db.CheckConstraint(
-            "latitude BETWEEN 12.80 AND 13.25",
+            "latitude BETWEEN 12.85 AND 13.20",
             name="ck_al_lat_chennai",
         ),
         db.CheckConstraint(
-            "longitude BETWEEN 80.10 AND 80.35",
+            "longitude BETWEEN 80.05 AND 80.35",
             name="ck_al_lon_chennai",
         ),
         db.CheckConstraint(
