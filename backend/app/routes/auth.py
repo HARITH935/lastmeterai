@@ -8,6 +8,7 @@ Follows the API contract exactly (docs/api/contract.md §1 — Auth).
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
+from app.extensions import limiter
 from app.services import auth_service
 
 bp = Blueprint("auth", __name__, url_prefix="/api/auth")
@@ -21,6 +22,7 @@ def _err(code: str, msg: str, status: int, details: dict | None = None):
 # ── POST /api/auth/login ──────────────────────────────────────────────────────
 
 @bp.post("/login")
+@limiter.limit("5 per minute")
 def login():
     """
     🔓 Public
@@ -82,6 +84,7 @@ def logout():
 # ── POST /api/auth/refresh ────────────────────────────────────────────────────
 
 @bp.post("/refresh")
+@limiter.limit("10 per minute")
 def refresh():
     """
     🔑 Requires refresh token (not access token)

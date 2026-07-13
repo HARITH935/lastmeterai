@@ -28,8 +28,12 @@ import os
 os.environ.setdefault("FLASK_ENV", "development")
 
 from app import create_app
+from app.extensions import limiter
 
 app = create_app("development")
+# Test suites log in multiple times per run, which can trip the
+# production login rate limit (5/min). Disable it for tests only.
+limiter.enabled = False
 
 PASS = "\033[92m✓\033[0m"
 FAIL = "\033[91m✗\033[0m"
