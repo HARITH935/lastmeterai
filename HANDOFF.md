@@ -71,10 +71,16 @@ addressable they are:
    (cited / internal estimate / judgment call), and a sensitivity note showing
    exactly how the headline savings figure moves if `AVG_FAILED_DELIVERY_COST_INR`
    changes. Ranks which constants are weakest-sourced and worth tightening first.
-4. **Synthetic data throughout** (validate when possible) — models train on
-   generated data with no real-world validation. Document the data-generation
-   methodology and why it's representative; if any real delivery data becomes
-   available, validate against it and report the delta.
+4. **Synthetic data throughout** — **documentation DONE**, see
+   `SYNTHETIC_DATA.md`. Important finding: the generator scripts that produced
+   `ml/data/raw/*.csv` don't exist in this repo (never committed — verified via
+   git history) and were reconstructed empirically by analyzing the CSVs
+   directly. Label balance is well-calibrated to a real cited benchmark
+   (RedSeer 2023), but per-area/time-window/package-size distributions are
+   artificially uniform, not representative. **Real-world validation itself is
+   still not possible** — it requires actual delivery outcome data, which
+   doesn't exist yet. `SYNTHETIC_DATA.md` lists the exact validation steps to
+   run once real data arrives.
 5. **Solo-project origin** — *this handoff itself starts fixing that.* Work via
    feature branches + pull requests (not direct commits to `main`) so there's a
    visible collaboration/review trail for evaluators.
