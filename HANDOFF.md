@@ -61,9 +61,8 @@ frontend/src/
 These are the weak points evaluators/judges will press on. Ranked by how
 addressable they are:
 
-1. **No CI/CD** (addressable now) — there's no automated pipeline. Add a GitHub
-   Actions workflow that, on every push/PR, runs the backend smoke tests and the
-   frontend typecheck + build. This is the fastest credibility win.
+1. ~~**No CI/CD**~~ — **DONE.** `.github/workflows/ci.yml` runs backend smoke
+   tests + frontend typecheck/build on every push/PR to main.
 2. **No formal security review** (addressable now) — run a security pass over the
    auth/JWT flow, input validation, CORS (`CORS_ORIGINS` is currently `*` in
    places), and secrets handling. Document findings even if minor.
