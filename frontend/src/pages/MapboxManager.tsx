@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
 import type { OrderListItem } from '../api/orders'
 import type { HeatmapZone } from '../api/analytics'
+import { escapeHtml } from '../lib/escapeHtml'
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN ?? ''
 mapboxgl.accessToken = MAPBOX_TOKEN
@@ -254,10 +255,10 @@ export function MapboxManager({ orders, zones, agentMarkers }: Props) {
         popup.setLngLat((e.features![0].geometry as GeoJSON.Point).coordinates as [number, number])
           .setHTML(
             `<div style="font-size:12px;line-height:1.6;min-width:150px">
-              <strong>${p.order_number}</strong>${p.is_urgent === 'true' || p.is_urgent === true ? ' <span style="color:#EF4444;font-weight:700">⚠</span>' : ''}
-              <br/>${p.customer_name}
-              <br/>${p.area} · <span style="text-transform:capitalize">${p.status}</span>
-              <br/><span style="color:${p.color};font-weight:600;text-transform:capitalize">${p.risk_level} risk</span>
+              <strong>${escapeHtml(p.order_number)}</strong>${p.is_urgent === 'true' || p.is_urgent === true ? ' <span style="color:#EF4444;font-weight:700">⚠</span>' : ''}
+              <br/>${escapeHtml(p.customer_name)}
+              <br/>${escapeHtml(p.area)} · <span style="text-transform:capitalize">${escapeHtml(p.status)}</span>
+              <br/><span style="color:${escapeHtml(p.color)};font-weight:600;text-transform:capitalize">${escapeHtml(p.risk_level)} risk</span>
             </div>`,
           ).addTo(map)
       })
@@ -267,8 +268,8 @@ export function MapboxManager({ orders, zones, agentMarkers }: Props) {
         popup.setLngLat(e.lngLat)
           .setHTML(
             `<div style="font-size:12px;line-height:1.6;min-width:150px">
-              <strong>${p.area}</strong>
-              <br/>Failure rate: <span style="color:${p.color};font-weight:700">${Math.round(p.failure_rate * 100)}%</span>
+              <strong>${escapeHtml(p.area)}</strong>
+              <br/>Failure rate: <span style="color:${escapeHtml(p.color)};font-weight:700">${Math.round(p.failure_rate * 100)}%</span>
               <br/>Live: ${Math.round(p.live_rate * 100)}% · ${p.order_count} orders
             </div>`,
           ).addTo(map)

@@ -2,6 +2,7 @@ import 'mapbox-gl/dist/mapbox-gl.css'
 import { useEffect, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
 import type { OrderListItem, OptimizedRoute } from '../api/orders'
+import { escapeHtml } from '../lib/escapeHtml'
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN ?? ''
 mapboxgl.accessToken = MAPBOX_TOKEN
@@ -272,10 +273,10 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
         popup.setLngLat((e.features![0].geometry as GeoJSON.Point).coordinates as [number, number])
           .setHTML(
             `<div style="font-size:12px;line-height:1.6;min-width:170px">
-              <strong>Stop ${p.seq} — ${p.order_number}</strong>${p.is_urgent === true || p.is_urgent === 'true' ? ' <span style="color:#EF4444;font-weight:700">⚠</span>' : ''}
-              <br/>${p.customer_name}
-              <br/>${p.address}
-              <br/><span style="color:${p.color};font-weight:600">ETA ${fmtEta(p.eta)}</span>
+              <strong>Stop ${escapeHtml(p.seq)} — ${escapeHtml(p.order_number)}</strong>${p.is_urgent === true || p.is_urgent === 'true' ? ' <span style="color:#EF4444;font-weight:700">⚠</span>' : ''}
+              <br/>${escapeHtml(p.customer_name)}
+              <br/>${escapeHtml(p.address)}
+              <br/><span style="color:${escapeHtml(p.color)};font-weight:600">ETA ${escapeHtml(fmtEta(p.eta))}</span>
               <span style="color:#64748b"> (${p.dur} min · ${p.dist} km)</span>
             </div>`,
           ).addTo(map)
