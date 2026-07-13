@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { getKPI, getLeaderboard, type AgentPerf, type LeaderboardAgent } from '../api/analytics'
 import { getAllOrders, type OrderListItem } from '../api/orders'
+import { createAgentAccount } from '../api/agents'
+import { VALID_AREAS } from '../api/analytics'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -348,6 +350,131 @@ function Leaderboard({ period, accessToken }: { period: Period; accessToken: str
   )
 }
 
+// ── Add Agent modal ───────────────────────────────────────────────────────────
+
+function AddAgentModal({
+  accessToken,
+  onClose,
+  onCreated,
+}: {
+  accessToken: string
+  onClose: () => void
+  onCreated: (username: string) => void
+}) {
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [name, setName]         = useState('')
+  const [area, setArea]         = useState<string>(VALID_AREAS[0])
+  const [phone, setPhone]       = useState('')
+  const [saving, setSaving]     = useState(false)
+  const [error, setError]       = useState<string | null>(null)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (saving) return
+    setSaving(true)
+    setError(null)
+    try {
+      const created = await createAgentAccount(accessToken, {
+        username: username.trim(),
+        password,
+        name: name.trim(),
+        area,
+        phone: phone.trim() || undefined,
+      })
+      onCreated(created.username)
+    } catch (err) {
+      setError(extractMsg(err))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-bold text-slate-900">Add Agent</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-lg leading-none">✕</button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div>
+            <label className="text-xs font-semibold text-slate-500">Username</label>
+            <input
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+              required
+              placeholder="e.g. priya.lakshmi"
+              className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-slate-500">Full name</label>
+            <input
+              value={name}
+              onChange={e => setName(e.target.value)}
+              required
+              className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-slate-500">Area</label>
+            <select
+              value={area}
+              onChange={e => setArea(e.target.value)}
+              className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {VALID_AREAS.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-slate-500">Phone (optional)</label>
+            <input
+              value={phone}
+              onChange={e => setPhone(e.target.value)}
+              placeholder="10-digit number"
+              className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-slate-500">Initial password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+              minLength={8}
+              placeholder="At least 8 characters"
+              className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="text-[11px] text-slate-400 mt-1">The agent can change this later from their own Settings.</p>
+          </div>
+
+          {error && <p className="text-xs font-semibold text-red-600">{error}</p>}
+
+          <div className="flex gap-2 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-4 py-2 rounded-lg transition-colors"
+            >
+              {saving ? 'Creating…' : 'Create Agent'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 // ── Main export ────────────────────────────────────────────────────────────────
 
 export function Agents() {
@@ -357,6 +484,8 @@ export function Agents() {
   const [period, setPeriod]               = useState<Period>('week')
   const [sortKey, setSortKey]             = useState<SortKey>('performance_score')
   const [selectedAgent, setSelectedAgent] = useState<AgentPerf | null>(null)
+  const [showAddAgent, setShowAddAgent]   = useState(false)
+  const [addedUsername, setAddedUsername] = useState<string | null>(null)
 
   const [kpiState, setKpiState] = useState<
     | { status: 'loading' }
@@ -434,6 +563,12 @@ export function Agents() {
       <div className="px-4 md:px-6 pt-6 pb-4 flex flex-wrap items-center gap-3 justify-between">
         <h1 className="text-xl font-bold text-slate-900">Agent Management</h1>
         <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setShowAddAgent(true)}
+            className="text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            + Add Agent
+          </button>
           {/* View toggle */}
           <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
             {(['leaderboard', 'cards'] as View[]).map(v => (
@@ -477,6 +612,28 @@ export function Agents() {
           )}
         </div>
       </div>
+
+      {/* Add-agent success confirmation */}
+      {addedUsername && (
+        <div className="mx-4 md:mx-6 mb-4 card border-green-200 bg-green-50 flex items-center justify-between">
+          <p className="text-sm font-semibold text-green-700">
+            ✓ Agent "{addedUsername}" created — they can log in now. New agents appear on this
+            leaderboard once they have order activity.
+          </p>
+          <button onClick={() => setAddedUsername(null)} className="text-green-600 hover:text-green-800 text-lg leading-none">✕</button>
+        </div>
+      )}
+
+      {showAddAgent && (
+        <AddAgentModal
+          accessToken={access_token!}
+          onClose={() => setShowAddAgent(false)}
+          onCreated={(username) => {
+            setShowAddAgent(false)
+            setAddedUsername(username)
+          }}
+        />
+      )}
 
       {/* Leaderboard view */}
       {view === 'leaderboard' && (
