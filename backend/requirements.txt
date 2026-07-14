@@ -13,6 +13,9 @@ eventlet==0.38.2
 
 # Database
 SQLAlchemy==2.0.36
+# Postgres driver (production persistence — see DATABASE_URL in app/config.py).
+# -binary bundles libpq, no system build deps needed on Render.
+psycopg2-binary==2.9.10
 
 # ML inference (.pkl models pre-built — only joblib+numpy+sklearn needed at runtime)
 scikit-learn==1.6.1

@@ -1,11 +1,20 @@
+databases:
+  # Free-tier Postgres for persistence across deploys. seed.py now skips
+  # seeding if the DB already has data (see seed.py docstring), so this
+  # combination is what actually makes data survive a deploy — Postgres
+  # alone isn't enough if seed.py still unconditionally wiped it.
+  - name: lastmeter-ai-db
+    plan: free
+
 services:
   - type: web
     name: lastmeter-ai-backend
     runtime: python
     rootDir: backend
     buildCommand: pip install -r requirements.txt
-    # Auto-seed on every deploy (Option A: ephemeral SQLite).
-    # Database resets on each restart but always has demo data.
+    # seed.py is safe to run on every deploy now — it only seeds an empty
+    # database, never touches one that already has data (manual agents,
+    # order status changes, etc. all persist across deploys).
     startCommand: python seed.py && gunicorn -k gthread -w 1 --threads 4 --bind 0.0.0.0:$PORT run:app
     envVars:
       - key: FLASK_ENV
@@ -14,9 +23,14 @@ services:
         generateValue: true
       - key: JWT_SECRET_KEY
         generateValue: true
-      # SQLite path — Flask places this under backend/instance/lastmeter.db
+      # Auto-wired to the lastmeter-ai-db Postgres instance above (new
+      # provisions only — the existing live service needs this set manually
+      # in the Render dashboard: Environment → DATABASE_URL → paste the
+      # Postgres instance's Internal Database URL, then redeploy).
       - key: DATABASE_URL
-        value: sqlite:///lastmeter.db
+        fromDatabase:
+          name: lastmeter-ai-db
+          property: connectionString
       # Pinned to the live Vercel frontend. This only sets the value on first
       # provisioning — if the service already exists, update CORS_ORIGINS in
       # the Render dashboard directly (this file won't retroactively change it).

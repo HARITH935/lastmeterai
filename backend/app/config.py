@@ -5,6 +5,17 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def _normalize_db_url(url: str) -> str:
+    """
+    Render (like Heroku) hands out DATABASE_URL as postgres://, but
+    SQLAlchemy 1.4+/2.0 requires the postgresql:// scheme — connecting with
+    the old scheme raises NoSuchModuleError at startup.
+    """
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql://", 1)
+    return url
+
+
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "change-me-in-production")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -36,7 +47,11 @@ class DevelopmentConfig(Config):
 
 class ProductionConfig(Config):
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "sqlite:///lastmeter.db")
+    # Set DATABASE_URL to a Postgres connection string for persistence across
+    # deploys — falls back to ephemeral SQLite (wiped on every deploy) if unset.
+    SQLALCHEMY_DATABASE_URI = _normalize_db_url(
+        os.environ.get("DATABASE_URL", "sqlite:///lastmeter.db")
+    )
     SQLALCHEMY_ECHO = False
 
 

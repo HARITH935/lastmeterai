@@ -16,9 +16,12 @@ Run:
     cd backend
     python seed.py
 
-Idempotent: drops and recreates all tables on each run (dev only).
+Skips seeding if the database already has data (safe to run on every deploy
+against a persistent database — see seed() docstring). Pass --force to
+drop and reseed unconditionally.
 """
 
+import argparse
 import os
 import random
 import sys
@@ -198,8 +201,24 @@ def make_decision(order: Order, seq: int) -> Decision:
 
 # ── Main seeding function ──────────────────────────────────────────────────────
 
-def seed():
+def seed(force: bool = False):
+    """
+    force=False (default — what render.yaml's startCommand runs on every
+    deploy): if the database already has data, do nothing. This is what makes
+    persistence (DATABASE_URL pointing at Postgres) actually work — without
+    this guard, every deploy would drop_all() and wipe real data regardless
+    of which database backend is configured.
+
+    force=True (`python seed.py --force`): always drop and reseed, even if
+    data exists. Use this to intentionally reset back to the demo dataset.
+    """
     with app.app_context():
+        db.create_all()  # no-op if tables already exist; creates them on a fresh DB
+
+        if not force and User.query.first() is not None:
+            print("Database already has data — skipping seed (use --force to reset).")
+            return
+
         print("Dropping existing tables …")
         db.drop_all()
         print("Creating tables …")
@@ -629,4 +648,8 @@ def seed():
 
 
 if __name__ == "__main__":
-    seed()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--force", action="store_true",
+                         help="Drop and reseed even if the database already has data.")
+    args = parser.parse_args()
+    seed(force=args.force)

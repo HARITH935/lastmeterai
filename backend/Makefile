@@ -35,9 +35,14 @@ dev:
 	FLASK_ENV=development python run.py
 
 # ── Seed ──────────────────────────────────────────────────────────────────────
+# seed: safe to run anytime — skips if the DB already has data.
+# reseed: forces a full drop + reset back to the demo dataset.
 
 seed:
 	python seed.py
+
+reseed:
+	python seed.py --force
 
 # ── Migrations ────────────────────────────────────────────────────────────────
 

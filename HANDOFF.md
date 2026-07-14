@@ -9,7 +9,8 @@ productive fast.
 **Backend** (Python 3.13, from `backend/`):
 ```bash
 pip install -r requirements.txt
-python seed.py          # creates SQLite DB with demo data
+python seed.py          # creates demo data — safe to re-run, skips if DB already has data
+python seed.py --force  # force a full reset back to the demo dataset
 python run.py           # serves on http://localhost:5001
 ```
 
