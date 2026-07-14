@@ -144,6 +144,10 @@ def _validate_agent_assignment(area: str, agent_id: int | None) -> User | None:
     agent = db.session.get(User, agent_id)
     if not agent or not agent.is_agent:
         raise ValueError("AGENT_NOT_FOUND")
+    if not agent.is_active:
+        raise ValueError(
+            f"Agent {agent.username!r} is deactivated and cannot be assigned new orders."
+        )
     if agent.area != area:
         raise AreaMismatch(
             f"Agent {agent.username!r} is assigned to {agent.area!r},"

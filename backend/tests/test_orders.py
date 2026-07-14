@@ -7,6 +7,7 @@ Covers:
   2b. T Nagar agent blocked from Adyar order → 403 FORBIDDEN
   2c. Agent's list contains only their area
   3.  area_mismatch on agent_id → 400 AREA_MISMATCH
+  3b. Reassigning to a deactivated agent → 400 (blocked, not silently allowed)
   4a. pending → delivered rejected → 400 INVALID_TRANSITION
   4b. pending → postponed accepted → 200
   4c. in_transit → delivered accepted → 200
@@ -20,6 +21,7 @@ Run from backend/:
 """
 
 import sys
+import uuid
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -115,6 +117,21 @@ def run():
         check("POST with wrong-area agent → 400 AREA_MISMATCH",
               r.status_code == 400 and r.get_json().get("error") == "AREA_MISMATCH",
               r.data[:200])
+
+        print("\n── 3b. Reassign to deactivated agent ──")
+        throwaway_uname = f"throwaway_{uuid.uuid4().hex[:8]}"
+        r = c.post("/api/agents", json={
+            "username": throwaway_uname, "password": "testpass123",
+            "name": "Throwaway Agent", "area": "Adyar",
+        }, headers=mgr)
+        throwaway_id = r.get_json().get("id")
+        r = c.patch(f"/api/agents/{throwaway_id}", json={"is_active": False}, headers=mgr)
+        check("deactivate throwaway agent → 200", r.status_code == 200, r.data[:200])
+        r = c.put(f"/api/orders/{order_id}", json={"agent_id": throwaway_id}, headers=mgr)
+        check("PUT reassign to deactivated agent → 400", r.status_code == 400, r.data[:250])
+        check("error mentions deactivated",
+              "deactivat" in (r.get_json() or {}).get("message", "").lower(),
+              r.data[:250])
 
         print("\n── 4. Status transitions ──")
 

@@ -720,8 +720,10 @@ export function OrderDetail() {
         </div>
       )}
 
-      {/* Smart Reassign (manager only, failed orders) */}
-      {isManager && order.status === 'failed' && (
+      {/* Smart Reassign (manager only) — failed orders, or active orders that
+          still need reassigning (e.g. moving work off an agent being
+          deactivated). The backend already supports this for any status. */}
+      {isManager && (order.status === 'failed' || order.status === 'pending' || order.status === 'in_transit') && (
         <ReassignPanel
           orderId={order.id}
           accessToken={access_token!}
