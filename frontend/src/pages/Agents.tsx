@@ -1,15 +1,15 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { getKPI, getLeaderboard, type AgentPerf, type LeaderboardAgent } from '../api/analytics'
 import { getAllOrders, type OrderListItem } from '../api/orders'
-import { createAgentAccount } from '../api/agents'
+import { createAgentAccount, listAgentAccounts, setAgentActive, type AgentAccount } from '../api/agents'
 import { VALID_AREAS } from '../api/analytics'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 type Period  = 'week' | 'month'
 type SortKey = 'performance_score' | 'success_rate' | 'area' | 'agent_name'
-type View    = 'cards' | 'leaderboard'
+type View    = 'cards' | 'leaderboard' | 'accounts'
 
 type OrderFetchState =
   | { status: 'idle' }
@@ -350,6 +350,118 @@ function Leaderboard({ period, accessToken }: { period: Period; accessToken: str
   )
 }
 
+// ── Accounts view (full roster — includes zero-order agents; deactivate/reactivate) ──
+
+function AccountsView({ accessToken }: { accessToken: string }) {
+  const [state, setState] = useState<
+    | { status: 'loading' }
+    | { status: 'error'; message: string }
+    | { status: 'success'; agents: AgentAccount[] }
+  >({ status: 'loading' })
+  const [busyId, setBusyId] = useState<number | null>(null)
+  const [rowError, setRowError] = useState<{ id: number; message: string } | null>(null)
+
+  function load() {
+    setState({ status: 'loading' })
+    listAgentAccounts(accessToken)
+      .then(agents => setState({ status: 'success', agents }))
+      .catch((err: unknown) => setState({ status: 'error', message: extractMsg(err) }))
+  }
+
+  useEffect(() => { load() }, [])
+
+  async function toggle(agent: AgentAccount) {
+    setBusyId(agent.id)
+    setRowError(null)
+    try {
+      await setAgentActive(accessToken, agent.id, !agent.is_active)
+      load()
+    } catch (err) {
+      setRowError({ id: agent.id, message: extractMsg(err) })
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  if (state.status === 'loading') return <AgentsSkeleton />
+  if (state.status === 'error') {
+    return (
+      <div className="p-6">
+        <div className="card border-red-200 bg-red-50">
+          <p className="text-sm font-semibold text-red-600">Failed to load agent accounts</p>
+          <p className="text-xs text-red-500 mt-1">{state.message}</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-4 md:p-6">
+      <div className="card overflow-hidden p-0">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-100">
+                {['Agent', 'Username', 'Area', 'Phone', 'Status', 'Created', ''].map(h => (
+                  <th key={h} className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-3 whitespace-nowrap">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {state.agents.map(a => (
+                <Fragment key={a.id}>
+                  <tr className="border-b border-slate-50 last:border-0">
+                    <td className="px-4 py-3 font-medium text-slate-800 whitespace-nowrap">{a.name}</td>
+                    <td className="px-4 py-3 text-slate-500 whitespace-nowrap font-mono text-xs">{a.username}</td>
+                    <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{a.area}</td>
+                    <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{a.phone ?? '—'}</td>
+                    <td className="px-4 py-3">
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                        a.is_active ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-500'
+                      }`}>
+                        {a.is_active ? 'Active' : 'Deactivated'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">
+                      {new Date(a.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        onClick={() => toggle(a)}
+                        disabled={busyId === a.id}
+                        className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 ${
+                          a.is_active
+                            ? 'text-red-600 bg-red-50 hover:bg-red-100'
+                            : 'text-green-700 bg-green-50 hover:bg-green-100'
+                        }`}
+                      >
+                        {busyId === a.id ? '…' : a.is_active ? 'Deactivate' : 'Reactivate'}
+                      </button>
+                    </td>
+                  </tr>
+                  {rowError?.id === a.id && (
+                    <tr>
+                      <td colSpan={7} className="px-4 pb-3 -mt-2">
+                        <p className="text-xs font-semibold text-red-600">{rowError.message}</p>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <p className="text-xs text-slate-400 mt-3">
+        Deactivating blocks login but preserves the agent's full order/decision history.
+        Agents with pending or in-transit orders must be reassigned before deactivating.
+      </p>
+    </div>
+  )
+}
+
 // ── Add Agent modal ───────────────────────────────────────────────────────────
 
 function AddAgentModal({
@@ -571,7 +683,7 @@ export function Agents() {
           </button>
           {/* View toggle */}
           <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
-            {(['leaderboard', 'cards'] as View[]).map(v => (
+            {(['leaderboard', 'cards', 'accounts'] as View[]).map(v => (
               <button
                 key={v}
                 onClick={() => setView(v)}
@@ -579,7 +691,7 @@ export function Agents() {
                   view === v ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
-                {v === 'leaderboard' ? '🏆 Leaderboard' : 'Cards'}
+                {v === 'leaderboard' ? '🏆 Leaderboard' : v === 'cards' ? 'Cards' : 'Accounts'}
               </button>
             ))}
           </div>
@@ -617,8 +729,8 @@ export function Agents() {
       {addedUsername && (
         <div className="mx-4 md:mx-6 mb-4 card border-green-200 bg-green-50 flex items-center justify-between">
           <p className="text-sm font-semibold text-green-700">
-            ✓ Agent "{addedUsername}" created — they can log in now. New agents appear on this
-            leaderboard once they have order activity.
+            ✓ Agent "{addedUsername}" created — they can log in now. They'll appear on the
+            Leaderboard/Cards views once they have order activity; this Accounts tab shows them right away.
           </p>
           <button onClick={() => setAddedUsername(null)} className="text-green-600 hover:text-green-800 text-lg leading-none">✕</button>
         </div>
@@ -631,6 +743,7 @@ export function Agents() {
           onCreated={(username) => {
             setShowAddAgent(false)
             setAddedUsername(username)
+            setView('accounts')
           }}
         />
       )}
@@ -638,6 +751,11 @@ export function Agents() {
       {/* Leaderboard view */}
       {view === 'leaderboard' && (
         <Leaderboard period={period} accessToken={access_token!} />
+      )}
+
+      {/* Accounts view — full roster, deactivate/reactivate */}
+      {view === 'accounts' && (
+        <AccountsView accessToken={access_token!} />
       )}
 
       {/* Cards view */}

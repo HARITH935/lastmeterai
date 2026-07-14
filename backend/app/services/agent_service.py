@@ -10,7 +10,8 @@ own password later via the existing auth_service.change_password() flow.
 from __future__ import annotations
 
 from app.extensions import db, bcrypt
-from app.models import User, AuditLog, AuditAction, EntityType
+from app.models import User, Order, AuditLog, AuditAction, EntityType
+from app.models.order import OrderStatus
 from app.models.user import UserRole
 
 
@@ -86,6 +87,60 @@ def create_agent(
         entity_id=agent.id,
         action=AuditAction.AGENT_CREATED,
         description=f"Agent {agent.name} ({agent.username}) created for {area}",
+        actor_id=int(manager_id),
+    )
+    db.session.commit()
+
+    return agent.to_public_dict()
+
+
+def set_agent_active(manager_id: str, agent_id: int, is_active: bool) -> dict:
+    """
+    Deactivate or reactivate an agent account.
+
+    Deactivating is a soft-delete, not a row deletion: it preserves the
+    agent's order/decision/rating history (Order.agent_id → SET NULL only
+    fires on an actual row delete, which we deliberately never do) and just
+    blocks them from logging in (auth_service.login checks is_active).
+
+    Blocks deactivation while the agent has PENDING or IN_TRANSIT orders —
+    deactivating them would leave live deliveries with an unreachable agent.
+    Reassign those orders first (existing Smart Reassignment flow), then
+    deactivate. No such restriction on reactivating.
+
+    Raises ValueError with a safe, user-facing message on failure.
+    """
+    agent = db.session.get(User, agent_id)
+    if not agent or agent.role != UserRole.AGENT:
+        raise ValueError("Agent not found.")
+
+    if agent.is_active == is_active:
+        return agent.to_public_dict()  # already in the requested state — no-op
+
+    if not is_active:
+        active_count = (
+            db.session.query(Order)
+            .filter(
+                Order.agent_id == agent_id,
+                Order.status.in_([OrderStatus.PENDING, OrderStatus.IN_TRANSIT]),
+            )
+            .count()
+        )
+        if active_count:
+            raise ValueError(
+                f"{agent.name} has {active_count} active order(s) (pending/in transit). "
+                "Reassign them to another agent before deactivating."
+            )
+
+    agent.is_active = is_active
+    db.session.flush()
+
+    AuditLog.log(
+        entity_type=EntityType.AGENT,
+        entity_id=agent.id,
+        action=AuditAction.AGENT_DEACTIVATED if not is_active else AuditAction.AGENT_UPDATED,
+        description=f"Agent {agent.name} ({agent.username}) "
+                     f"{'deactivated' if not is_active else 'reactivated'}",
         actor_id=int(manager_id),
     )
     db.session.commit()

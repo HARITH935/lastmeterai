@@ -69,3 +69,33 @@ def create_agent():
         return _err("VALIDATION_ERROR", str(exc), 400)
 
     return jsonify(agent), 201
+
+
+# ── PATCH /api/agents/<id> ────────────────────────────────────────────────────
+# Deactivate (is_active: false) or reactivate (is_active: true) an agent.
+# Soft-delete only — see agent_service.set_agent_active for why.
+
+@bp.patch("/<int:agent_id>")
+@jwt_required()
+def set_agent_active(agent_id: int):
+    user = _current_user()
+    if err := _require_manager(user):
+        return err
+
+    body = request.get_json(silent=True) or {}
+    if "is_active" not in body or not isinstance(body["is_active"], bool):
+        return _err("VALIDATION_ERROR", "is_active (boolean) is required.", 400)
+
+    try:
+        agent = agent_service.set_agent_active(
+            manager_id=get_jwt_identity(),
+            agent_id=agent_id,
+            is_active=body["is_active"],
+        )
+    except ValueError as exc:
+        msg = str(exc)
+        code = "NOT_FOUND" if "not found" in msg.lower() else "VALIDATION_ERROR"
+        status = 404 if code == "NOT_FOUND" else 400
+        return _err(code, msg, status)
+
+    return jsonify(agent), 200

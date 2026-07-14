@@ -12,6 +12,12 @@ Covers:
   8.  Short password → 400 VALIDATION_ERROR
   9.  POST /api/agents (agent role) → 403 FORBIDDEN
   10. Missing auth → 401
+  11. PATCH /api/agents/<id> {is_active: false} → 200, deactivates
+  12. Deactivated agent's own login → 403 (blocked, not deleted)
+  13. PATCH {is_active: true} → 200, reactivate; agent can log in again
+  14. Deactivating an agent with PENDING/IN_TRANSIT orders → 400 (blocked)
+  15. PATCH unknown agent id → 404
+  16. Agent role forbidden from PATCH; missing is_active → 400
 
 Run from backend/:
     python3 tests/test_agents.py
@@ -57,6 +63,9 @@ def run():
 
         def post(path, token, body):
             return c.post(path, json=body, headers={"Authorization": f"Bearer {token}"})
+
+        def patch(path, token, body):
+            return c.patch(path, json=body, headers={"Authorization": f"Bearer {token}"})
 
         mgr_token   = login("manager", "manager123")
         agent_token = login("ravi.kumar", "agent123")
@@ -125,6 +134,46 @@ def run():
         print("\n── 10. No auth ──")
         r = c.get("/api/agents")
         check("missing auth → 401", r.status_code == 401, r.data[:120])
+
+        # ── 11. Deactivate (no active orders) ───────────────────────────────────
+        print("\n── 11. Deactivate agent ──")
+        agent_id = created["id"]
+        r = patch(f"/api/agents/{agent_id}", mgr_token, {"is_active": False})
+        check("PATCH deactivate → 200", r.status_code == 200, r.data[:200])
+        check("is_active is False", (r.get_json() or {}).get("is_active") is False)
+
+        # ── 12. Deactivated agent can no longer log in ──────────────────────────
+        print("\n── 12. Deactivated agent blocked from login ──")
+        r = c.post("/api/auth/login", json={"username": uname, "password": "testpass123"})
+        check("deactivated agent login → 403", r.status_code == 403, r.data[:200])
+
+        # ── 13. Reactivate ───────────────────────────────────────────────────────
+        print("\n── 13. Reactivate agent ──")
+        r = patch(f"/api/agents/{agent_id}", mgr_token, {"is_active": True})
+        check("PATCH reactivate → 200", r.status_code == 200, r.data[:200])
+        check("is_active is True", (r.get_json() or {}).get("is_active") is True)
+        r = c.post("/api/auth/login", json={"username": uname, "password": "testpass123"})
+        check("reactivated agent can log in again → 200", r.status_code == 200, r.data[:200])
+
+        # ── 14. Blocked while agent has active orders ───────────────────────────
+        print("\n── 14. Blocked by active orders ──")
+        # ravi.kumar (seeded) always has PENDING/IN_TRANSIT orders per seed.py.
+        r = get("/api/agents", mgr_token)
+        ravi = next(a for a in (r.get_json() or {}).get("agents") or [] if a["username"] == "ravi.kumar")
+        r = patch(f"/api/agents/{ravi['id']}", mgr_token, {"is_active": False})
+        check("deactivate agent with active orders → 400", r.status_code == 400, r.data[:250])
+
+        # ── 15. Not found ────────────────────────────────────────────────────────
+        print("\n── 15. Not found ──")
+        r = patch("/api/agents/999999", mgr_token, {"is_active": False})
+        check("deactivate unknown id → 404", r.status_code == 404, r.data[:120])
+
+        # ── 16. Role guard + validation ─────────────────────────────────────────
+        print("\n── 16. Role guard + validation ──")
+        r = patch(f"/api/agents/{agent_id}", agent_token, {"is_active": False})
+        check("agent → 403", r.status_code == 403, r.data[:120])
+        r = patch(f"/api/agents/{agent_id}", mgr_token, {})
+        check("missing is_active → 400", r.status_code == 400, r.data[:120])
 
     print("\n" + "─" * 50)
     if _failures:
