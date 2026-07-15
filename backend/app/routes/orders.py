@@ -277,10 +277,18 @@ def reassign_suggestion(order_id: int):
 
     from sqlalchemy import func
 
-    # Score every active agent
+    # Score active agents based in this order's area — cross-area agents are
+    # never valid candidates (update_order's _validate_agent_assignment
+    # rejects any agent whose area != order.area), and the currently-assigned
+    # agent isn't a useful "suggestion" for reassigning away from themselves.
     agents = (
         db.session.query(User)
-        .filter(User.role == UserRole.AGENT, User.is_active == True)  # noqa: E712
+        .filter(
+            User.role == UserRole.AGENT,
+            User.is_active == True,  # noqa: E712
+            User.area == order.area,
+            User.id != order.agent_id,
+        )
         .all()
     )
 

@@ -15,6 +15,10 @@ Covers:
   6.  Agent cannot create order → 403 FORBIDDEN
   7.  Manager can PUT (update) order fields
   8.  DELETE cascades decisions → order gone, 404 on re-fetch
+  9.  Reassign suggestion: excludes the order's current agent, only
+      suggests same-area agents (cross-area suggestions always failed
+      assignment before this fix), and the top suggestion is always
+      actually assignable
 
 Run from backend/:
     python3 tests/test_orders.py
@@ -228,6 +232,31 @@ def run():
                   isinstance(d["data"][0].get("top_factors"), list) and
                   all("factor" in f for f in d["data"][0]["top_factors"]))
             check("8c. pagination present", "pagination" in d)
+
+        print("\n── 9. Reassign suggestion (area-scoped, excludes current agent) ──")
+        r = c.get("/api/orders?area=T Nagar", headers=mgr)
+        tnagar_orders = (r.get_json() or {}).get("data", [])
+        active_order = next(
+            (o for o in tnagar_orders if o["status"] in ("pending", "in_transit")), None
+        )
+        if active_order:
+            r = c.get(f"/api/orders/{active_order['id']}/reassign-suggestion", headers=mgr)
+            check("GET reassign-suggestion → 200", r.status_code == 200, r.data[:200])
+            suggestions = (r.get_json() or {}).get("suggestions", [])
+            check("9a. current agent excluded from suggestions",
+                  not any(s["agent_id"] == active_order["agent_id"] for s in suggestions),
+                  str([s["agent_name"] for s in suggestions]))
+            check("9b. all suggestions are in the order's area",
+                  all(s["area"] == "T Nagar" for s in suggestions),
+                  str([(s["agent_name"], s["area"]) for s in suggestions]))
+            # A suggestion must always be a valid, assignable candidate — no
+            # AREA_MISMATCH when actually assigning the top pick.
+            if suggestions:
+                top = suggestions[0]
+                r = c.put(f"/api/orders/{active_order['id']}",
+                          json={"agent_id": top["agent_id"]}, headers=mgr)
+                check("9c. assigning top suggestion succeeds (no AREA_MISMATCH)",
+                      r.status_code == 200, r.data[:200])
 
         # Summary
         print(f"\n{'═' * 50}")
