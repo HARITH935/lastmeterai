@@ -2,7 +2,7 @@ import { Fragment, useEffect, useState, type KeyboardEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import {
-  getAllOrders, getAgentOrders, updateOrderStatus, bulkCreateOrders,
+  getAllOrders, getAgentOrders, updateOrderStatus, bulkCreateOrders, createOrder,
   type OrderListItem, type OrderListResponse, type BulkCreateResponse,
 } from '../api/orders'
 import { VALID_AREAS as AREAS } from '../api/analytics'
@@ -11,6 +11,32 @@ import { VALID_AREAS as AREAS } from '../api/analytics'
 
 const STATUSES   = ['pending', 'in_transit', 'delivered', 'failed', 'postponed']
 const RISK_LEVELS = ['low', 'medium', 'high']
+
+// Area centroid coordinates — auto-fills lat/lon on manual entry so a manager
+// doesn't need to know exact GPS coordinates. Must match backend
+// analytics_service.AREA_COORDS exactly.
+const AREA_COORDS: Record<string, [number, number]> = {
+  'Anna Nagar':     [13.0850, 80.2101],
+  'T Nagar':        [13.0418, 80.2341],
+  'Velachery':      [12.9815, 80.2180],
+  'Adyar':          [13.0063, 80.2574],
+  'Porur':          [13.0358, 80.1567],
+  'Mylapore':       [13.0339, 80.2619],
+  'Nungambakkam':   [13.0604, 80.2418],
+  'Guindy':         [13.0067, 80.2206],
+  'Tambaram':       [12.9249, 80.1000],
+  'Sholinganallur': [12.9010, 80.2279],
+  'Thiruvanmiyur':  [12.9830, 80.2594],
+  'Besant Nagar':   [13.0002, 80.2666],
+  'Kilpauk':        [13.0827, 80.2367],
+  'Egmore':         [13.0732, 80.2609],
+  'Vadapalani':     [13.0503, 80.2121],
+  'Koyambedu':      [13.0694, 80.1948],
+  'Ambattur':       [13.1143, 80.1548],
+  'Perambur':       [13.1179, 80.2419],
+  'Chromepet':      [12.9516, 80.1462],
+  'Saidapet':       [13.0212, 80.2219],
+}
 
 const STATUS_BADGE: Record<string, string> = {
   pending:    'bg-amber-50 text-amber-700',
@@ -106,6 +132,155 @@ function ErrorCard({ message }: { message: string }) {
       <div className="card border-red-200 bg-red-50">
         <p className="text-sm font-semibold text-red-600">Failed to load orders</p>
         <p className="text-xs text-red-500 mt-1">{message}</p>
+      </div>
+    </div>
+  )
+}
+
+// ── Manual order entry ────────────────────────────────────────────────────────
+
+function CreateOrderModal({
+  accessToken,
+  onClose,
+  onSuccess,
+}: {
+  accessToken: string
+  onClose: () => void
+  onSuccess: () => void
+}) {
+  const [customerName, setCustomerName]       = useState('')
+  const [customerPhone, setCustomerPhone]     = useState('')
+  const [customerAddress, setCustomerAddress] = useState('')
+  const [area, setArea]                       = useState<string>(AREAS[0])
+  const [residenceType, setResidenceType]     = useState('apartment')
+  const [packageSize, setPackageSize]         = useState('medium')
+  const [timeWindow, setTimeWindow]           = useState('morning')
+  const [deadline, setDeadline]               = useState('')
+  const [paymentAmount, setPaymentAmount]     = useState('')
+  const [saving, setSaving]                   = useState(false)
+  const [error, setError]                     = useState<string | null>(null)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (saving) return
+    setSaving(true)
+    setError(null)
+    try {
+      const [lat, lon] = AREA_COORDS[area] ?? [13.0827, 80.2707]
+      await createOrder(accessToken, {
+        customer_name: customerName.trim(),
+        customer_phone: customerPhone.trim() || null,
+        customer_address: customerAddress.trim(),
+        area,
+        latitude: lat,
+        longitude: lon,
+        residence_type: residenceType,
+        package_size: packageSize,
+        time_window: timeWindow,
+        deadline: new Date(deadline).toISOString(),
+        payment_amount: Number(paymentAmount),
+      })
+      onSuccess()
+    } catch (err) {
+      setError(extractMsg(err, 'Failed to create order.'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const selectCls = "w-full text-sm border border-slate-200 rounded-lg px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+  const labelCls  = "text-xs font-semibold text-slate-500"
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-5 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-bold text-slate-900">Add Order</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-lg leading-none">✕</button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div>
+            <label className={labelCls}>Customer name</label>
+            <input value={customerName} onChange={e => setCustomerName(e.target.value)} required className={selectCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Phone (optional)</label>
+            <input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="10-digit number" className={selectCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Address</label>
+            <input value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} required className={selectCls} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelCls}>Area</label>
+              <select value={area} onChange={e => setArea(e.target.value)} className={selectCls}>
+                {AREAS.map(a => <option key={a} value={a}>{a}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={labelCls}>Residence</label>
+              <select value={residenceType} onChange={e => setResidenceType(e.target.value)} className={selectCls}>
+                <option value="apartment">Apartment</option>
+                <option value="independent">Independent</option>
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelCls}>Package size</label>
+              <select value={packageSize} onChange={e => setPackageSize(e.target.value)} className={selectCls}>
+                <option value="small">Small</option>
+                <option value="medium">Medium</option>
+                <option value="large">Large</option>
+              </select>
+            </div>
+            <div>
+              <label className={labelCls}>Time window</label>
+              <select value={timeWindow} onChange={e => setTimeWindow(e.target.value)} className={selectCls}>
+                <option value="morning">Morning</option>
+                <option value="afternoon">Afternoon</option>
+                <option value="evening">Evening</option>
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelCls}>Deadline</label>
+              <input
+                type="datetime-local"
+                value={deadline}
+                onChange={e => setDeadline(e.target.value)}
+                required
+                className={selectCls}
+              />
+            </div>
+            <div>
+              <label className={labelCls}>Payment (₹)</label>
+              <input
+                type="number" min="0" step="0.01"
+                value={paymentAmount}
+                onChange={e => setPaymentAmount(e.target.value)}
+                required
+                className={selectCls}
+              />
+            </div>
+          </div>
+
+          {error && <p className="text-xs font-semibold text-red-600">{error}</p>}
+
+          <div className="flex gap-2 pt-1">
+            <button type="button" onClick={onClose}
+              className="flex-1 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-lg transition-colors">
+              Cancel
+            </button>
+            <button type="submit" disabled={saving}
+              className="flex-1 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-4 py-2 rounded-lg transition-colors">
+              {saving ? 'Creating…' : 'Create Order'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   )
@@ -483,6 +658,7 @@ function ManagerOrders({ accessToken }: { accessToken: string }) {
   const [page,        setPage]        = useState(1)
   const [refreshKey,  setRefreshKey]  = useState(0)
   const [showBulk,    setShowBulk]    = useState(false)
+  const [showCreate,  setShowCreate]  = useState(false)
 
   // Data state
   const [dataState, setDataState] = useState<
@@ -550,6 +726,14 @@ function ManagerOrders({ accessToken }: { accessToken: string }) {
 
   return (
     <div className="p-4 md:p-6 space-y-4">
+      {showCreate && (
+        <CreateOrderModal
+          accessToken={accessToken}
+          onClose={() => setShowCreate(false)}
+          onSuccess={() => { setShowCreate(false); setRefreshKey(k => k + 1) }}
+        />
+      )}
+
       {showBulk && (
         <BulkUploadModal
           accessToken={accessToken}
@@ -563,12 +747,20 @@ function ManagerOrders({ accessToken }: { accessToken: string }) {
           All Orders
           <span className="ml-2 text-sm font-normal text-slate-400">({pagination.total})</span>
         </h1>
-        <button
-          onClick={() => setShowBulk(true)}
-          className="text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg transition-colors shrink-0"
-        >
-          ⬆ Bulk Upload
-        </button>
+        <div className="flex gap-2 shrink-0">
+          <button
+            onClick={() => setShowCreate(true)}
+            className="text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            + Add Order
+          </button>
+          <button
+            onClick={() => setShowBulk(true)}
+            className="text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            ⬆ Bulk Upload
+          </button>
+        </div>
       </div>
 
       {/* Filter bar */}

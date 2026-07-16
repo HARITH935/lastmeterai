@@ -9,7 +9,12 @@ from marshmallow import (
     Schema, fields, validate, validates, validates_schema, ValidationError, EXCLUDE
 )
 
-VALID_AREAS = ["Anna Nagar", "T Nagar", "Velachery", "Adyar", "Porur"]
+from app.models.order import Order
+
+# Single source of truth — was a 5th separately-hardcoded copy of the area
+# list (after User, Order, seed.py, and analytics_service all had their own);
+# import instead of duplicating so this can never drift again.
+VALID_AREAS = Order.VALID_AREAS
 VALID_PACKAGE_SIZES = ["small", "medium", "large"]
 VALID_TIME_WINDOWS = ["morning", "afternoon", "evening"]
 VALID_RESIDENCE_TYPES = ["apartment", "independent"]

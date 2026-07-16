@@ -96,6 +96,16 @@ def run():
         check("decision not null (stub ran)", new_order.get("latest_decision") is not None)
         check("response has created_by", "created_by" in new_order)
 
+        # Regression check: order_schema.py once had its own hardcoded 5-area
+        # list (a 5th independent copy, separate from User/Order/seed.py/
+        # analytics_service) that rejected all 15 areas added in the 20-area
+        # expansion. Confirm a non-original area is accepted.
+        r = c.post("/api/orders", json={**ADYAR_ORDER, "area": "Guindy",
+                                         "latitude": 13.0067, "longitude": 80.2206},
+                   headers=mgr)
+        check("1b. create order in a new (post-expansion) area → 201",
+              r.status_code == 201, r.data[:250])
+
         print("\n── 2. Area isolation ──")
         r = c.get(f"/api/orders/{order_id}", headers=adyar)
         check("2a. Adyar agent can read own-area order → 200",

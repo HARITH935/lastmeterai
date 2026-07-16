@@ -347,6 +347,38 @@ export interface BulkCreateResponse {
   total: number
 }
 
+export interface CreateOrderInput {
+  customer_name: string
+  customer_phone?: string | null
+  customer_address: string
+  area: string
+  latitude: number
+  longitude: number
+  residence_type: string
+  package_size: string
+  time_window: string
+  deadline: string
+  payment_amount: number
+  agent_id?: number | null
+}
+
+export async function createOrder(
+  accessToken: string,
+  input: CreateOrderInput,
+): Promise<OrderListItem> {
+  const res = await authFetch(`${API_BASE}/api/orders`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(input),
+  })
+  const body = await res.json()
+  if (!res.ok) throw body
+  return body as OrderListItem
+}
+
 export async function bulkCreateOrders(
   accessToken: string,
   orders: BulkOrderRow[],
