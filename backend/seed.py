@@ -213,16 +213,24 @@ def seed(force: bool = False):
     data exists. Use this to intentionally reset back to the demo dataset.
     """
     with app.app_context():
-        db.create_all()  # no-op if tables already exist; creates them on a fresh DB
+        db.create_all()  # ensures tables exist; no-op if they already do
 
-        if not force and User.query.first() is not None:
+        has_data = User.query.first() is not None
+
+        if has_data and not force:
             print("Database already has data — skipping seed (use --force to reset).")
             return
 
-        print("Dropping existing tables …")
-        db.drop_all()
-        print("Creating tables …")
-        db.create_all()
+        if has_data and force:
+            # Only drop when there's actually something to drop — on a fresh
+            # database db.create_all() above already made empty tables, so
+            # dropping+recreating them is a wasted (and, against a cold/pooled
+            # remote Postgres connection, sometimes slow-enough-to-timeout)
+            # extra round trip for no benefit.
+            print("Dropping existing tables …")
+            db.drop_all()
+            print("Creating tables …")
+            db.create_all()
 
         # ── 1. Manager ────────────────────────────────────────────────────────
         manager = User(

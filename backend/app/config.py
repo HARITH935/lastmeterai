@@ -54,6 +54,17 @@ class ProductionConfig(Config):
     )
     SQLALCHEMY_ECHO = False
 
+    if SQLALCHEMY_DATABASE_URI.startswith("postgresql://"):
+        # pool_pre_ping: a hosted pooler (e.g. Supabase's pgbouncer) can
+        # silently drop idle connections; this pings before reuse and
+        # transparently reconnects instead of raising on a dead connection.
+        # connect_timeout: give a cold/free-tier pooler more than the
+        # psycopg2 default (a few seconds) to establish the first connection.
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            "pool_pre_ping": True,
+            "connect_args": {"connect_timeout": 30},
+        }
+
 
 config = {
     "development": DevelopmentConfig,
