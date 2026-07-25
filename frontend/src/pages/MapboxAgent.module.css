@@ -1,0 +1,48 @@
+.optimizeToggle { position: absolute; left: 12px; top: 12px; z-index: 10; display: flex; gap: 6px; }
+.layerStack { position: absolute; right: 12px; top: 12px; z-index: 10; display: flex; flex-direction: column; gap: 8px; }
+
+.navBanner {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 20;
+  width: min(92%, 420px); padding: 14px 18px; display: flex; align-items: center; gap: 14px;
+}
+.navIcon {
+  width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: #241503;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.4rem; line-height: 1;
+}
+.navDist { font-family: 'LM Plex Mono', monospace; font-weight: 700; font-size: 1.2rem; }
+.navText { font-size: 0.86rem; color: var(--ink-muted); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.navSub {
+  position: absolute; top: 92px; left: 50%; transform: translateX(-50%); z-index: 20;
+  padding: 5px 14px; border-radius: 20px; font-size: 0.72rem; color: var(--ink-muted);
+}
+
+.routeSummary {
+  position: absolute; bottom: 66px; left: 50%; transform: translateX(-50%); z-index: 10;
+  padding: 10px 20px; border-radius: 24px; display: flex; align-items: center; gap: 16px; font-size: 0.78rem; white-space: nowrap;
+}
+.routeDivider { width: 1px; height: 14px; background: var(--border); }
+.routeFigure { font-family: 'LM Plex Mono', monospace; font-weight: 700; }
+.routeFigLabel { color: var(--ink-dim); font-size: 0.68rem; margin-left: 4px; }
+.routeTraffic { color: var(--urgent); font-size: 0.72rem; }
+
+.navCta {
+  position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 10;
+  font-family: 'LM Plex Sans', sans-serif; font-weight: 600; font-size: 0.86rem;
+  padding: 11px 30px; border-radius: 24px; border: none; cursor: pointer;
+  background-image: linear-gradient(100deg, var(--accent-deep), var(--accent-soft) 30%, var(--accent) 55%, var(--accent-soft) 80%, var(--accent-deep));
+  color: #241503; box-shadow: 0 10px 30px -10px rgba(217,165,75,0.6);
+  transition: transform 0.15s ease;
+}
+.navCta:hover { transform: translateY(-1px); }
+.navCtaExit {
+  background-image: none; background: rgba(227,91,82,0.92); color: #2B0705;
+  box-shadow: 0 10px 30px -10px rgba(227,91,82,0.5);
+}
+
+/* bottom: clears Mapbox's native zoom+/zoom-/compass stack (~110px tall,
+   bottom-right), so it doesn't overlap the "+" zoom button. */
+.recenter {
+  position: absolute; right: 12px; bottom: 148px; z-index: 20;
+  width: 42px; height: 42px; border-radius: 50%; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}

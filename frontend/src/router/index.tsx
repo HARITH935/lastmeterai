@@ -1,8 +1,8 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { Shell } from '../components/layout/Shell'
 import { ProtectedRoute } from './ProtectedRoute'
+import { Landing } from '../pages/Landing'
 import { Login } from '../pages/Login'
-import { Placeholder } from '../pages/Placeholder'
 import { Dashboard } from '../pages/Dashboard'
 import { Map } from '../pages/Map'
 import { Chat } from '../pages/Chat'
@@ -22,6 +22,11 @@ import { Track } from '../pages/Track'
 import { RouteError } from '../components/layout/RouteError'
 
 export const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <Landing />,
+    errorElement: <RouteError />,
+  },
   {
     path: '/login',
     element: <Login />,
@@ -55,8 +60,6 @@ export const router = createBrowserRouter([
       { path: '/settings',          element: <Settings /> },
       { path: '/customer-insights', element: <CustomerInsights /> },
       { path: '/area-intelligence', element: <AreaIntelligence /> },
-      // Root redirect
-      { path: '/',                  element: <Navigate to="/dashboard" replace /> },
     ],
   },
   // Catch-all → login

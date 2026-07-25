@@ -1,0 +1,95 @@
+.topbar {
+  --surface: #FFFFFF;
+  --surface-2: #F3EEE1;
+  --ink: #1E2A22;
+  --ink-muted: #756F62;
+  --ink-dim: #A39C8C;
+  --border: #E8E2D3;
+  --accent: #A9772A;
+  --accent-soft: #D9A54B;
+  --nogo: #EF4444;
+  --nogo-wash: rgba(239, 68, 68, 0.08);
+
+  height: 62px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  position: relative;
+  z-index: 5;
+  font-family: 'LM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+}
+
+:global(.dark) .topbar {
+  --surface: #16304F;
+  --surface-2: #1B3A5C;
+  --ink: #F3ECDA;
+  --ink-muted: #B9C2D2;
+  --ink-dim: #8290A3;
+  --border: rgba(243, 236, 218, 0.14);
+  --accent: #D9A54B;
+  --accent-soft: #E8BE73;
+  --nogo: #E35B52;
+  --nogo-wash: rgba(227, 91, 82, 0.13);
+}
+
+.title { font-family: 'Italiana', ui-serif, Georgia, serif; font-weight: 400; font-size: 1.2rem; color: var(--ink); margin: 0; }
+
+.right { display: flex; align-items: center; gap: 4px; }
+
+.iconBtn {
+  width: 38px; height: 38px; border-radius: 10px; border: none; background: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; color: var(--ink-muted); position: relative;
+  transition: background-color 0.15s ease, color 0.15s ease; text-decoration: none;
+}
+.iconBtn:hover { background: var(--surface-2); color: var(--ink); }
+.iconBtn svg { width: 19px; height: 19px; }
+.iconBtn svg[data-spin] { animation: iconSpin 0.4s cubic-bezier(.2,.8,.2,1); }
+@keyframes iconSpin { from { transform: rotate(-100deg) scale(0.4); opacity: 0; } to { transform: rotate(0) scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .iconBtn svg[data-spin] { animation: none; } }
+
+.iconDot {
+  position: absolute; top: 6px; right: 6px; min-width: 15px; height: 15px; padding: 0 3px;
+  border-radius: 50%; background-image: linear-gradient(100deg, var(--accent), var(--accent-soft));
+  color: #241503; font-size: 0.56rem; font-weight: 700; display: flex; align-items: center; justify-content: center;
+  font-family: 'LM Plex Mono', monospace;
+}
+
+.divider { width: 1px; height: 24px; background: var(--border); margin: 0 6px; }
+
+.userMenu { position: relative; }
+.userTrigger { display: flex; align-items: center; gap: 9px; padding: 5px 10px 5px 6px; border-radius: 12px; border: none; background: none; cursor: pointer; transition: background-color 0.15s ease; }
+.userTrigger:hover { background: var(--surface-2); }
+.userAvatar {
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(150deg, var(--accent), var(--accent-soft)); color: #241503;
+  display: flex; align-items: center; justify-content: center; font-family: 'Prata', serif; font-size: 0.86rem;
+}
+.userText { text-align: left; }
+.userName { font-size: 0.8rem; font-weight: 600; color: var(--ink); line-height: 1.2; margin: 0; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.userRole { font-family: 'LM Plex Mono', monospace; font-size: 0.62rem; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.04em; margin: 0; }
+.chev { width: 13px; height: 13px; color: var(--ink-dim); transition: transform 0.15s ease; flex-shrink: 0; }
+.chevOpen { transform: rotate(180deg); }
+
+.backdrop { position: fixed; inset: 0; z-index: 8; }
+
+.dropdown {
+  position: absolute; top: calc(100% + 8px); right: 0; width: 190px; z-index: 10;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: 0 20px 44px -18px rgba(0, 0, 0, 0.3); padding: 6px;
+}
+.ddItem {
+  display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 8px;
+  font-size: 0.82rem; color: var(--ink-muted); cursor: pointer; text-decoration: none;
+  border: none; background: none; width: 100%; text-align: left; font-family: inherit;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.ddItem:hover { background: var(--surface-2); color: var(--ink); }
+.ddItem svg { width: 15px; height: 15px; flex-shrink: 0; }
+.ddDivider { height: 1px; background: var(--border); margin: 5px 3px; }
+.ddItemLogout:hover { background: var(--nogo-wash); color: var(--nogo); }
+
+@media (max-width: 767px) { .topbar { display: none; } }

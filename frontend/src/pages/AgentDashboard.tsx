@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { getCostSavings, type CostSavingsResponse } from '../api/analytics'
 import { getAgentOrders, getOptimizedRoute, type OrderListItem, type OrderListResponse, type OptimizedRoute } from '../api/orders'
+import styles from './AgentDashboard.module.css'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -29,74 +30,59 @@ function fmtTime(iso: string): string {
 
 // ── Skeleton ───────────────────────────────────────────────────────────────────
 
-function Skeleton({ className }: { className?: string }) {
-  return <div className={`animate-pulse bg-slate-200 rounded-xl ${className ?? ''}`} />
-}
-
 function AgentSkeleton() {
   return (
-    <div className="p-4 md:p-6 space-y-4">
-      <Skeleton className="h-28" />
-      <Skeleton className="h-3 w-full" />
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20" />)}
+    <div className={styles.page}>
+      <div className={styles.wrap}>
+        <div className={styles.section}>
+          <div className={styles.kpi} style={{ height: 96 }} />
+          <div className={styles.kpiGrid}>
+            {Array.from({ length: 4 }).map((_, i) => <div key={i} className={styles.kpi} style={{ height: 70 }} />)}
+          </div>
+        </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <Skeleton className="h-36" />
-        <Skeleton className="h-36" />
-      </div>
-      <Skeleton className="h-48" />
     </div>
   )
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
-const STATUS_COLORS: Record<string, string> = {
-  pending:    'bg-amber-50 text-amber-700 border border-amber-200',
-  in_transit: 'bg-blue-50 text-blue-700 border border-blue-200',
-  delivered:  'bg-green-50 text-green-700 border border-green-200',
-  failed:     'bg-red-50 text-red-700 border border-red-200',
-  postponed:  'bg-slate-100 text-slate-500 border border-slate-200',
+const STATUS_TOKEN: Record<string, { bg: string; fg: string }> = {
+  pending:    { bg: 'var(--urgent-wash)', fg: 'var(--urgent)' },
+  in_transit: { bg: 'var(--accent-wash)', fg: 'var(--accent)' },
+  delivered:  { bg: 'var(--go-wash)',     fg: 'var(--go)' },
+  failed:     { bg: 'var(--nogo-wash)',   fg: 'var(--nogo)' },
+  postponed:  { bg: 'var(--surface-2)',   fg: 'var(--ink-dim)' },
 }
 
-const RISK_DOT: Record<string, string> = {
-  low:    'bg-go',
-  medium: 'bg-urgent',
-  high:   'bg-nogo',
+const RISK_VAR: Record<string, string> = {
+  low: 'var(--go)', medium: 'var(--urgent)', high: 'var(--nogo)',
 }
 
 function OrderRow({ order }: { order: OrderListItem }) {
   const navigate = useNavigate()
-  const colorClass = STATUS_COLORS[order.status] ?? 'bg-slate-100 text-slate-600'
+  const token = STATUS_TOKEN[order.status] ?? { bg: 'var(--surface-2)', fg: 'var(--ink-muted)' }
   const deadline = new Date(order.deadline).toLocaleTimeString('en-IN', {
     hour: '2-digit', minute: '2-digit', hour12: true,
   })
 
   return (
-    <div
-      onClick={() => navigate(`/orders/${order.id}`)}
-      className="flex items-center justify-between py-2.5 border-b border-slate-100 last:border-0 gap-3 cursor-pointer hover:bg-slate-50 active:bg-slate-100 -mx-1 px-1 rounded-lg transition-colors"
-    >
-      <div className="flex items-center gap-2.5 min-w-0">
-        <div className={`w-2 h-2 rounded-full shrink-0 ${RISK_DOT[order.risk_level ?? ''] ?? 'bg-slate-300'}`} />
+    <div onClick={() => navigate(`/orders/${order.id}`)} className={styles.orderRow}>
+      <div className={styles.orderLeft}>
+        <div className={styles.riskDot} style={{ background: RISK_VAR[order.risk_level ?? ''] ?? 'var(--ink-dim)' }} />
         <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
-            <span className="text-sm font-semibold text-slate-800">{order.order_number}</span>
-            {order.is_urgent && (
-              <span className="text-[10px] font-bold text-nogo bg-red-50 border border-nogo/20 px-1 rounded leading-tight">
-                URGENT
-              </span>
-            )}
+          <div>
+            <span className={styles.orderId}>{order.order_number}</span>
+            {order.is_urgent && <span className={styles.orderUrgentTag}>URGENT</span>}
           </div>
-          <p className="text-xs text-slate-400 truncate">{order.customer_name} · by {deadline}</p>
+          <p className={styles.orderMeta}>{order.customer_name} · by {deadline}</p>
         </div>
       </div>
-      <div className="flex items-center gap-1.5 shrink-0">
-        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${colorClass}`}>
+      <div className={styles.orderRight}>
+        <span className={styles.statusBadge} style={{ background: token.bg, color: token.fg }}>
           {order.status.replace('_', ' ')}
         </span>
-        <span className="text-slate-300 text-xs">›</span>
+        <span className={styles.chevron}>›</span>
       </div>
     </div>
   )
@@ -104,13 +90,10 @@ function OrderRow({ order }: { order: OrderListItem }) {
 
 // ── Quick link button ──────────────────────────────────────────────────────────
 
-function QuickLink({ to, label, icon, color }: { to: string; label: string; icon: string; color: string }) {
+function QuickLink({ to, label, icon }: { to: string; label: string; icon: string }) {
   return (
-    <Link
-      to={to}
-      className={`flex flex-col items-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-2.5 sm:py-3 rounded-xl border font-medium text-[11px] sm:text-xs transition-colors ${color}`}
-    >
-      <span className="text-lg sm:text-xl">{icon}</span>
+    <Link to={to} className={styles.quickLink}>
+      <span className={styles.quickIcon}>{icon}</span>
       {label}
     </Link>
   )
@@ -121,41 +104,37 @@ function QuickLink({ to, label, icon, color }: { to: string; label: string; icon
 function NextStopCard({ route }: { route: OptimizedRoute | null }) {
   if (!route || route.stops.length === 0) {
     return (
-      <div className="card flex flex-col justify-center items-center py-6 text-center">
-        <span className="text-2xl mb-2">✅</span>
-        <p className="text-sm font-semibold text-slate-700">All deliveries done</p>
-        <p className="text-xs text-slate-400 mt-1">No pending stops in your route</p>
+      <div className={styles.card}>
+        <div className={styles.nextStopDone}>
+          <span className={styles.nextStopDoneIcon}>✅</span>
+          <p className={styles.nextStopDoneTitle}>All deliveries done</p>
+          <p className={styles.nextStopDoneSub}>No pending stops in your route</p>
+        </div>
       </div>
     )
   }
 
   const stop = route.stops[0]
-  const riskBg: Record<string, string> = { low: 'bg-go/10 text-go', medium: 'bg-urgent/10 text-urgent', high: 'bg-nogo/10 text-nogo' }
-  const riskClass = riskBg[stop.risk_level ?? ''] ?? 'bg-slate-100 text-slate-500'
+  const riskColor = RISK_VAR[stop.risk_level ?? ''] ?? 'var(--ink-dim)'
 
   return (
-    <div className="card border-l-4 border-l-primary">
-      <div className="flex items-start justify-between mb-2">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Next Stop</p>
-        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${riskClass}`}>
+    <div className={styles.card}>
+      <div className={styles.nextStopHead}>
+        <p className={styles.cardLabel}>Next Stop</p>
+        <span className={styles.riskPill} style={{ background: riskColor, color: '#fff', opacity: 0.9 }}>
           {stop.risk_level ?? 'unassessed'} risk
         </span>
       </div>
-      <p className="text-base font-bold text-slate-900 leading-snug">{stop.customer_name}</p>
-      <p className="text-xs text-slate-500 mt-0.5 truncate">{stop.customer_address}</p>
-      <div className="flex items-center gap-3 mt-3 text-xs text-slate-600">
-        <span className="flex items-center gap-1">
-          <span>🕐</span>
-          <span className="font-medium">ETA {fmtTime(stop.eta)}</span>
-        </span>
+      <p className={styles.nextStopName}>{stop.customer_name}</p>
+      <p className={styles.nextStopAddr}>{stop.customer_address}</p>
+      <div className={styles.nextStopMeta}>
+        <span>🕐 ETA {fmtTime(stop.eta)}</span>
         <span>·</span>
         <span>{stop.distance_from_prev_km} km away</span>
         <span>·</span>
         <span>{stop.duration_from_prev_min} min</span>
       </div>
-      {stop.is_urgent && (
-        <p className="mt-2 text-xs font-bold text-nogo">⚠ Urgent delivery</p>
-      )}
+      {stop.is_urgent && <p className={styles.nextStopUrgent}>⚠ Urgent delivery</p>}
     </div>
   )
 }
@@ -169,38 +148,25 @@ function AICard({ savings }: { savings: CostSavingsResponse }) {
   const lift    = aiPct - basePct
 
   return (
-    <div className="card">
-      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">AI Performance · This Week</p>
-      <div className="flex items-end gap-2 mb-3">
-        <span className="text-3xl font-bold text-slate-900">{aiPct}%</span>
-        <span className={`text-sm font-semibold mb-0.5 ${lift >= 0 ? 'text-go' : 'text-nogo'}`}>
+    <div className={styles.card}>
+      <p className={styles.cardLabel} style={{ marginBottom: 10 }}>AI Performance · This Week</p>
+      <div className="flex items-end" style={{ marginBottom: 12 }}>
+        <span className={`${styles.aiPct} ${styles.mono}`}>{aiPct}%</span>
+        <span className={styles.aiLift} style={{ color: lift >= 0 ? 'var(--go)' : 'var(--nogo)' }}>
           {lift >= 0 ? '+' : ''}{lift}% vs baseline
         </span>
       </div>
 
-      {/* AI bar */}
-      <div className="space-y-2">
-        <div>
-          <div className="flex justify-between text-[11px] text-slate-500 mb-1">
-            <span>AI-assisted</span><span>{aiPct}%</span>
-          </div>
-          <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-            <div className="h-full bg-go rounded-full" style={{ width: `${aiPct}%` }} />
-          </div>
-        </div>
-        <div>
-          <div className="flex justify-between text-[11px] text-slate-500 mb-1">
-            <span>Baseline</span><span>{basePct}%</span>
-          </div>
-          <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-            <div className="h-full bg-slate-400 rounded-full" style={{ width: `${basePct}%` }} />
-          </div>
-        </div>
+      <div className={styles.aiBarRow}>
+        <div className={styles.aiBarHead}><span>AI-assisted</span><span>{aiPct}%</span></div>
+        <div className={styles.aiBarTrack}><div className={styles.aiBarFill} style={{ width: `${aiPct}%`, background: 'var(--go)' }} /></div>
+      </div>
+      <div className={styles.aiBarRow}>
+        <div className={styles.aiBarHead}><span>Baseline</span><span>{basePct}%</span></div>
+        <div className={styles.aiBarTrack}><div className={styles.aiBarFill} style={{ width: `${basePct}%`, background: 'var(--ink-dim)' }} /></div>
       </div>
 
-      <p className="text-xs text-go font-semibold mt-3">
-        Saved {formatINR(metrics.total_savings_inr)} this week
-      </p>
+      <p className={styles.aiSaved}>Saved {formatINR(metrics.total_savings_inr)} this week</p>
     </div>
   )
 }
@@ -221,7 +187,6 @@ function AgentContent({ orders, savings, route }: AgentContentProps) {
   const total     = orders.pagination.total
   const delivered = countOf('delivered')
   const active    = countOf('pending') + countOf('in_transit')
-  const failed    = countOf('failed') + countOf('postponed')
   const progress  = total > 0 ? Math.round((delivered / total) * 100) : 0
 
   const earningsToday = allOrders
@@ -232,101 +197,100 @@ function AgentContent({ orders, savings, route }: AgentContentProps) {
     weekday: 'long', day: 'numeric', month: 'short', year: 'numeric',
   })
 
-  // Build a sorted display list: active first, then done/failed
   const activeOrders = allOrders.filter(o => o.status === 'pending' || o.status === 'in_transit')
   const doneOrders   = allOrders.filter(o => o.status !== 'pending' && o.status !== 'in_transit')
 
   return (
-    <div className="pb-8">
+    <div className={styles.page}>
+      <div className={styles.guilloche} />
+      <div className={styles.wrap}>
 
-      {/* ── Welcome banner ── */}
-      <div className="mx-4 md:mx-6 mt-5 mb-4 rounded-2xl bg-gradient-to-br from-primary to-primary-light p-5 text-white shadow-md">
-        <p className="text-sm font-medium opacity-80">{greeting()},</p>
-        <h1 className="text-2xl font-bold mt-0.5">{user?.name}</h1>
-        <p className="text-xs opacity-70 mt-1">{user?.area} Area · {todayStr}</p>
-        <p className="text-sm font-semibold mt-3 opacity-90">
-          {active > 0
-            ? `${active} stop${active !== 1 ? 's' : ''} remaining · ${delivered} delivered today`
-            : delivered > 0
-              ? `All ${delivered} deliveries done — great work!`
-              : 'No orders today'}
-        </p>
-      </div>
-
-      {/* ── Progress bar ── */}
-      <div className="px-4 md:px-6 mb-5">
-        <div className="flex justify-between text-xs text-slate-500 mb-1.5">
-          <span>Delivery progress</span>
-          <span className="font-semibold">{delivered}/{total} ({progress}%)</span>
+        {/* ── Welcome banner ── */}
+        <div className={styles.banner}>
+          <span className={`${styles.corner} ${styles.cornerTl}`} /><span className={`${styles.corner} ${styles.cornerTr}`} />
+          <span className={`${styles.corner} ${styles.cornerBl}`} /><span className={`${styles.corner} ${styles.cornerBr}`} />
+          <p className={styles.bannerGreet}>{greeting()},</p>
+          <h1 className={styles.bannerName}>{user?.name}</h1>
+          <p className={styles.bannerMeta}>{user?.area?.toUpperCase()} AREA · {todayStr.toUpperCase()}</p>
+          <p className={styles.bannerStatus}>
+            {active > 0
+              ? `${active} stop${active !== 1 ? 's' : ''} remaining · ${delivered} delivered today`
+              : delivered > 0
+                ? `All ${delivered} deliveries done — great work!`
+                : 'No orders today'}
+          </p>
         </div>
-        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-go rounded-full transition-all duration-500"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      </div>
 
-      <div className="px-4 md:px-6 space-y-4">
-
-        {/* ── Metric cards ── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="card">
-            <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Total</p>
-            <p className="text-2xl font-bold text-slate-900 mt-1">{total}</p>
-            <p className="text-xs text-slate-400 mt-0.5">orders today</p>
+        {/* ── Progress bar ── */}
+        <div className={styles.progressRow}>
+          <div className={styles.progressHead}>
+            <span>Delivery progress</span>
+            <strong>{delivered}/{total} ({progress}%)</strong>
           </div>
-          <div className="card">
-            <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Delivered</p>
-            <p className={`text-2xl font-bold mt-1 ${delivered > 0 ? 'text-go' : 'text-slate-900'}`}>{delivered}</p>
-            <p className="text-xs text-slate-400 mt-0.5">completed</p>
-          </div>
-          <div className="card">
-            <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Pending</p>
-            <p className={`text-2xl font-bold mt-1 ${active > 0 ? 'text-urgent' : 'text-slate-900'}`}>{active}</p>
-            <p className="text-xs text-slate-400 mt-0.5">in queue</p>
-          </div>
-          <div className="card">
-            <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Earnings</p>
-            <p className="text-2xl font-bold text-go mt-1">{formatINR(earningsToday)}</p>
-            <p className="text-xs text-slate-400 mt-0.5">today</p>
+          <div className={styles.progressTrack}>
+            <div className={styles.progressFill} style={{ width: `${progress}%` }} />
           </div>
         </div>
 
-        {/* ── Next stop + AI performance ── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <NextStopCard route={route} />
-          <AICard savings={savings} />
+        <div className={styles.section}>
+
+          {/* ── Metric tiles ── */}
+          <div className={styles.kpiGrid}>
+            <div className={styles.kpi}>
+              <p className={styles.kpiLabel}>Total</p>
+              <p className={`${styles.kpiValue} ${styles.mono}`}>{total}</p>
+              <p className={styles.kpiSub}>orders today</p>
+            </div>
+            <div className={styles.kpi}>
+              <p className={styles.kpiLabel}>Delivered</p>
+              <p className={`${styles.kpiValue} ${styles.mono} ${delivered > 0 ? styles.go : ''}`}>{delivered}</p>
+              <p className={styles.kpiSub}>completed</p>
+            </div>
+            <div className={styles.kpi}>
+              <p className={styles.kpiLabel}>Pending</p>
+              <p className={`${styles.kpiValue} ${styles.mono} ${active > 0 ? styles.urgent : ''}`}>{active}</p>
+              <p className={styles.kpiSub}>in queue</p>
+            </div>
+            <div className={styles.kpi}>
+              <p className={styles.kpiLabel}>Earnings</p>
+              <p className={`${styles.kpiValue} ${styles.mono} ${styles.go}`}>{formatINR(earningsToday)}</p>
+              <p className={styles.kpiSub}>today</p>
+            </div>
+          </div>
+
+          {/* ── Next stop + AI performance ── */}
+          <div className={styles.twoCol}>
+            <NextStopCard route={route} />
+            <AICard savings={savings} />
+          </div>
+
+          {/* ── Quick links ── */}
+          <div className={styles.quickGrid}>
+            <QuickLink to="/map"      label="My Route" icon="🗺️" />
+            <QuickLink to="/orders"   label="Orders"   icon="📦" />
+            <QuickLink to="/chat"     label="AI Chat"  icon="🤖" />
+            <QuickLink to="/earnings" label="Earnings" icon="💰" />
+          </div>
+
+          {/* ── Today's order list ── */}
+          <div className={styles.card}>
+            <p style={{ fontWeight: 600, fontSize: '0.9rem' }}>Today's Orders</p>
+            <p className={styles.listSub}>Active first, then completed</p>
+
+            {allOrders.length === 0 ? (
+              <p className={styles.listEmpty}>No orders assigned today.</p>
+            ) : (
+              <>
+                {activeOrders.map(o => <OrderRow key={o.id} order={o} />)}
+                {doneOrders.length > 0 && activeOrders.length > 0 && (
+                  <p className={styles.listDivider}>Completed / Skipped</p>
+                )}
+                {doneOrders.map(o => <OrderRow key={o.id} order={o} />)}
+              </>
+            )}
+          </div>
+
         </div>
-
-        {/* ── Quick links ── */}
-        <div className="grid grid-cols-4 gap-2 sm:gap-3">
-          <QuickLink to="/map"      label="My Route"    icon="🗺️"  color="bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100" />
-          <QuickLink to="/orders"   label="Orders"      icon="📦"  color="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100" />
-          <QuickLink to="/chat"     label="AI Chat"     icon="🤖"  color="bg-green-50 text-green-700 border-green-200 hover:bg-green-100" />
-          <QuickLink to="/earnings" label="Earnings"    icon="💰"  color="bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100" />
-        </div>
-
-        {/* ── Today's order list ── */}
-        <div className="card">
-          <p className="text-sm font-semibold text-slate-700 mb-1">Today's Orders</p>
-          <p className="text-xs text-slate-400 mb-3">Active first, then completed</p>
-
-          {allOrders.length === 0 ? (
-            <p className="text-sm text-slate-400 py-6 text-center">No orders assigned today.</p>
-          ) : (
-            <>
-              {activeOrders.map(o => <OrderRow key={o.id} order={o} />)}
-              {doneOrders.length > 0 && activeOrders.length > 0 && (
-                <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide pt-3 pb-1">
-                  Completed / Skipped
-                </p>
-              )}
-              {doneOrders.map(o => <OrderRow key={o.id} order={o} />)}
-            </>
-          )}
-        </div>
-
       </div>
     </div>
   )
@@ -372,10 +336,12 @@ export function AgentDashboard() {
 
   if (state.status === 'error') {
     return (
-      <div className="p-6">
-        <div className="card border-nogo/30 bg-red-50">
-          <p className="text-sm font-semibold text-nogo">Failed to load dashboard</p>
-          <p className="text-xs text-nogo/80 mt-1">{state.message}</p>
+      <div className={styles.page}>
+        <div className={styles.wrap}>
+          <div className={styles.card} style={{ borderColor: 'var(--nogo)' }}>
+            <p style={{ color: 'var(--nogo)', fontWeight: 600, fontSize: '0.9rem' }}>Failed to load dashboard</p>
+            <p style={{ color: 'var(--nogo)', opacity: 0.85, fontSize: '0.8rem', marginTop: 4 }}>{state.message}</p>
+          </div>
         </div>
       </div>
     )

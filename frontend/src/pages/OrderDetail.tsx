@@ -6,6 +6,7 @@ import {
   notifyCustomer,
   type OrderDetail, type ReassignSuggestion, type OrderEta, type NotifyResponse,
 } from '../api/orders'
+import styles from './OrderDetail.module.css'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -28,28 +29,28 @@ function fmtINR(n: number): string {
 
 // ── Badges ─────────────────────────────────────────────────────────────────────
 
-const STATUS_STYLES: Record<string, string> = {
-  pending:    'bg-slate-100 text-slate-600',
-  in_transit: 'bg-blue-50 text-blue-600',
-  delivered:  'bg-green-50 text-green-700',
-  failed:     'bg-red-50 text-red-600',
-  postponed:  'bg-amber-50 text-amber-600',
+const STATUS_PILL: Record<string, string> = {
+  pending:    styles.pillPending,
+  in_transit: styles.pillIn_transit,
+  delivered:  styles.pillDelivered,
+  failed:     styles.pillFailed,
+  postponed:  styles.pillPostponed,
 }
 
-const RISK_STYLES: Record<string, string> = {
-  low:    'bg-green-50 text-green-700',
-  medium: 'bg-amber-50 text-amber-600',
-  high:   'bg-red-50 text-red-600',
+const RISK_PILL: Record<string, string> = {
+  low:    styles.pillLow,
+  medium: styles.pillMedium,
+  high:   styles.pillHigh,
 }
 
-const DECISION_STYLES: Record<string, string> = {
-  go:    'bg-green-50 text-green-700 border border-green-200',
-  no_go: 'bg-red-50 text-red-600 border border-red-200',
+const DECISION_PILL: Record<string, string> = {
+  go:    styles.pillGo,
+  no_go: styles.pillNoGo,
 }
 
-function Badge({ label, style }: { label: string; style: string }) {
+function Badge({ label, pill }: { label: string; pill: string }) {
   return (
-    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${style}`}>
+    <span className={`${styles.pill} ${pill}`}>
       {label.replace('_', ' ')}
     </span>
   )
@@ -63,15 +64,15 @@ function ShapBar({ factor, contribution }: { factor: string; contribution: numbe
   const label = factor.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-xs text-slate-500 w-44 shrink-0">{label}</span>
-      <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+    <div className={styles.shapRow}>
+      <span className={styles.shapLabel}>{label}</span>
+      <div className={styles.shapTrack}>
         <div
-          className={`h-full rounded-full transition-all ${isNego ? 'bg-red-400' : 'bg-green-400'}`}
+          className={isNego ? styles.shapFillUp : styles.shapFillDown}
           style={{ width: `${Math.min(pct, 100)}%` }}
         />
       </div>
-      <span className={`text-xs font-semibold w-12 text-right ${isNego ? 'text-red-500' : 'text-green-600'}`}>
+      <span className={`${styles.shapVal} ${isNego ? styles.shapValUp : styles.shapValDown}`}>
         {isNego ? '+' : ''}{contribution.toFixed(1)}%
       </span>
     </div>
@@ -79,6 +80,12 @@ function ShapBar({ factor, contribution }: { factor: string; contribution: numbe
 }
 
 // ── Status update form (agent view) ───────────────────────────────────────────
+
+const STATUS_CHIP_SEL: Record<string, string> = {
+  delivered: styles.statusChipSelDelivered,
+  failed:    styles.statusChipSelFailed,
+  postponed: styles.statusChipSelPostponed,
+}
 
 function StatusUpdateForm({
   orderId,
@@ -119,24 +126,18 @@ function StatusUpdateForm({
   }
 
   if (success) {
-    return <p className="text-sm font-semibold text-green-600">Status updated.</p>
+    return <p className={styles.updateSuccess}>Status updated.</p>
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
-      <div className="flex gap-2 flex-wrap">
+    <form onSubmit={handleSubmit}>
+      <div className={styles.statusChips}>
         {(['delivered', 'failed', 'postponed'] as const).map(s => (
           <button
             key={s}
             type="button"
             onClick={() => { setStatus(s); setError(null) }}
-            className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors capitalize ${
-              status === s
-                ? s === 'delivered' ? 'bg-green-600 text-white border-green-600'
-                  : s === 'failed' ? 'bg-red-600 text-white border-red-600'
-                  : 'bg-amber-500 text-white border-amber-500'
-                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-            }`}
+            className={`${styles.statusChip} ${status === s ? STATUS_CHIP_SEL[s] : ''}`}
           >
             {s.replace('_', ' ')}
           </button>
@@ -149,17 +150,13 @@ function StatusUpdateForm({
           onChange={e => { setReason(e.target.value); setError(null) }}
           placeholder="Describe why delivery failed…"
           rows={2}
-          className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          className={styles.reasonBox}
         />
       )}
 
-      {error && <p className="text-xs font-semibold text-red-600">{error}</p>}
+      {error && <p className={styles.updateError}>{error}</p>}
 
-      <button
-        type="submit"
-        disabled={saving}
-        className="text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-4 py-2 rounded-lg transition-colors"
-      >
+      <button type="submit" disabled={saving} className={styles.updateSubmit}>
         {saving ? 'Saving…' : 'Update Status'}
       </button>
     </form>
@@ -167,6 +164,8 @@ function StatusUpdateForm({
 }
 
 // ── Reassign panel (manager only, shown when order is failed) ──────────────────
+
+const MEDALS = ['🥇', '🥈', '🥉']
 
 function ReassignPanel({
   orderId,
@@ -209,87 +208,68 @@ function ReassignPanel({
 
   if (done) {
     return (
-      <div className="card border-green-200 bg-green-50">
-        <p className="text-sm font-semibold text-green-700">✓ Order reassigned successfully</p>
+      <div className={styles.card}>
+        <p className={styles.reassignDone}>✓ Order reassigned successfully</p>
       </div>
     )
   }
 
   return (
-    <div className="card dark:bg-slate-900 dark:border-slate-800">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-          Smart Reassignment
-        </h2>
+    <div className={styles.card}>
+      <div className={styles.cardLabelRow}>
+        <p className={styles.cardLabel}>Smart Reassignment</p>
         {!open && (
-          <button
-            onClick={fetchSuggestions}
-            className="text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg transition-colors"
-          >
+          <button onClick={fetchSuggestions} className={styles.suggestBtn}>
             🤖 Suggest Agent
           </button>
         )}
       </div>
 
       {!open && (
-        <p className="text-sm text-slate-500">
+        <p className={styles.reassignHint}>
           AI will rank available agents by success rate, area familiarity, and current workload.
         </p>
       )}
 
       {open && loading && (
-        <div className="space-y-2">
-          {[1,2,3].map(i => <div key={i} className="animate-pulse h-16 bg-slate-100 dark:bg-slate-800 rounded-xl" />)}
+        <div className={styles.suggSkeleton}>
+          {[1, 2, 3].map(i => <div key={i} className={styles.suggSkelBlock} />)}
         </div>
       )}
 
       {open && !loading && error && (
-        <p className="text-xs font-semibold text-red-600">{error}</p>
+        <p className={styles.reassignError}>{error}</p>
       )}
 
       {open && !loading && suggestions.length > 0 && (
-        <div className="space-y-2">
+        <div className={styles.suggList}>
           {suggestions.map((s, i) => (
             <div
               key={s.agent_id}
-              className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${
-                i === 0
-                  ? 'bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800'
-                  : 'bg-slate-50 border-slate-200 dark:bg-slate-800 dark:border-slate-700'
-              }`}
+              className={`${styles.suggRow} ${i === 0 ? styles.suggRowTop : ''}`}
             >
-              <div className="text-xl">{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{s.agent_name}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">{s.reason}</p>
-                <div className="flex items-center gap-3 mt-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <div className="h-1.5 w-20 bg-slate-200 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-green-500"
-                        style={{ width: `${Math.round(s.success_rate * 100)}%` }}
-                      />
-                    </div>
-                    <span className="text-[10px] text-slate-500">{Math.round(s.success_rate * 100)}% success</span>
+              <div className={styles.medal}>{MEDALS[i] ?? '🏅'}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p className={styles.suggName}>{s.agent_name}</p>
+                <p className={styles.suggReason}>{s.reason}</p>
+                <div className={styles.suggMetaRow}>
+                  <div className={styles.suggBar}>
+                    <div className={styles.suggBarFill} style={{ width: `${Math.round(s.success_rate * 100)}%` }} />
                   </div>
-                  <span className="text-[10px] text-blue-600 font-bold">
-                    Score: {Math.round(s.score * 100)}
-                  </span>
+                  <span className={styles.suggPct}>{Math.round(s.success_rate * 100)}% success</span>
+                  <span className={styles.suggScore}>Score: {Math.round(s.score * 100)}</span>
                 </div>
               </div>
               <button
                 onClick={() => handleReassign(s.agent_id, s.agent_name)}
                 disabled={applying !== null}
-                className="text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-3 py-1.5 rounded-lg transition-colors shrink-0"
+                className={styles.assignBtn}
               >
                 {applying === s.agent_id ? 'Assigning…' : 'Assign'}
               </button>
             </div>
           ))}
-          <button
-            onClick={() => setOpen(false)}
-            className="text-xs text-slate-400 hover:text-slate-600 mt-1"
-          >
+          <button onClick={() => setOpen(false)} className={styles.cancelSuggest}>
             Cancel
           </button>
         </div>
@@ -317,7 +297,7 @@ function EtaCard({ orderId, accessToken }: { orderId: number; accessToken: strin
   }, [accessToken, orderId])
 
   if (state.status === 'loading') {
-    return <div className="animate-pulse h-40 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
+    return <div className={styles.skelBlock} style={{ height: 160 }} />
   }
   if (state.status === 'error') return null
 
@@ -326,72 +306,58 @@ function EtaCard({ orderId, accessToken }: { orderId: number; accessToken: strin
     hour: '2-digit', minute: '2-digit', hour12: true,
   })
   const confPct = Math.round(data.confidence * 100)
+  const confFill = confPct >= 85 ? styles.confFillGood : confPct >= 70 ? styles.confFillMed : styles.confFillLow
   const factors = data.factors ?? []
   const maxMin  = Math.max(...factors.map(f => f.minutes), 1)
 
   return (
-    <div className="card dark:bg-slate-900 dark:border-slate-800 space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-          ⏱ Predicted ETA
-        </h2>
-        <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-wide">AI estimate</span>
+    <div className={styles.card}>
+      <div className={styles.cardLabelRow}>
+        <p className={styles.cardLabel}>⏱ Predicted ETA</p>
+        <span className={styles.aiTag}>AI estimate</span>
       </div>
 
       {/* Headline */}
-      <div className="flex items-end gap-3 flex-wrap">
+      <div className={styles.etaHeadRow}>
         <div>
-          <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 leading-none">
-            {data.predicted_min}<span className="text-lg font-semibold text-slate-400 ml-1">min</span>
-          </p>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className={styles.etaBig}>{data.predicted_min}<span>min</span></p>
+          <p className={styles.etaWindow}>
             Window {data.eta_low_min}–{data.eta_high_min} min · arrives ~{arrival}
           </p>
         </div>
-        <div className="ml-auto text-right">
-          <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{data.distance_km} km</p>
-          <p className="text-[10px] text-slate-400">from depot</p>
+        <div className={styles.etaDist}>
+          <p className={styles.km}>{data.distance_km} km</p>
+          <p className={styles.lbl}>from depot</p>
         </div>
       </div>
 
       {/* Confidence bar */}
-      <div>
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Confidence</span>
-          <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300">{confPct}%</span>
-        </div>
-        <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-          <div
-            className={`h-full rounded-full ${confPct >= 85 ? 'bg-green-500' : confPct >= 70 ? 'bg-amber-500' : 'bg-red-500'}`}
-            style={{ width: `${confPct}%` }}
-          />
-        </div>
+      <div className={styles.confRow}>
+        <span>Confidence</span>
+        <span className={styles.confVal}>{confPct}%</span>
+      </div>
+      <div className={styles.confTrack}>
+        <div className={confFill} style={{ width: `${confPct}%` }} />
       </div>
 
       {/* Factor breakdown */}
-      <div className="space-y-2 pt-1">
-        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Time breakdown</p>
-        {factors.map(f => (
-          <div key={f.label} className="flex items-center gap-3">
-            <span className="text-xs text-slate-600 dark:text-slate-400 w-32 shrink-0">{f.label}</span>
-            <div className="flex-1 h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full bg-indigo-400"
-                style={{ width: `${Math.max((f.minutes / maxMin) * 100, f.minutes > 0 ? 6 : 0)}%` }}
-              />
-            </div>
-            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 w-14 text-right">
-              {f.minutes} min
-            </span>
+      <p className={styles.shapTitle}>Time breakdown</p>
+      {factors.map(f => (
+        <div key={f.label} className={styles.factorRow}>
+          <span className={styles.factorLabel}>{f.label}</span>
+          <div className={styles.factorTrack}>
+            <div
+              className={styles.factorFill}
+              style={{ width: `${Math.max((f.minutes / maxMin) * 100, f.minutes > 0 ? 6 : 0)}%` }}
+            />
           </div>
-        ))}
-        <div className="pt-1 space-y-0.5">
-          {factors.map(f => (
-            <p key={f.label} className="text-[10px] text-slate-400">
-              <span className="font-semibold text-slate-500 dark:text-slate-400">{f.label}:</span> {f.detail}
-            </p>
-          ))}
+          <span className={styles.factorVal}>{f.minutes} min</span>
         </div>
+      ))}
+      <div className={styles.factorDetail}>
+        {factors.map(f => (
+          <p key={f.label}><b>{f.label}:</b> {f.detail}</p>
+        ))}
       </div>
     </div>
   )
@@ -435,79 +401,50 @@ function ShareTrackingCard({
   }
 
   return (
-    <div className="card dark:bg-slate-900 dark:border-slate-800">
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-          🔗 Customer Tracking Link
-        </h2>
-        <a
-          href={link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs font-semibold text-blue-600 hover:text-blue-700"
-        >
+    <div className={styles.card}>
+      <div className={styles.linkTitleRow}>
+        <p className={styles.cardLabel}>🔗 Customer Tracking Link</p>
+        <a href={link} target="_blank" rel="noopener noreferrer" className={styles.previewLink}>
           Preview ↗
         </a>
       </div>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className={styles.shareDesc}>
         Share this public link — the customer can track status and live ETA without logging in.
       </p>
-      <div className="flex items-center gap-2">
-        <input
-          readOnly
-          value={link}
-          onFocus={e => e.target.select()}
-          className="flex-1 min-w-0 text-xs font-mono bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-600 dark:text-slate-400 outline-none"
-        />
-        <button
-          onClick={copy}
-          className={`shrink-0 text-xs font-semibold px-3 py-2 rounded-lg transition-colors ${
-            copied ? 'bg-green-600 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'
-          }`}
-        >
+      <div className={styles.linkRow}>
+        <input readOnly value={link} onFocus={e => e.target.select()} className={styles.linkInput} />
+        <button onClick={copy} className={`${styles.copyBtn} ${copied ? styles.copyBtnDone : ''}`}>
           {copied ? '✓ Copied' : 'Copy'}
         </button>
       </div>
 
       {/* Send alert */}
-      <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">
-          Send delivery alert to customer
-        </p>
+      <div className={styles.notifyDivider}>
+        <p className={styles.notifyLabel}>Send delivery alert to customer</p>
         {!hasPhone ? (
-          <p className="text-xs text-amber-600">No phone number on file for this order.</p>
+          <p className={styles.noPhone}>No phone number on file for this order.</p>
         ) : (
-          <div className="flex gap-2">
-            <button
-              onClick={() => notify('sms')}
-              disabled={sending !== null}
-              className="flex items-center gap-1.5 text-xs font-semibold text-white bg-slate-700 hover:bg-slate-800 disabled:opacity-50 px-3 py-2 rounded-lg transition-colors"
-            >
+          <div className={styles.notifyBtns}>
+            <button onClick={() => notify('sms')} disabled={sending !== null} className={styles.smsBtn}>
               {sending === 'sms' ? 'Sending…' : '💬 Send SMS'}
             </button>
-            <button
-              onClick={() => notify('whatsapp')}
-              disabled={sending !== null}
-              className="flex items-center gap-1.5 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 px-3 py-2 rounded-lg transition-colors"
-            >
+            <button onClick={() => notify('whatsapp')} disabled={sending !== null} className={styles.waBtn}>
               {sending === 'whatsapp' ? 'Sending…' : '🟢 Send WhatsApp'}
             </button>
           </div>
         )}
 
-        {error && <p className="text-xs font-semibold text-red-600 mt-2">{error}</p>}
+        {error && <p className={styles.notifyError}>{error}</p>}
 
         {result && (
-          <div className="mt-3 p-3 rounded-xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
-            <p className="text-xs font-semibold text-green-700 dark:text-green-400">
+          <div className={styles.notifyResult}>
+            <p className={styles.ok}>
               ✓ {result.channel === 'whatsapp' ? 'WhatsApp' : 'SMS'} {result.simulated ? 'simulated' : 'sent'} to {result.to}
             </p>
             {result.simulated && (
-              <p className="text-[10px] text-amber-600 mt-0.5">
-                Demo mode — add Twilio keys to send real messages.
-              </p>
+              <p className={styles.demo}>Demo mode — add Twilio keys to send real messages.</p>
             )}
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 italic">"{result.message}"</p>
+            <p className={styles.quote}>"{result.message}"</p>
           </div>
         )}
       </div>
@@ -541,20 +478,26 @@ export function OrderDetail() {
 
   if (state.status === 'loading') {
     return (
-      <div className="p-4 md:p-6 space-y-4">
-        {[1,2,3].map(i => (
-          <div key={i} className="animate-pulse bg-slate-200 dark:bg-slate-800 rounded-xl h-28" />
-        ))}
+      <div className={styles.page}>
+        <div className={styles.guilloche} />
+        <div className={styles.wrap}>
+          <div className={styles.skeleton}>
+            {[1, 2, 3].map(i => <div key={i} className={styles.skelBlock} />)}
+          </div>
+        </div>
       </div>
     )
   }
 
   if (state.status === 'error') {
     return (
-      <div className="p-4 md:p-6">
-        <button onClick={() => navigate(-1)} className="text-sm text-blue-600 mb-4">← Back</button>
-        <div className="card border-red-200 bg-red-50">
-          <p className="text-sm font-semibold text-red-600">{state.message}</p>
+      <div className={styles.page}>
+        <div className={styles.guilloche} />
+        <div className={styles.wrap}>
+          <button onClick={() => navigate(-1)} className={styles.backLink}>← Back</button>
+          <div className={styles.errorCard}>
+            <p className={styles.errorMsg}>{state.message}</p>
+          </div>
         </div>
       </div>
     )
@@ -565,176 +508,146 @@ export function OrderDetail() {
   const isManager = user?.role === 'manager'
 
   return (
-    <div className="p-4 md:p-6 space-y-4 max-w-2xl">
-      {/* Back + header */}
-      <div>
-        <button
-          onClick={() => navigate(-1)}
-          className="text-sm text-blue-600 hover:text-blue-700 mb-3 flex items-center gap-1"
-        >
-          ← Back
-        </button>
-        <div className="flex items-start justify-between gap-3 flex-wrap">
-          <div>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-              {order.order_number}
-            </h1>
-            <p className="text-xs text-slate-400 mt-0.5">{order.area} · {order.time_window}</p>
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            <Badge label={order.status} style={STATUS_STYLES[order.status] ?? 'bg-slate-100 text-slate-600'} />
-            {order.is_urgent && (
-              <Badge label="Urgent" style="bg-red-100 text-red-700 border border-red-200" />
-            )}
+    <div className={styles.page}>
+      <div className={styles.guilloche} />
+      <div className={styles.wrap}>
+        {/* Back + header */}
+        <div>
+          <button onClick={() => navigate(-1)} className={styles.backLink}>← Back</button>
+          <div className={styles.headRow}>
+            <div>
+              <h1>{order.order_number}</h1>
+              <p className={styles.headSub}>{order.area} · {order.time_window}</p>
+            </div>
+            <div className={styles.headBadges}>
+              <Badge label={order.status} pill={STATUS_PILL[order.status] ?? styles.pillPostponed} />
+              {order.is_urgent && <Badge label="Urgent" pill={styles.pillUrgent} />}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Customer */}
-      <div className="card space-y-2 dark:bg-slate-900 dark:border-slate-800">
-        <h2 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">Customer</h2>
-        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{order.customer_name}</p>
-        {order.customer_phone && (
-          <p className="text-sm text-slate-500 dark:text-slate-400">{order.customer_phone}</p>
+        {/* Customer */}
+        <div className={styles.card}>
+          <p className={styles.cardLabel} style={{ marginBottom: 10 }}>Customer</p>
+          <p className={styles.custName}>{order.customer_name}</p>
+          {order.customer_phone && <p className={styles.custLine}>{order.customer_phone}</p>}
+          <p className={styles.custLine}>{order.customer_address}</p>
+          <div className={styles.custMetaRow}>
+            <span>Package: <strong>{order.package_size}</strong></span>
+            <span>Residence: <strong>{order.residence_type.replace('_', ' ')}</strong></span>
+            <span>Payment: <strong>{fmtINR(order.payment_amount)}</strong></span>
+          </div>
+          <p className={styles.deadline}>Deadline: {fmtDate(order.deadline)}</p>
+        </div>
+
+        {/* Navigate to this order (agent, active orders) */}
+        {isAgent && (order.status === 'pending' || order.status === 'in_transit') && (
+          <button onClick={() => navigate(`/map?order=${order.id}`)} className={styles.navBtn}>
+            🧭 Navigate to this order
+          </button>
         )}
-        <p className="text-sm text-slate-600 dark:text-slate-400">{order.customer_address}</p>
-        <div className="flex gap-4 pt-1 text-xs text-slate-500 dark:text-slate-400">
-          <span>Package: <strong className="text-slate-700 dark:text-slate-300 capitalize">{order.package_size}</strong></span>
-          <span>Residence: <strong className="text-slate-700 dark:text-slate-300 capitalize">{order.residence_type.replace('_', ' ')}</strong></span>
-          <span>Payment: <strong className="text-slate-700 dark:text-slate-300">{fmtINR(order.payment_amount)}</strong></span>
-        </div>
-        <p className="text-xs text-slate-400">Deadline: {fmtDate(order.deadline)}</p>
-      </div>
 
-      {/* Navigate to this order (agent, active orders) */}
-      {isAgent && (order.status === 'pending' || order.status === 'in_transit') && (
-        <button
-          onClick={() => navigate(`/map?order=${order.id}`)}
-          className="w-full flex items-center justify-center gap-2 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-700 px-4 py-3 rounded-xl transition-colors shadow-sm"
-        >
-          🧭 Navigate to this order
-        </button>
-      )}
-
-      {/* Agent */}
-      {order.agent_name && (
-        <div className="card dark:bg-slate-900 dark:border-slate-800">
-          <h2 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Assigned Agent</h2>
-          <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{order.agent_name}</p>
-        </div>
-      )}
-
-      {/* AI Decision */}
-      {d ? (
-        <div className="card dark:bg-slate-900 dark:border-slate-800 space-y-4">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <h2 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">AI Decision</h2>
-            <div className="flex gap-2">
-              <Badge
-                label={d.decision.replace('_', '-')}
-                style={DECISION_STYLES[d.decision] ?? 'bg-slate-100 text-slate-600'}
-              />
-              {d.risk_level && (
-                <Badge label={d.risk_level} style={RISK_STYLES[d.risk_level] ?? 'bg-slate-100 text-slate-600'} />
-              )}
-            </div>
+        {/* Agent */}
+        {order.agent_name && (
+          <div className={styles.card}>
+            <p className={styles.cardLabel} style={{ marginBottom: 8 }}>Assigned Agent</p>
+            <p className={styles.custName}>{order.agent_name}</p>
           </div>
+        )}
 
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full ${d.risk_score > 50 ? 'bg-red-400' : 'bg-green-400'}`}
-                style={{ width: `${Math.round(d.risk_score)}%` }}
-              />
+        {/* AI Decision */}
+        {d ? (
+          <div className={styles.card}>
+            <div className={styles.cardLabelRow}>
+              <p className={styles.cardLabel}>AI Decision</p>
+              <div className={styles.badgeGroup}>
+                <Badge label={d.decision.replace('_', '-')} pill={DECISION_PILL[d.decision] ?? styles.pillPostponed} />
+                {d.risk_level && <Badge label={d.risk_level} pill={RISK_PILL[d.risk_level] ?? styles.pillPostponed} />}
+              </div>
             </div>
-            <span className="text-sm font-bold text-slate-700 dark:text-slate-300 w-14 text-right">
-              {Math.round(d.risk_score)}% risk
-            </span>
-          </div>
 
-          {d.explanation && (
-            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{d.explanation}</p>
-          )}
-
-          {(d.top_shap_factors?.length ?? 0) > 0 && (
-            <div className="space-y-2 pt-1">
-              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                Risk Factors
-              </p>
-              {d.top_shap_factors.map(f => (
-                <ShapBar key={f.factor} factor={f.factor} contribution={f.contribution} />
-              ))}
+            <div className={styles.riskRow}>
+              <div className={styles.riskTrack}>
+                <div
+                  className={`${styles.riskFill} ${d.risk_score > 50 ? styles.riskFillHigh : styles.riskFillLow}`}
+                  style={{ width: `${Math.round(d.risk_score)}%` }}
+                />
+              </div>
+              <span className={styles.riskPct}>{Math.round(d.risk_score)}% risk</span>
             </div>
-          )}
 
-          <p className="text-xs text-slate-400">
-            Assessed {fmtDate(d.created_at)}
-            {d.model_version && ` · Model ${d.model_version}`}
-          </p>
-        </div>
-      ) : (
-        <div className="card dark:bg-slate-900 dark:border-slate-800">
-          <p className="text-sm text-slate-400">No AI decision recorded for this order.</p>
-        </div>
-      )}
+            {d.explanation && <p className={styles.explain}>{d.explanation}</p>}
 
-      {/* ETA prediction (active orders only) */}
-      {(order.status === 'pending' || order.status === 'in_transit') && (
-        <EtaCard orderId={order.id} accessToken={access_token!} />
-      )}
+            {(d.top_shap_factors?.length ?? 0) > 0 && (
+              <>
+                <p className={styles.shapTitle}>Risk Factors</p>
+                {d.top_shap_factors.map(f => (
+                  <ShapBar key={f.factor} factor={f.factor} contribution={f.contribution} />
+                ))}
+              </>
+            )}
 
-      {/* Customer tracking link + alerts (manager only) */}
-      {isManager && order.tracking_token && (
-        <ShareTrackingCard
-          token={order.tracking_token}
-          orderId={order.id}
-          accessToken={access_token!}
-          hasPhone={!!order.customer_phone}
-        />
-      )}
-
-      {/* Failure / reschedule reason — label depends on status */}
-      {order.failure_reason && (
-        order.status === 'postponed' ? (
-          <div className="card border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900">
-            <h2 className="text-xs font-semibold text-amber-600 uppercase tracking-wide mb-1">Reschedule Reason</h2>
-            <p className="text-sm text-amber-700 dark:text-amber-400">{order.failure_reason}</p>
+            <p className={styles.assessedNote}>
+              Assessed {fmtDate(d.created_at)}
+              {d.model_version && ` · Model ${d.model_version}`}
+            </p>
           </div>
         ) : (
-          <div className="card border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900">
-            <h2 className="text-xs font-semibold text-red-600 uppercase tracking-wide mb-1">Failure Reason</h2>
-            <p className="text-sm text-red-700 dark:text-red-400">{order.failure_reason}</p>
+          <div className={styles.card}>
+            <p className={styles.noDecision}>No AI decision recorded for this order.</p>
           </div>
-        )
-      )}
+        )}
 
-      {/* Status update (agent only, active orders) */}
-      {isAgent && (order.status === 'pending' || order.status === 'in_transit') && (
-        <div className="card dark:bg-slate-900 dark:border-slate-800">
-          <h2 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">Update Status</h2>
-          <StatusUpdateForm
+        {/* ETA prediction (active orders only) */}
+        {(order.status === 'pending' || order.status === 'in_transit') && (
+          <EtaCard orderId={order.id} accessToken={access_token!} />
+        )}
+
+        {/* Customer tracking link + alerts (manager only) */}
+        {isManager && order.tracking_token && (
+          <ShareTrackingCard
+            token={order.tracking_token}
             orderId={order.id}
             accessToken={access_token!}
-            onUpdated={load}
+            hasPhone={!!order.customer_phone}
           />
+        )}
+
+        {/* Failure / reschedule reason — label depends on status */}
+        {order.failure_reason && (
+          order.status === 'postponed' ? (
+            <div className={`${styles.reasonCard} ${styles.reasonCardPostpone}`}>
+              <p className={styles.reasonCardTitle}>Reschedule Reason</p>
+              <p className={styles.reasonCardText}>{order.failure_reason}</p>
+            </div>
+          ) : (
+            <div className={`${styles.reasonCard} ${styles.reasonCardFail}`}>
+              <p className={styles.reasonCardTitle}>Failure Reason</p>
+              <p className={styles.reasonCardText}>{order.failure_reason}</p>
+            </div>
+          )
+        )}
+
+        {/* Status update (agent only, active orders) */}
+        {isAgent && (order.status === 'pending' || order.status === 'in_transit') && (
+          <div className={styles.card}>
+            <p className={styles.cardLabel} style={{ marginBottom: 12 }}>Update Status</p>
+            <StatusUpdateForm orderId={order.id} accessToken={access_token!} onUpdated={load} />
+          </div>
+        )}
+
+        {/* Smart Reassign (manager only) — failed orders, or active orders that
+            still need reassigning (e.g. moving work off an agent being
+            deactivated). The backend already supports this for any status. */}
+        {isManager && (order.status === 'failed' || order.status === 'pending' || order.status === 'in_transit') && (
+          <ReassignPanel orderId={order.id} accessToken={access_token!} onReassigned={load} />
+        )}
+
+        {/* Timestamps */}
+        <div className={styles.timestamps}>
+          <p>Created: {fmtDate(order.created_at)}</p>
+          <p>Updated: {fmtDate(order.updated_at)}</p>
         </div>
-      )}
-
-      {/* Smart Reassign (manager only) — failed orders, or active orders that
-          still need reassigning (e.g. moving work off an agent being
-          deactivated). The backend already supports this for any status. */}
-      {isManager && (order.status === 'failed' || order.status === 'pending' || order.status === 'in_transit') && (
-        <ReassignPanel
-          orderId={order.id}
-          accessToken={access_token!}
-          onReassigned={load}
-        />
-      )}
-
-      {/* Timestamps */}
-      <div className="text-xs text-slate-400 pb-2 space-y-1">
-        <p>Created: {fmtDate(order.created_at)}</p>
-        <p>Updated: {fmtDate(order.updated_at)}</p>
       </div>
     </div>
   )

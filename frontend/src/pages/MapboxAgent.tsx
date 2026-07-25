@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
 import type { OrderListItem, OptimizedRoute } from '../api/orders'
 import { escapeHtml } from '../lib/escapeHtml'
+import '../styles/mapChrome.css'
+import styles from './MapboxAgent.module.css'
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN ?? ''
 mapboxgl.accessToken = MAPBOX_TOKEN
@@ -11,7 +13,9 @@ const CHENNAI_CENTER: [number, number] = [80.220, 13.040] // [lng, lat]
 const INITIAL_ZOOM = 12
 const MAP_STYLE = 'mapbox://styles/mapbox/standard'
 
-const RISK_COLOR: Record<string, string> = { low: '#10B981', medium: '#F59E0B', high: '#EF4444' }
+// Map is a committed dark environment (night light-preset) — same
+// dark-mode-validated risk hues used elsewhere (Dashboard's dark theme).
+const RISK_COLOR: Record<string, string> = { low: '#1FA971', medium: '#C1841A', high: '#E35B52' }
 const OWM_KEY = import.meta.env.VITE_OWM_KEY ?? '93ffaa6d46b4f1ba233e01d83955e17d'
 
 function riskColor(level: string | null | undefined): string {
@@ -200,6 +204,10 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
     mapRef.current = map
 
     map.on('load', () => {
+      // Standard style's configurable light preset — commit to a dark
+      // "night" look matching the app's navy/gold chrome.
+      map.setConfigProperty('basemap', 'lightPreset', 'night')
+
       // Weather rasters
       map.addSource('owm-clouds', { type: 'raster', tiles: [`https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${OWM_KEY}`], tileSize: 256 })
       map.addSource('owm-precip', { type: 'raster', tiles: [`https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${OWM_KEY}`], tileSize: 256 })
@@ -219,48 +227,56 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
           'line-opacity': 0.7,
           'line-color': [
             'match', ['get', 'congestion'],
-            'moderate', '#94A3B8',
-            '#DC2626',
+            'moderate', '#8290A3',
+            '#E35B52',
           ],
+          'line-emissive-strength': 1,
         },
       })
 
       // Route line
+      // 'emissive-strength' properties below counter Standard style's night
+      // light-preset, which otherwise scene-dims every custom layer's color.
       map.addSource('route', { type: 'geojson', data: routeLineGeoJSON(route) })
       map.addLayer({
         id: 'route-line', type: 'line', source: 'route',
         layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: { 'line-color': '#8B5CF6', 'line-width': 5, 'line-opacity': 0.85 },
+        paint: { 'line-color': '#D9A54B', 'line-width': 5, 'line-opacity': 0.85, 'line-emissive-strength': 1 },
       })
 
-      // Non-route order pins
+      // Non-route order pins — soft glow halo so risk color reads clearly
+      // (a dark stroke on a 5px fill was visually swallowing the color).
       map.addSource('pins', { type: 'geojson', data: pinsGeoJSON(orders) })
       map.addLayer({
+        id: 'order-pins-glow', type: 'circle', source: 'pins',
+        paint: { 'circle-radius': 13, 'circle-color': ['get', 'color'], 'circle-opacity': 0.4, 'circle-blur': 0.9, 'circle-emissive-strength': 1 },
+      })
+      map.addLayer({
         id: 'order-pins', type: 'circle', source: 'pins',
-        paint: { 'circle-radius': 5, 'circle-color': ['get', 'color'], 'circle-stroke-width': 1.5, 'circle-stroke-color': '#0f172a' },
+        paint: { 'circle-radius': 6, 'circle-color': ['get', 'color'], 'circle-stroke-width': 1.2, 'circle-stroke-color': '#F3ECDA', 'circle-stroke-opacity': 0.9, 'circle-emissive-strength': 1 },
       })
 
       // Route stops (numbered)
       map.addSource('stops', { type: 'geojson', data: stopsGeoJSON(route) })
       map.addLayer({
         id: 'stop-circles', type: 'circle', source: 'stops',
-        paint: { 'circle-radius': 12, 'circle-color': ['get', 'color'], 'circle-stroke-width': 2, 'circle-stroke-color': '#ffffff' },
+        paint: { 'circle-radius': 12, 'circle-color': ['get', 'color'], 'circle-stroke-width': 2, 'circle-stroke-color': '#F3ECDA', 'circle-emissive-strength': 1 },
       })
       map.addLayer({
         id: 'stop-labels', type: 'symbol', source: 'stops',
         layout: { 'text-field': ['get', 'seq'], 'text-size': 12, 'text-font': ['DIN Offc Pro Bold', 'Arial Unicode MS Bold'] },
-        paint: { 'text-color': '#ffffff' },
+        paint: { 'text-color': '#0E2038' },
       })
 
-      // Agent position (pulsing blue dot)
+      // Agent position (pulsing gold dot)
       map.addSource('agent', { type: 'geojson', data: agentGeoJSON(agentPos) })
       map.addLayer({
         id: 'agent-halo', type: 'circle', source: 'agent',
-        paint: { 'circle-radius': 18, 'circle-color': '#2563EB', 'circle-opacity': 0.25 },
+        paint: { 'circle-radius': 18, 'circle-color': '#D9A54B', 'circle-opacity': 0.25, 'circle-emissive-strength': 1 },
       })
       map.addLayer({
         id: 'agent-dot', type: 'circle', source: 'agent',
-        paint: { 'circle-radius': 8, 'circle-color': '#2563EB', 'circle-stroke-width': 3, 'circle-stroke-color': '#ffffff' },
+        paint: { 'circle-radius': 8, 'circle-color': '#D9A54B', 'circle-stroke-width': 3, 'circle-stroke-color': '#F3ECDA', 'circle-emissive-strength': 1 },
       })
 
       loadedRef.current = true
@@ -272,12 +288,12 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
         if (!p) return
         popup.setLngLat((e.features![0].geometry as GeoJSON.Point).coordinates as [number, number])
           .setHTML(
-            `<div style="font-size:12px;line-height:1.6;min-width:170px">
-              <strong>Stop ${escapeHtml(p.seq)} — ${escapeHtml(p.order_number)}</strong>${p.is_urgent === true || p.is_urgent === 'true' ? ' <span style="color:#EF4444;font-weight:700">⚠</span>' : ''}
+            `<div style="font-family:'LM Plex Sans',sans-serif;font-size:12px;line-height:1.6;min-width:170px">
+              <strong>Stop ${escapeHtml(p.seq)} — ${escapeHtml(p.order_number)}</strong>${p.is_urgent === true || p.is_urgent === 'true' ? ' <span style="color:#E35B52;font-weight:700">⚠</span>' : ''}
               <br/>${escapeHtml(p.customer_name)}
               <br/>${escapeHtml(p.address)}
               <br/><span style="color:${escapeHtml(p.color)};font-weight:600">ETA ${escapeHtml(fmtEta(p.eta))}</span>
-              <span style="color:#64748b"> (${p.dur} min · ${p.dist} km)</span>
+              <span style="color:#8290A3"> (${p.dur} min · ${p.dist} km)</span>
             </div>`,
           ).addTo(map)
       })
@@ -322,7 +338,7 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
     if (!map || !loadedRef.current || !map.getLayer(id)) return
     map.setLayoutProperty(id, 'visibility', v ? 'visible' : 'none')
   }
-  useEffect(() => setVis('order-pins', showPins), [showPins])
+  useEffect(() => { setVis('order-pins', showPins); setVis('order-pins-glow', showPins) }, [showPins])
   useEffect(() => { setVis('route-line', showRoute); setVis('stop-circles', showRoute); setVis('stop-labels', showRoute) }, [showRoute])
   useEffect(() => { setVis('owm-clouds', showWeather); setVis('owm-precip', showWeather) }, [showWeather])
   useEffect(() => setVis('traffic-flow', showTraffic), [showTraffic])
@@ -406,8 +422,8 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
 
       const el = document.createElement('div')
       el.innerHTML =
-        `<svg width="36" height="36" viewBox="0 0 24 24" style="filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))">
-          <circle cx="12" cy="12" r="11" fill="#2563EB"/><path d="M12 5 L17 18 L12 15 L7 18 Z" fill="#ffffff"/>
+        `<svg width="36" height="36" viewBox="0 0 24 24" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,.6))">
+          <circle cx="12" cy="12" r="11" fill="#D9A54B"/><path d="M12 5 L17 18 L12 15 L7 18 Z" fill="#241503"/>
         </svg>`
       const vehicle = new mapboxgl.Marker({ element: el, rotationAlignment: 'map' }).setLngLat(line[0]).addTo(map)
       vehicle.setRotation(bearingDeg(line[0], line[1]))
@@ -524,13 +540,15 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
 
   if (!MAPBOX_TOKEN) {
     return (
-      <div className="flex items-center justify-center p-6" style={{ height: 'calc(100vh - 64px)' }}>
-        <div className="max-w-md text-center card dark:bg-slate-900 dark:border-slate-800">
-          <p className="text-3xl mb-2">🗺️</p>
-          <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Map needs a Mapbox token</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-            Add <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded">VITE_MAPBOX_TOKEN</code> to Vercel and redeploy.
-          </p>
+      <div className="mapTokens">
+        <div className="mapTokenCard">
+          <div className="mapTokenBox">
+            <p>🗺️</p>
+            <p className="mapTokenTitle">Map needs a Mapbox token</p>
+            <p className="mapTokenBody">
+              Add <code>VITE_MAPBOX_TOKEN</code> to Vercel and redeploy.
+            </p>
+          </div>
         </div>
       </div>
     )
@@ -539,44 +557,42 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
   const hasRoute = route && route.stops.length > 0
 
   return (
-    <div className="relative" style={{ height: 'calc(100vh - 64px)' }}>
+    <div className="mapTokens">
       <div ref={containerRef} style={{ height: '100%', width: '100%' }} />
 
       {/* Re-center (Gmap-style) — appears when the user has panned away mid-nav */}
       {navMode && !following && (
-        <button
-          onClick={recenter}
-          className="absolute bottom-28 right-4 z-[21] flex items-center gap-2 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 text-sm font-semibold px-4 py-2.5 rounded-full shadow-2xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <button onClick={recenter} className={`${styles.recenter} mapPanel`} title="Re-center">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="3" />
             <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
           </svg>
-          Re-center
         </button>
       )}
 
       {/* Turn-by-turn banner (navigation mode) */}
       {navMode && nav && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[20] w-[92%] max-w-md">
-          <div className="bg-violet-700 text-white rounded-2xl shadow-2xl px-4 py-3 flex items-center gap-4">
-            <span className="text-4xl leading-none shrink-0">{nav.icon}</span>
-            <div className="flex-1 min-w-0">
-              <p className="text-lg font-bold leading-tight">
+        <>
+          <div className={`${styles.navBanner} mapPanel`}>
+            <span className="mapCorner mapCornerTl" /><span className="mapCorner mapCornerTr" />
+            <span className="mapCorner mapCornerBl" /><span className="mapCorner mapCornerBr" />
+            <span className={styles.navIcon}>{nav.icon}</span>
+            <div className="min-w-0">
+              <p className={`${styles.navDist} mapGoldShimmer`}>
                 {nav.distToNext >= 1000 ? `${(nav.distToNext / 1000).toFixed(1)} km` : `${nav.distToNext} m`}
               </p>
-              <p className="text-sm text-violet-100 truncate">{nav.instruction}</p>
+              <p className={styles.navText}>{nav.instruction}</p>
             </div>
           </div>
-          <div className="mt-1.5 mx-auto w-max bg-slate-900/90 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full shadow-lg">
+          <div className={`${styles.navSub} mapPanel`}>
             <strong>{nav.remainMin} min</strong> · {nav.remainKm} km to destination
           </div>
-        </div>
+        </>
       )}
 
       {/* Corner controls — hidden while navigating for a clean driver view */}
       {!navMode && (<>
-      <div className="absolute top-3 left-3 z-[10] bg-slate-900/90 backdrop-blur-sm rounded-lg shadow-lg p-1 flex gap-1">
+      <div className={styles.optimizeToggle}>
         {([
           { key: 'time',     label: '⚡ Fastest' },
           { key: 'distance', label: '📏 Shortest' },
@@ -584,9 +600,7 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
           <button
             key={m.key}
             onClick={() => onOptimizeChange(m.key)}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-              optimize === m.key ? 'bg-violet-600 text-white' : 'text-slate-300 hover:text-white'
-            }`}
+            className={`mapPill ${optimize === m.key ? 'mapPillGold' : ''}`}
           >
             {m.label}
           </button>
@@ -594,19 +608,16 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
       </div>
 
       {/* Layer panel */}
-      <div className="absolute top-3 right-3 z-[10] flex flex-col gap-2">
+      <div className={styles.layerStack}>
         {[
-          { on: showPins,    color: '#2563EB', set: () => setShowPins(p => !p),    label: 'Order Pins' },
-          { on: showRoute,   color: '#8B5CF6', set: () => setShowRoute(r => !r),   label: showRoute ? 'Route ON' : 'My Route' },
-          { on: showTraffic, color: '#DC2626', set: () => setShowTraffic(t => !t), label: showTraffic ? '🚦 Traffic ON' : 'Traffic' },
-          { on: showWeather, color: '#0EA5E9', set: () => setShowWeather(w => !w), label: showWeather ? '🌧 Weather ON' : 'Weather' },
+          { on: showPins,    variant: 'mapPillGold', set: () => setShowPins(p => !p),    label: 'Order Pins' },
+          { on: showRoute,   variant: 'mapPillGold', set: () => setShowRoute(r => !r),   label: showRoute ? 'Route ON' : 'My Route' },
+          { on: showTraffic, variant: 'mapPillRisk', set: () => setShowTraffic(t => !t), label: showTraffic ? '🚦 Traffic ON' : 'Traffic' },
+          { on: showWeather, variant: 'mapPillGold', set: () => setShowWeather(w => !w), label: showWeather ? '🌧 Weather ON' : 'Weather' },
         ].map(b => (
           <button
             key={b.label} onClick={b.set}
-            style={b.on ? { backgroundColor: b.color } : undefined}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg shadow-lg border backdrop-blur-sm transition-colors ${
-              b.on ? 'text-white border-transparent' : 'bg-white/90 text-slate-700 border-slate-200 hover:bg-white'
-            }`}
+            className={`mapPill ${b.on ? b.variant : ''}`}
           >
             {b.label}
           </button>
@@ -616,29 +627,27 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
 
       {/* Route summary + navigation control */}
       {hasRoute && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[10] flex flex-col items-center gap-2">
-          <div className="bg-slate-900/90 backdrop-blur-sm text-white text-xs px-4 py-2 rounded-full shadow-lg flex gap-4 items-center">
-            <span><strong>{route.stops.length}</strong> stops</span>
-            <span>·</span>
-            <span><strong>{route.total_distance_km} km</strong></span>
-            <span>·</span>
-            <span><strong>{route.total_duration_min} min</strong></span>
+        <>
+          <div className={`${styles.routeSummary} mapPanel`}>
+            <span><span className={`${styles.routeFigure} mapGoldShimmer`}>{route.stops.length}</span><span className={styles.routeFigLabel}>stops</span></span>
+            <span className={styles.routeDivider} />
+            <span><span className={`${styles.routeFigure} mapGoldShimmer`}>{route.total_distance_km}</span><span className={styles.routeFigLabel}>km</span></span>
+            <span className={styles.routeDivider} />
+            <span><span className={`${styles.routeFigure} mapGoldShimmer`}>{route.total_duration_min}</span><span className={styles.routeFigLabel}>min</span></span>
             {route.traffic_factor > 1.1 && (
               <>
-                <span>·</span>
-                <span style={{ color: '#F59E0B' }}>Traffic ×{route.traffic_factor.toFixed(1)}</span>
+                <span className={styles.routeDivider} />
+                <span className={styles.routeTraffic}>⚠ Traffic ×{route.traffic_factor.toFixed(1)}</span>
               </>
             )}
           </div>
           <button
             onClick={() => setNavMode(n => !n)}
-            className={`px-6 py-2.5 text-sm font-bold rounded-full shadow-xl transition-colors ${
-              navMode ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-violet-600 hover:bg-violet-700 text-white'
-            }`}
+            className={`${styles.navCta} ${navMode ? styles.navCtaExit : ''}`}
           >
             {navMode ? '■ Exit Navigation' : '▶ Start Navigation'}
           </button>
-        </div>
+        </>
       )}
     </div>
   )

@@ -1,62 +1,43 @@
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { useSocket } from '../../contexts/SocketContext'
-import { MANAGER_NAV, AGENT_NAV } from '../../router/nav'
+import { MANAGER_NAV_GROUPS, AGENT_NAV_GROUPS } from '../../router/nav'
+import { NavGlyph } from './navIcons'
+import styles from './Sidebar.module.css'
 
 export function Sidebar() {
-  const { user, logout } = useAuth()
-  const { unreadCount } = useSocket()
-  const navigate = useNavigate()
-  const navItems = user?.role === 'manager' ? MANAGER_NAV : AGENT_NAV
-
-  function handleLogout() {
-    logout()
-    navigate('/login', { replace: true })
-  }
+  const { user } = useAuth()
+  const groups = user?.role === 'manager' ? MANAGER_NAV_GROUPS : AGENT_NAV_GROUPS
 
   return (
-    <aside className="hidden md:flex flex-col w-56 shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 h-full">
+    <aside className={styles.sidebar}>
       {/* Brand */}
-      <div className="px-4 py-5 border-b border-slate-100 dark:border-slate-800">
-        <span className="text-lg font-bold text-primary tracking-tight">LastMeter AI</span>
-        <p className="text-xs text-slate-400 mt-0.5 truncate">{user?.name ?? user?.username}</p>
+      <div className={styles.brand}>
+        <div className={styles.brandMark}>L</div>
+        <div className={styles.brandText}>
+          <p className={styles.brandName}>LastMeter AI</p>
+        </div>
       </div>
 
-      {/* Nav items */}
-      <nav className="flex-1 overflow-y-auto py-2">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            className={({ isActive }) =>
-              `flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium rounded-lg mx-2 my-0.5 transition-colors ${
-                isActive
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'
-              }`
-            }
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-current opacity-60 shrink-0" />
-            {item.label}
-            {item.path === '/notifications' && unreadCount > 0 && (
-              <span className="ml-auto text-[10px] font-bold bg-red-500 text-white px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none">
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
-            )}
-          </NavLink>
+      {/* Nav groups */}
+      <nav className={styles.navScroll}>
+        {groups.map(group => (
+          <div key={group.label} className={styles.navGroup}>
+            <p className={styles.navGroupLabel}>{group.label}</p>
+            {group.items.map(item => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) =>
+                  `${styles.navItem} ${isActive ? styles.navItemActive : ''}`
+                }
+              >
+                <NavGlyph icon={item.icon} />
+                {item.label}
+              </NavLink>
+            ))}
+          </div>
         ))}
       </nav>
-
-      {/* Logout */}
-      <div className="p-3 border-t border-slate-100 dark:border-slate-800">
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-nogo hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
-        >
-          <span>↩</span>
-          Logout
-        </button>
-      </div>
     </aside>
   )
 }

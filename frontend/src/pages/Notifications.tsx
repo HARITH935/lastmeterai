@@ -5,6 +5,7 @@ import {
   getNotifications, markNotificationRead, markAllRead, deleteNotification,
   type NotificationCategory, type NotificationItem, type NotificationListResponse,
 } from '../api/notifications'
+import styles from './Notifications.module.css'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -29,16 +30,16 @@ const CAT_CONFIG: Record<
   NotificationCategory,
   { label: string; pill: string }
 > = {
-  ai_alert:       { label: 'AI',       pill: 'bg-blue-50 text-blue-600' },
-  delivery_alert: { label: 'Delivery', pill: 'bg-amber-50 text-amber-600' },
-  weather_alert:  { label: 'Weather',  pill: 'bg-cyan-50 text-cyan-600' },
-  system_alert:   { label: 'System',   pill: 'bg-slate-100 text-slate-500' },
+  ai_alert:       { label: 'AI',       pill: styles.catAi },
+  delivery_alert: { label: 'Delivery', pill: styles.catDelivery },
+  weather_alert:  { label: 'Weather',  pill: styles.catWeather },
+  system_alert:   { label: 'System',   pill: styles.catSystem },
 }
 
 function CatBadge({ category }: { category: NotificationCategory }) {
   const c = CAT_CONFIG[category]
   return (
-    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wide ${c.pill}`}>
+    <span className={`${styles.catBadge} ${c.pill}`}>
       {c.label}
     </span>
   )
@@ -46,14 +47,15 @@ function CatBadge({ category }: { category: NotificationCategory }) {
 
 // ── Skeleton ───────────────────────────────────────────────────────────────────
 
-function Sk({ className }: { className?: string }) {
-  return <div className={`animate-pulse bg-slate-200 rounded-xl ${className ?? ''}`} />
-}
-
 function NotifSkeleton() {
   return (
-    <div className="p-4 md:p-6 space-y-3">
-      {Array.from({ length: 5 }).map((_, i) => <Sk key={i} className="h-20" />)}
+    <div className={styles.page}>
+      <div className={styles.guilloche} />
+      <div className={styles.wrap}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {Array.from({ length: 5 }).map((_, i) => <div key={i} className={styles.skelBlock} style={{ height: 80 }} />)}
+        </div>
+      </div>
     </div>
   )
 }
@@ -76,47 +78,41 @@ function NotifRow({
   onDelete:    (id: number) => void
 }) {
   return (
-    <div
-      className={`px-4 py-3 border-b border-slate-50 last:border-0 flex gap-3 items-start transition-colors ${
-        !notif.is_read ? 'bg-blue-50/25' : ''
-      }`}
-    >
+    <div className={`${styles.row} ${!notif.is_read ? styles.rowUnread : ''}`}>
       {/* Unread dot */}
-      <div className="pt-1.5 shrink-0 w-2">
-        {!notif.is_read && (
-          <div className="w-2 h-2 rounded-full bg-blue-500" />
-        )}
+      <div className={styles.dotCol}>
+        {!notif.is_read && <div className={styles.unreadDot} />}
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
+      <div className={styles.rowBody}>
+        <div className={styles.rowTop}>
           <CatBadge category={notif.category} />
-          <span className={`text-sm font-semibold text-slate-800 ${!notif.is_read ? 'font-bold' : ''}`}>
+          <span className={`${styles.rowTitle} ${!notif.is_read ? styles.rowTitleUnread : ''}`}>
             {notif.title}
           </span>
-          <span className="text-[11px] text-slate-400 ml-auto whitespace-nowrap">
+          <span className={styles.rowTime}>
             {fmtTime(notif.created_at)}
           </span>
         </div>
-        <p className="text-xs text-slate-500 mt-0.5 leading-relaxed line-clamp-2">
+        <p className={styles.rowMsg}>
           {notif.message}
         </p>
         {notif.order_id != null && (
-          <p className="text-[11px] text-blue-600 mt-1">
+          <p className={styles.rowOrder}>
             → Order #{notif.order_id}
           </p>
         )}
       </div>
 
       {/* Actions */}
-      <div className="flex gap-1 shrink-0 pt-0.5">
+      <div className={styles.rowActions}>
         {!notif.is_read && (
           <button
             onClick={() => onMarkRead(notif.id)}
             disabled={pending}
             title="Mark as read"
-            className="text-[11px] text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-50 transition-colors disabled:opacity-40"
+            className={`${styles.actBtn} ${styles.actCheck}`}
           >
             ✓
           </button>
@@ -125,7 +121,7 @@ function NotifRow({
           onClick={() => onDelete(notif.id)}
           disabled={pending}
           title="Delete"
-          className="text-[11px] text-slate-400 hover:text-red-500 px-2 py-1 rounded hover:bg-red-50 transition-colors disabled:opacity-40"
+          className={`${styles.actBtn} ${styles.actDel}`}
         >
           ×
         </button>
@@ -259,105 +255,95 @@ export function Notifications() {
     ? (filterRead !== 'read' && listState.resp.unread_counts.total > 0)
     : false
 
+  if (listState.status === 'loading') return <NotifSkeleton />
+
   return (
-    <div>
-      {/* ── Header ──────────────────────────────────────────────────────────── */}
-      <div className="px-4 md:px-6 pt-6 pb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h1 className="text-xl font-bold text-slate-900">Notifications</h1>
-          {unread != null && unread > 0 && (
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-500 text-white">
-              {unread}
-            </span>
+    <div className={styles.page}>
+      <div className={styles.guilloche} />
+      <div className={styles.wrap}>
+
+        {/* ── Header ──────────────────────────────────────────────────────── */}
+        <div className={styles.pageHead}>
+          <div className={styles.headLeft}>
+            <h1>Notifications</h1>
+            {unread != null && unread > 0 && (
+              <span className={styles.unreadBadge}>{unread}</span>
+            )}
+          </div>
+          {hasUnread && (
+            <button onClick={handleMarkAll} disabled={markingAll} className={styles.markAllBtn}>
+              {markingAll ? 'Marking…' : 'Mark all read'}
+            </button>
           )}
         </div>
-        {hasUnread && (
-          <button
-            onClick={handleMarkAll}
-            disabled={markingAll}
-            className="text-xs font-semibold text-blue-600 hover:text-blue-800 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors disabled:opacity-50"
-          >
-            {markingAll ? 'Marking…' : 'Mark all read'}
-          </button>
-        )}
-      </div>
 
-      {/* ── Filters ─────────────────────────────────────────────────────────── */}
-      <div className="px-4 md:px-6 pt-4 pb-0 flex flex-wrap gap-3">
-        {/* Category pills */}
-        <div className="flex gap-1 flex-wrap">
-          {(
-            [
-              { value: '' as const,               label: 'All' },
-              { value: 'ai_alert' as const,        label: 'AI' },
-              { value: 'delivery_alert' as const,  label: 'Delivery' },
-              { value: 'weather_alert' as const,   label: 'Weather' },
-              { value: 'system_alert' as const,    label: 'System' },
-            ] as const
-          ).map(opt => (
-            <button
-              key={opt.value}
-              onClick={() => changeFilterCat(opt.value)}
-              className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors ${
-                filterCat === opt.value
-                  ? 'bg-slate-800 text-white border-slate-800'
-                  : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400'
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
+        {/* ── Filters ─────────────────────────────────────────────────────── */}
+        <div className={styles.filterRow}>
+          {/* Category pills */}
+          <div className={styles.catPills}>
+            {(
+              [
+                { value: '' as const,               label: 'All' },
+                { value: 'ai_alert' as const,        label: 'AI' },
+                { value: 'delivery_alert' as const,  label: 'Delivery' },
+                { value: 'weather_alert' as const,   label: 'Weather' },
+                { value: 'system_alert' as const,    label: 'System' },
+              ] as const
+            ).map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => changeFilterCat(opt.value)}
+                className={`${styles.catPill} ${filterCat === opt.value ? styles.catPillSel : ''}`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Read/unread toggle */}
+          <div className={styles.readToggle}>
+            {(
+              [
+                { value: 'all' as const,    label: 'All' },
+                { value: 'unread' as const, label: 'Unread' },
+                { value: 'read' as const,   label: 'Read' },
+              ] as const
+            ).map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => changeFilterRead(opt.value)}
+                className={`${styles.readBtn} ${filterRead === opt.value ? styles.readBtnSel : ''}`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Read/unread toggle */}
-        <div className="flex gap-1 bg-slate-100 rounded-lg p-1 ml-auto">
-          {(
-            [
-              { value: 'all' as const,    label: 'All' },
-              { value: 'unread' as const, label: 'Unread' },
-              { value: 'read' as const,   label: 'Read' },
-            ] as const
-          ).map(opt => (
-            <button
-              key={opt.value}
-              onClick={() => changeFilterRead(opt.value)}
-              className={`text-xs font-semibold px-3 py-1.5 rounded-md transition-colors ${
-                filterRead === opt.value
-                  ? 'bg-white text-slate-800 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Content ─────────────────────────────────────────────────────────── */}
-      <div className="p-4 md:p-6 pt-4">
-        {listState.status === 'loading' && <NotifSkeleton />}
-
+        {/* ── Content ─────────────────────────────────────────────────────── */}
         {listState.status === 'error' && (
-          <div className="card border-red-200 bg-red-50">
-            <p className="text-sm font-semibold text-red-600">Failed to load notifications</p>
-            <p className="text-xs text-red-500 mt-1">{listState.message}</p>
+          <div className={styles.errorCard}>
+            <p className={styles.errorTitle}>Failed to load notifications</p>
+            <p className={styles.errorMsg}>{listState.message}</p>
           </div>
         )}
 
         {listState.status === 'success' && (
           <>
             {listState.resp.data.length === 0 ? (
-              <div className="card">
-                <p className="text-sm text-slate-400 text-center py-6">
-                  {filterRead === 'unread'
-                    ? 'No unread notifications.'
-                    : filterCat
-                    ? `No ${CAT_CONFIG[filterCat].label.toLowerCase()} notifications.`
-                    : 'No notifications yet.'}
-                </p>
+              <div className={styles.listCard}>
+                <div className={styles.emptyState}>
+                  <p>
+                    {filterRead === 'unread'
+                      ? 'No unread notifications.'
+                      : filterCat
+                      ? `No ${CAT_CONFIG[filterCat].label.toLowerCase()} notifications.`
+                      : 'No notifications yet.'}
+                  </p>
+                </div>
               </div>
             ) : (
-              <div className="card overflow-hidden p-0">
+              <div className={styles.listCard}>
                 {listState.resp.data.map(n => (
                   <NotifRow
                     key={n.id}
@@ -372,22 +358,22 @@ export function Notifications() {
 
             {/* Pagination */}
             {pagination && pagination.pages > 1 && (
-              <div className="flex items-center justify-between mt-4">
+              <div className={styles.pager}>
                 <button
                   onClick={() => setPage(p => Math.max(1, p - 1))}
                   disabled={page <= 1}
-                  className="text-xs font-semibold text-slate-600 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40"
+                  className={styles.pagerBtn}
                 >
                   ← Previous
                 </button>
-                <span className="text-xs text-slate-500">
+                <span className={styles.pagerInfo}>
                   Page {pagination.page} of {pagination.pages}
-                  <span className="text-slate-400"> · {pagination.total} total</span>
+                  <span> · {pagination.total} total</span>
                 </span>
                 <button
                   onClick={() => setPage(p => Math.min(pagination.pages, p + 1))}
                   disabled={page >= pagination.pages}
-                  className="text-xs font-semibold text-slate-600 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40"
+                  className={styles.pagerBtn}
                 >
                   Next →
                 </button>
@@ -396,11 +382,11 @@ export function Notifications() {
 
             {/* Unread breakdown (shown when viewing "All") */}
             {filterRead === 'all' && listState.resp.unread_counts.total > 0 && (
-              <div className="mt-4 card bg-slate-50">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+              <div className={styles.breakdownCard}>
+                <p className={styles.breakdownLabel}>
                   Unread by category
                 </p>
-                <div className="flex flex-wrap gap-3">
+                <div className={styles.breakdownChips}>
                   {(
                     [
                       ['ai_alert', 'AI'] ,
@@ -415,7 +401,7 @@ export function Notifications() {
                       <button
                         key={key}
                         onClick={() => changeFilterCat(key)}
-                        className={`text-xs px-2.5 py-1 rounded-full font-semibold ${CAT_CONFIG[key].pill}`}
+                        className={`${styles.breakdownChip} ${CAT_CONFIG[key].pill}`}
                       >
                         {label}: {count}
                       </button>

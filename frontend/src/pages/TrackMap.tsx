@@ -1,6 +1,7 @@
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { useEffect, useRef } from 'react'
 import mapboxgl from 'mapbox-gl'
+import styles from './Track.module.css'
 
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN ?? ''
 mapboxgl.accessToken = TOKEN
@@ -59,7 +60,7 @@ export function TrackMap({ destination, agentLocation }: Props) {
     if (mapRef.current || !containerRef.current || !TOKEN) return
     const map = new mapboxgl.Map({
       container: containerRef.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
+      style: 'mapbox://styles/mapbox/dark-v11',
       center: dest, zoom: 13, attributionControl: false,
     })
     mapRef.current = map
@@ -70,7 +71,7 @@ export function TrackMap({ destination, agentLocation }: Props) {
       map.addLayer({
         id: 'trk-route', type: 'line', source: 'trk-route',
         layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: { 'line-color': '#2563EB', 'line-width': 5, 'line-opacity': 0.8 },
+        paint: { 'line-color': '#D9A54B', 'line-width': 5, 'line-opacity': 0.85 },
       })
       loadedRef.current = true
     })
@@ -126,11 +127,11 @@ export function TrackMap({ destination, agentLocation }: Props) {
   if (!TOKEN) return null
 
   return (
-    <div className="relative rounded-2xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800" style={{ height: 260 }}>
+    <div className={styles.mapCard}>
       <div ref={containerRef} style={{ height: '100%', width: '100%' }} />
       {!agentLocation && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm">
-          <p className="text-xs font-semibold text-slate-500">Waiting for driver to start moving…</p>
+        <div className={styles.mapWaitOverlay}>
+          <p>Waiting for driver to start moving…</p>
         </div>
       )}
     </div>

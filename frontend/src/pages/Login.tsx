@@ -1,9 +1,8 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type CSSProperties, type FormEvent } from 'react'
 import { useNavigate, Navigate } from 'react-router-dom'
 import { loginRequest, type ApiError } from '../api/auth'
 import { useAuth } from '../contexts/AuthContext'
-import { Input } from '../components/ui/Input'
-import { Button } from '../components/ui/Button'
+import styles from './Login.module.css'
 
 export function Login() {
   const { user, login } = useAuth()
@@ -44,94 +43,146 @@ export function Login() {
   }
 
   return (
-    <div className="flex h-full min-h-screen">
-      {/* Left — form panel */}
-      <div className="flex flex-col justify-center w-full md:w-1/2 px-8 py-12 bg-white">
-        <div className="max-w-sm w-full mx-auto">
-          {/* Logo / Brand */}
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">LastMeter AI</h1>
-            <p className="mt-1 text-sm text-slate-500">
-              Last-mile delivery intelligence for Chennai
-            </p>
+    <div className={styles.screen}>
+      <svg className={styles.bgMap} viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="bgRouteGrad" x1="80" y1="780" x2="1320" y2="140" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stopColor="#A9772A" />
+            <stop offset="0.55" stopColor="#D9A54B" />
+            <stop offset="1" stopColor="#FFF3D0" />
+          </linearGradient>
+          <linearGradient id="bgRouteGrad2" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#A9772A" />
+            <stop offset="1" stopColor="#F3D999" />
+          </linearGradient>
+          <filter id="bgGlow" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="5" result="b" />
+            <feMerge>
+              <feMergeNode in="b" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        <line className={styles.gridLine} x1="140" y1="80" x2="140" y2="840" />
+        <line className={styles.gridLine} x1="420" y1="40" x2="420" y2="860" />
+        <line className={styles.gridLine} x1="700" y1="40" x2="700" y2="820" />
+        <line className={styles.gridLine} x1="980" y1="40" x2="980" y2="760" />
+        <line className={styles.gridLine} x1="1260" y1="60" x2="1260" y2="700" />
+        <line className={styles.gridLine} x1="60" y1="200" x2="1400" y2="200" />
+        <line className={styles.gridLine} x1="60" y1="460" x2="1400" y2="460" />
+        <line className={styles.gridLine} x1="60" y1="700" x2="1400" y2="700" />
+
+        <rect className={styles.mapBlock} x="200" y="130" width="130" height="80" />
+        <rect className={styles.mapBlock} x="500" y="560" width="110" height="90" />
+        <rect className={styles.mapBlock} x="820" y="480" width="150" height="100" />
+        <rect className={styles.mapBlock} x="1080" y="600" width="120" height="80" />
+        <rect className={styles.mapBlock} x="960" y="90" width="100" height="70" />
+
+        <path id="bgRoutePath2" className={styles.routePath2} d="M 260 200 C 340 320, 420 340, 520 420 S 700 560, 880 600" />
+        <path id="bgRoutePath3" className={styles.routePath3} d="M 1360 200 C 1260 260, 1180 260, 1080 340 S 900 480, 700 520" />
+
+        <path className={styles.routeFaint} d="M 100 780 Q 300 700 420 520" />
+        <path className={styles.routeFaint} d="M 780 340 Q 900 260 980 90" />
+        <path className={styles.routeFaint} d="M 260 200 Q 180 400 260 700" />
+
+        <path id="bgRoutePath" className={styles.routePath} d="M 100 780 C 260 780, 300 560, 420 520 S 680 380, 780 340 S 1080 200, 1300 150" />
+        <path className={styles.routeDash} d="M 100 780 C 260 780, 300 560, 420 520 S 680 380, 780 340 S 1080 200, 1300 150" />
+
+        <circle className={styles.pin} cx="260" cy="700" r="4" />
+        <text className={styles.mapLabelDim} x="260" y="722" textAnchor="middle">VELACHERY</text>
+        <circle className={styles.pin} cx="880" cy="600" r="4" />
+        <text className={`${styles.mapLabelDim} ${styles.pingEnd}`} style={{ '--ping-dur': '4.2s' } as CSSProperties} x="880" y="622" textAnchor="middle">PORUR</text>
+        <circle className={styles.pin} cx="700" cy="520" r="4" />
+        <text className={`${styles.mapLabelDim} ${styles.pingEnd}`} style={{ '--ping-dur': '5.4s' } as CSSProperties} x="700" y="542" textAnchor="middle">T NAGAR</text>
+        <circle className={styles.pin} cx="420" cy="200" r="4" />
+        <text className={styles.mapLabelDim} x="420" y="186" textAnchor="middle">ANNA NAGAR</text>
+        <circle className={styles.pin} cx="1080" cy="340" r="4" />
+        <text className={styles.mapLabelDim} x="1080" y="326" textAnchor="middle">MYLAPORE</text>
+
+        <circle cx="100" cy="780" r="8" fill="#F3ECDA" opacity="0.85" />
+        <text className={`${styles.mapLabel} ${styles.pingStart}`} x="100" y="806" textAnchor="middle">DEPOT</text>
+        <circle cx="1300" cy="150" r="11" fill="none" stroke="#D9A54B" strokeWidth="2" opacity="0.5">
+          <animate attributeName="r" values="9;24;9" dur="2.8s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.55;0;0.55" dur="2.8s" repeatCount="indefinite" />
+        </circle>
+        <circle cx="1300" cy="150" r="7" fill="#F3D999" />
+        <text className={`${styles.mapLabelGold} ${styles.pingEnd}`} style={{ '--ping-dur': '6s' } as CSSProperties} x="1300" y="128" textAnchor="middle">ADYAR</text>
+
+        <circle r="7" fill="#FFF3D0" filter="url(#bgGlow)">
+          <animateMotion dur="6s" repeatCount="indefinite" rotate="auto">
+            <mpath href="#bgRoutePath" />
+          </animateMotion>
+        </circle>
+        <circle r="5" fill="#F3D999" filter="url(#bgGlow)" opacity="0.7">
+          <animateMotion dur="4.2s" repeatCount="indefinite" rotate="auto">
+            <mpath href="#bgRoutePath2" />
+          </animateMotion>
+        </circle>
+        <circle r="5" fill="#F3D999" filter="url(#bgGlow)" opacity="0.55">
+          <animateMotion dur="5.4s" repeatCount="indefinite" rotate="auto">
+            <mpath href="#bgRoutePath3" />
+          </animateMotion>
+        </circle>
+      </svg>
+
+      <div className={styles.guilloche} />
+      <div className={styles.grain} />
+      <div className={styles.topHairline} />
+      <div className={styles.screenAtmosphere} />
+
+      <div className={styles.formSide}>
+        <div className={styles.formWrap}>
+          <span className={`${styles.corner} ${styles.cornerTl}`} />
+          <span className={`${styles.corner} ${styles.cornerTr}`} />
+          <span className={`${styles.corner} ${styles.cornerBl}`} />
+          <span className={`${styles.corner} ${styles.cornerBr}`} />
+
+          <div className={styles.wordmark}>
+            LastMeter<span>-AI</span>
+          </div>
+          <div className={styles.formHead}>
+            <div className={styles.eyebrow}>Manager / Agent access</div>
+            <h1>Sign in to the console</h1>
+            <p>Accounts are provisioned by your dispatch manager.</p>
           </div>
 
-          <h2 className="text-lg font-semibold text-slate-800 mb-6">Sign in to your account</h2>
+          <form onSubmit={handleSubmit} noValidate>
+            <div className={styles.field}>
+              <label htmlFor="username">Username</label>
+              <input
+                id="username"
+                type="text"
+                autoComplete="username"
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                placeholder="Enter your username"
+                data-invalid={Boolean(fieldErrors.username)}
+                required
+              />
+              {fieldErrors.username && <p className={styles.fieldError}>{fieldErrors.username}</p>}
+            </div>
+            <div className={styles.field}>
+              <label htmlFor="password">Password</label>
+              <input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="••••••••"
+                data-invalid={Boolean(fieldErrors.password)}
+                required
+              />
+              {fieldErrors.password && <p className={styles.fieldError}>{fieldErrors.password}</p>}
+            </div>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
-            <Input
-              label="Username"
-              type="text"
-              autoComplete="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              error={fieldErrors.username}
-              placeholder="e.g. manager"
-              required
-            />
-            <Input
-              label="Password"
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              error={fieldErrors.password}
-              placeholder="••••••••"
-              required
-            />
+            {formError && <div className={styles.formError}>{formError}</div>}
 
-            {/* Form-level error (wrong credentials, disabled account, network) */}
-            {formError && (
-              <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-nogo">
-                {formError}
-              </div>
-            )}
-
-            <Button
-              type="submit"
-              variant="primary"
-              loading={loading}
-              className="w-full mt-2 py-3"
-            >
+            <button className={styles.btn} type="submit" disabled={loading}>
               {loading ? 'Signing in…' : 'Sign in'}
-            </Button>
+            </button>
           </form>
-
-          <p className="mt-6 text-xs text-slate-400 text-center">
-            Seed credentials: manager / manager123 · ravi.kumar / agent123
-          </p>
-        </div>
-      </div>
-
-      {/* Right — visual panel (desktop only) */}
-      <div className="hidden md:flex flex-col items-center justify-center w-1/2 bg-primary relative overflow-hidden">
-        {/* Decorative circles */}
-        <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-primary-light opacity-40" />
-        <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-primary-light opacity-30" />
-
-        <div className="relative z-10 text-center text-white px-8">
-          <div className="text-6xl font-bold tracking-tight mb-3">LM</div>
-          <h2 className="text-2xl font-semibold mb-4">AI-driven delivery decisions</h2>
-          <p className="text-primary-100 text-sm max-w-xs leading-relaxed">
-            Predict GO / NO-GO in real time. Reduce failed deliveries with weather-aware,
-            area-intelligent routing assistance across Chennai.
-          </p>
-
-          {/* Stats row */}
-          <div className="mt-10 flex gap-8 justify-center">
-            <div>
-              <div className="text-3xl font-bold">91%</div>
-              <div className="text-xs text-primary-100 mt-1">Model accuracy</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold">5</div>
-              <div className="text-xs text-primary-100 mt-1">Chennai areas</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold">8</div>
-              <div className="text-xs text-primary-100 mt-1">AI intents</div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

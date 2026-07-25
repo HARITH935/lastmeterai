@@ -6,6 +6,7 @@ import {
   type OrderListItem, type OrderListResponse, type BulkCreateResponse,
 } from '../api/orders'
 import { VALID_AREAS as AREAS } from '../api/analytics'
+import styles from './Orders.module.css'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -38,18 +39,18 @@ const AREA_COORDS: Record<string, [number, number]> = {
   'Saidapet':       [13.0212, 80.2219],
 }
 
-const STATUS_BADGE: Record<string, string> = {
-  pending:    'bg-amber-50 text-amber-700',
-  in_transit: 'bg-blue-50 text-blue-700',
-  delivered:  'bg-green-50 text-green-700',
-  failed:     'bg-red-50 text-red-700',
-  postponed:  'bg-slate-100 text-slate-600',
+const STATUS_PILL: Record<string, string> = {
+  pending:    styles.pillPending,
+  in_transit: styles.pillIn_transit,
+  delivered:  styles.pillDelivered,
+  failed:     styles.pillFailed,
+  postponed:  styles.pillPostponed,
 }
 
-const RISK_BADGE: Record<string, string> = {
-  low:    'bg-green-50 text-green-700',
-  medium: 'bg-amber-50 text-amber-700',
-  high:   'bg-red-50 text-red-700',
+const RISK_PILL: Record<string, string> = {
+  low:    styles.pillLow,
+  medium: styles.pillMedium,
+  high:   styles.pillHigh,
 }
 
 // Mirrors backend _AGENT_TRANSITIONS
@@ -83,16 +84,16 @@ function extractMsg(err: unknown, fallback: string): string {
 
 function StatusBadge({ status }: { status: string }) {
   return (
-    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_BADGE[status] ?? 'bg-slate-100 text-slate-600'}`}>
+    <span className={`${styles.pill} ${STATUS_PILL[status] ?? styles.pillPostponed}`}>
       {status.replace('_', ' ')}
     </span>
   )
 }
 
 function RiskBadge({ risk }: { risk: string | null }) {
-  if (!risk) return <span className="text-slate-300 text-xs">—</span>
+  if (!risk) return <span className={styles.pillNone}>—</span>
   return (
-    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${RISK_BADGE[risk] ?? 'bg-slate-100 text-slate-600'}`}>
+    <span className={`${styles.pill} ${RISK_PILL[risk] ?? styles.pillPostponed}`}>
       {risk}
     </span>
   )
@@ -106,11 +107,7 @@ function FilterSelect({
   children: React.ReactNode
 }) {
   return (
-    <select
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      className="text-sm border border-slate-200 rounded-lg px-2 py-1.5 bg-white outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
-    >
+    <select value={value} onChange={e => onChange(e.target.value)} className={styles.filterSelect}>
       {children}
     </select>
   )
@@ -118,20 +115,28 @@ function FilterSelect({
 
 function PageSkeleton() {
   return (
-    <div className="p-6 space-y-4">
-      <div className="animate-pulse bg-slate-200 rounded-xl h-10 w-48" />
-      <div className="animate-pulse bg-slate-200 rounded-xl h-12" />
-      <div className="animate-pulse bg-slate-200 rounded-xl h-72" />
+    <div className={styles.page}>
+      <div className={styles.guilloche} />
+      <div className={styles.wrap}>
+        <div className={styles.skeleton}>
+          <div className={styles.skelBlock} style={{ height: 40, width: 200 }} />
+          <div className={styles.skelBlock} style={{ height: 48 }} />
+          <div className={styles.skelBlock} style={{ height: 288 }} />
+        </div>
+      </div>
     </div>
   )
 }
 
 function ErrorCard({ message }: { message: string }) {
   return (
-    <div className="p-6">
-      <div className="card border-red-200 bg-red-50">
-        <p className="text-sm font-semibold text-red-600">Failed to load orders</p>
-        <p className="text-xs text-red-500 mt-1">{message}</p>
+    <div className={styles.page}>
+      <div className={styles.guilloche} />
+      <div className={styles.wrap}>
+        <div className={styles.errorCard}>
+          <p className={styles.title}>Failed to load orders</p>
+          <p className={styles.msg}>{message}</p>
+        </div>
       </div>
     </div>
   )
@@ -188,95 +193,90 @@ function CreateOrderModal({
     }
   }
 
-  const selectCls = "w-full text-sm border border-slate-200 rounded-lg px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-  const labelCls  = "text-xs font-semibold text-slate-500"
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-5 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-bold text-slate-900">Add Order</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-lg leading-none">✕</button>
+    <div className={styles.overlay}>
+      <div className={styles.modal}>
+        <div className={styles.modalHead}>
+          <h2>Add Order</h2>
+          <button onClick={onClose} className={styles.modalClose}>✕</button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div>
-            <label className={labelCls}>Customer name</label>
-            <input value={customerName} onChange={e => setCustomerName(e.target.value)} required className={selectCls} />
+        <form onSubmit={handleSubmit}>
+          <div className={styles.formRow}>
+            <label className={styles.formLabel}>Customer name</label>
+            <input value={customerName} onChange={e => setCustomerName(e.target.value)} required className={styles.formInput} />
           </div>
-          <div>
-            <label className={labelCls}>Phone (optional)</label>
-            <input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="10-digit number" className={selectCls} />
+          <div className={styles.formRow}>
+            <label className={styles.formLabel}>Phone (optional)</label>
+            <input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="10-digit number" className={styles.formInput} />
           </div>
-          <div>
-            <label className={labelCls}>Address</label>
-            <input value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} required className={selectCls} />
+          <div className={styles.formRow}>
+            <label className={styles.formLabel}>Address</label>
+            <input value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} required className={styles.formInput} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className={styles.formGrid2}>
             <div>
-              <label className={labelCls}>Area</label>
-              <select value={area} onChange={e => setArea(e.target.value)} className={selectCls}>
+              <label className={styles.formLabel}>Area</label>
+              <select value={area} onChange={e => setArea(e.target.value)} className={styles.formInput}>
                 {AREAS.map(a => <option key={a} value={a}>{a}</option>)}
               </select>
             </div>
             <div>
-              <label className={labelCls}>Residence</label>
-              <select value={residenceType} onChange={e => setResidenceType(e.target.value)} className={selectCls}>
+              <label className={styles.formLabel}>Residence</label>
+              <select value={residenceType} onChange={e => setResidenceType(e.target.value)} className={styles.formInput}>
                 <option value="apartment">Apartment</option>
                 <option value="independent">Independent</option>
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className={styles.formGrid2}>
             <div>
-              <label className={labelCls}>Package size</label>
-              <select value={packageSize} onChange={e => setPackageSize(e.target.value)} className={selectCls}>
+              <label className={styles.formLabel}>Package size</label>
+              <select value={packageSize} onChange={e => setPackageSize(e.target.value)} className={styles.formInput}>
                 <option value="small">Small</option>
                 <option value="medium">Medium</option>
                 <option value="large">Large</option>
               </select>
             </div>
             <div>
-              <label className={labelCls}>Time window</label>
-              <select value={timeWindow} onChange={e => setTimeWindow(e.target.value)} className={selectCls}>
+              <label className={styles.formLabel}>Time window</label>
+              <select value={timeWindow} onChange={e => setTimeWindow(e.target.value)} className={styles.formInput}>
                 <option value="morning">Morning</option>
                 <option value="afternoon">Afternoon</option>
                 <option value="evening">Evening</option>
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className={styles.formGrid2}>
             <div>
-              <label className={labelCls}>Deadline</label>
+              <label className={styles.formLabel}>Deadline</label>
               <input
                 type="datetime-local"
                 value={deadline}
                 onChange={e => setDeadline(e.target.value)}
                 required
-                className={selectCls}
+                className={styles.formInput}
               />
             </div>
             <div>
-              <label className={labelCls}>Payment (₹)</label>
+              <label className={styles.formLabel}>Payment (₹)</label>
               <input
                 type="number" min="0" step="0.01"
                 value={paymentAmount}
                 onChange={e => setPaymentAmount(e.target.value)}
                 required
-                className={selectCls}
+                className={styles.formInput}
               />
             </div>
           </div>
 
-          {error && <p className="text-xs font-semibold text-red-600">{error}</p>}
+          {error && <p className={styles.formError}>{error}</p>}
 
-          <div className="flex gap-2 pt-1">
-            <button type="button" onClick={onClose}
-              className="flex-1 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-lg transition-colors">
+          <div className={styles.modalFooter}>
+            <button type="button" onClick={onClose} className={styles.cancelBtn}>
               Cancel
             </button>
-            <button type="submit" disabled={saving}
-              className="flex-1 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-4 py-2 rounded-lg transition-colors">
+            <button type="submit" disabled={saving} className={styles.confirmBtn}>
               {saving ? 'Creating…' : 'Create Order'}
             </button>
           </div>
@@ -427,71 +427,59 @@ function BulkUploadModal({
   const invalidCount = rows.length - validCount
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+    <div className={styles.overlay}>
+      <div className={`${styles.modal} ${styles.modalWide}`}>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
+        <div className={styles.bulkHead}>
           <div>
-            <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">Bulk Order Upload</h2>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <h2>Bulk Order Upload</h2>
+            <p className={styles.bulkSub}>
               {step === 'upload'  ? 'Upload a CSV file to create multiple orders at once' :
                step === 'preview' ? `${rows.length} rows parsed · ${validCount} valid · ${invalidCount} invalid` :
                'Upload complete'}
             </p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-2xl leading-none dark:hover:text-slate-300">×</button>
+          <button onClick={onClose} className={styles.modalClose}>×</button>
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className={styles.bulkBody}>
 
           {/* ── Step 1: Upload ── */}
           {step === 'upload' && (
             <>
-              {/* Template row */}
-              <div className="flex items-center justify-between p-4 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
+              <div className={styles.templateBox}>
                 <div>
-                  <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">Download CSV Template</p>
-                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">Correct column order with a sample row</p>
+                  <p className={styles.title}>Download CSV Template</p>
+                  <p className={styles.desc}>Correct column order with a sample row</p>
                 </div>
-                <button
-                  onClick={downloadCSVTemplate}
-                  className="text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors shrink-0"
-                >
+                <button onClick={downloadCSVTemplate} className={styles.templateBtn}>
                   ⬇ Template
                 </button>
               </div>
 
-              {/* Drop zone */}
               <div
                 onDragOver={e => { e.preventDefault(); setDragOver(true) }}
                 onDragLeave={() => setDragOver(false)}
                 onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) processFile(f) }}
-                className={`border-2 border-dashed rounded-2xl py-14 text-center transition-colors ${
-                  dragOver
-                    ? 'border-blue-400 bg-blue-50 dark:bg-blue-950/20'
-                    : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
-                }`}
+                className={`${styles.dropZone} ${dragOver ? styles.dropZoneOver : ''}`}
               >
-                <p className="text-4xl mb-3">📋</p>
-                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Drop your CSV here or click to browse</p>
-                <p className="text-xs text-slate-400 mt-1">Max 200 rows · UTF-8 encoded</p>
-                <label className="mt-4 inline-block cursor-pointer text-xs font-semibold text-white bg-slate-700 hover:bg-slate-800 dark:bg-slate-600 px-4 py-2 rounded-lg transition-colors">
+                <p className={styles.icon}>📋</p>
+                <p className={styles.title}>Drop your CSV here or click to browse</p>
+                <p className={styles.desc}>Max 200 rows · UTF-8 encoded</p>
+                <label className={styles.browseBtn}>
                   Browse File
-                  <input type="file" accept=".csv,text/csv" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) processFile(f) }} />
+                  <input type="file" accept=".csv,text/csv" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) processFile(f) }} />
                 </label>
               </div>
 
-              {/* Column guide */}
-              <div className="text-xs text-slate-500 space-y-1.5">
-                <p className="font-semibold text-slate-700 dark:text-slate-300">Columns (in order):</p>
-                <p className="font-mono bg-slate-50 dark:bg-slate-800 rounded-lg p-2.5 text-[10px] leading-relaxed break-all">
-                  {BULK_COLS.join(', ')}
-                </p>
+              <div className={styles.colGuide}>
+                <p className={styles.lbl}>Columns (in order):</p>
+                <p className={styles.colsMono}>{BULK_COLS.join(', ')}</p>
                 <p>Areas: {AREAS.join(' · ')}</p>
                 <p>Package: small · medium · large &nbsp;|&nbsp; Window: morning · afternoon · evening</p>
-                <p>Deadline: ISO e.g. <span className="font-mono">2026-07-10T10:00:00</span> &nbsp;|&nbsp; is_urgent: true or false</p>
+                <p>Deadline: ISO e.g. <span className={styles.mono}>2026-07-10T10:00:00</span> &nbsp;|&nbsp; is_urgent: true or false</p>
               </div>
             </>
           )}
@@ -500,9 +488,9 @@ function BulkUploadModal({
           {step === 'preview' && (
             <>
               {invalidCount > 0 && (
-                <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
-                  <span className="text-amber-500 mt-0.5">⚠</span>
-                  <p className="text-xs text-amber-700 dark:text-amber-400">
+                <div className={styles.warnBox}>
+                  <span>⚠</span>
+                  <p className={styles.txt}>
                     <strong>{invalidCount} invalid row{invalidCount !== 1 ? 's' : ''}</strong> will be skipped.
                     {validCount > 0
                       ? ` Proceeding will create ${validCount} valid order${validCount !== 1 ? 's' : ''}.`
@@ -511,34 +499,29 @@ function BulkUploadModal({
                 </div>
               )}
 
-              <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
-                <table className="w-full text-xs">
+              <div className={styles.previewWrap}>
+                <table className={styles.previewTable}>
                   <thead>
-                    <tr className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
+                    <tr>
                       {['#', 'Customer', 'Address', 'Area', 'Package', 'Window', '₹', ''].map(h => (
-                        <th key={h} className="px-3 py-2 text-left font-semibold whitespace-nowrap">{h}</th>
+                        <th key={h}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {rows.map(row => (
-                      <tr
-                        key={row.rowNum}
-                        className={`border-b border-slate-100 dark:border-slate-800 last:border-0 ${
-                          row.errors.length ? 'bg-red-50 dark:bg-red-950/20' : ''
-                        }`}
-                      >
-                        <td className="px-3 py-2 text-slate-400">{row.rowNum}</td>
-                        <td className="px-3 py-2 font-medium text-slate-800 dark:text-slate-200 max-w-[100px] truncate">{row.data.customer_name}</td>
-                        <td className="px-3 py-2 text-slate-500 max-w-[120px] truncate">{row.data.customer_address}</td>
-                        <td className="px-3 py-2 text-slate-600 dark:text-slate-400 whitespace-nowrap">{row.data.area}</td>
-                        <td className="px-3 py-2 text-slate-600 dark:text-slate-400">{row.data.package_size}</td>
-                        <td className="px-3 py-2 text-slate-600 dark:text-slate-400">{row.data.time_window}</td>
-                        <td className="px-3 py-2 text-slate-600 dark:text-slate-400">{row.data.payment_amount}</td>
-                        <td className="px-3 py-2 text-center">
+                      <tr key={row.rowNum} className={row.errors.length ? styles.rowInvalid : ''}>
+                        <td className={styles.dim}>{row.rowNum}</td>
+                        <td>{row.data.customer_name}</td>
+                        <td className={styles.muted}>{row.data.customer_address}</td>
+                        <td className={styles.muted}>{row.data.area}</td>
+                        <td className={styles.muted}>{row.data.package_size}</td>
+                        <td className={styles.muted}>{row.data.time_window}</td>
+                        <td className={styles.muted}>{row.data.payment_amount}</td>
+                        <td style={{ textAlign: 'center' }}>
                           {row.errors.length === 0
-                            ? <span className="text-green-600 font-bold">✓</span>
-                            : <span title={row.errors.join('; ')} className="text-red-500 cursor-help font-bold">✗</span>
+                            ? <span className={styles.checkOk}>✓</span>
+                            : <span title={row.errors.join('; ')} className={styles.checkBad}>✗</span>
                           }
                         </td>
                       </tr>
@@ -548,51 +531,51 @@ function BulkUploadModal({
               </div>
 
               {rows.some(r => r.errors.length > 0) && (
-                <div className="space-y-1">
+                <div>
                   {rows.filter(r => r.errors.length > 0).map(r => (
-                    <p key={r.rowNum} className="text-[10px] text-red-600 dark:text-red-400">
+                    <p key={r.rowNum} className={styles.rowErrText}>
                       Row {r.rowNum}: {r.errors.join(' · ')}
                     </p>
                   ))}
                 </div>
               )}
 
-              {submitErr && <p className="text-xs font-semibold text-red-600">{submitErr}</p>}
+              {submitErr && <p className={styles.formError}>{submitErr}</p>}
             </>
           )}
 
           {/* ── Step 3: Results ── */}
           {step === 'results' && results && (
             <>
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div className="card">
-                  <p className="text-3xl font-bold text-green-600">{results.created}</p>
-                  <p className="text-xs text-slate-500 mt-1">Created</p>
+              <div className={styles.resultGrid}>
+                <div className={styles.resultCard}>
+                  <p className={`${styles.num} ${styles.numGood}`}>{results.created}</p>
+                  <p className={styles.lbl}>Created</p>
                 </div>
-                <div className="card">
-                  <p className="text-3xl font-bold text-red-500">{results.total - results.created}</p>
-                  <p className="text-xs text-slate-500 mt-1">Failed</p>
+                <div className={styles.resultCard}>
+                  <p className={`${styles.num} ${styles.numBad}`}>{results.total - results.created}</p>
+                  <p className={styles.lbl}>Failed</p>
                 </div>
-                <div className="card">
-                  <p className="text-3xl font-bold text-slate-700 dark:text-slate-300">{results.total}</p>
-                  <p className="text-xs text-slate-500 mt-1">Submitted</p>
+                <div className={styles.resultCard}>
+                  <p className={`${styles.num} ${styles.numNeutral}`}>{results.total}</p>
+                  <p className={styles.lbl}>Submitted</p>
                 </div>
               </div>
 
               {results.created > 0 && (
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
-                  <span className="text-green-600">✓</span>
-                  <p className="text-xs font-semibold text-green-700 dark:text-green-400">
+                <div className={styles.successBox}>
+                  <span>✓</span>
+                  <p className={styles.txt}>
                     {results.created} order{results.created !== 1 ? 's' : ''} created with AI risk assessment. Refreshing list…
                   </p>
                 </div>
               )}
 
               {results.results.some(r => r.status === 'error') && (
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">Row errors:</p>
+                <div>
+                  <p className={styles.muted} style={{ fontSize: '0.76rem', fontWeight: 600, marginBottom: 4 }}>Row errors:</p>
                   {results.results.filter(r => r.status === 'error').map(r => (
-                    <p key={r.row} className="text-[10px] text-red-600 dark:text-red-400">
+                    <p key={r.row} className={styles.rowErrText}>
                       Row {r.row}: {Object.values(r.errors ?? {}).join(' · ')}
                     </p>
                   ))}
@@ -603,35 +586,25 @@ function BulkUploadModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-3 shrink-0">
+        <div className={styles.bulkFooter}>
           {step === 'preview' && (
-            <button
-              onClick={() => { setStep('upload'); setRows([]) }}
-              className="text-xs font-semibold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-            >
+            <button onClick={() => { setStep('upload'); setRows([]) }} className={styles.reuploadLink}>
               ← Re-upload
             </button>
           )}
-          <div className="flex-1" />
+          <div style={{ flex: 1 }} />
           {step === 'upload' && (
-            <button onClick={onClose} className="text-xs font-semibold text-slate-500 hover:text-slate-700 px-4 py-2">
+            <button onClick={onClose} className={styles.cancelBtn}>
               Cancel
             </button>
           )}
           {step === 'preview' && (
-            <button
-              onClick={handleUpload}
-              disabled={busy || validCount === 0}
-              className="text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-6 py-2 rounded-lg transition-colors"
-            >
+            <button onClick={() => void handleUpload()} disabled={busy || validCount === 0} className={styles.confirmBtn}>
               {busy ? 'Creating…' : `Upload ${validCount} Order${validCount !== 1 ? 's' : ''}`}
             </button>
           )}
           {step === 'results' && (
-            <button
-              onClick={onClose}
-              className="text-sm font-semibold text-white bg-slate-700 hover:bg-slate-800 px-6 py-2 rounded-lg transition-colors"
-            >
+            <button onClick={onClose} className={styles.confirmBtn}>
               Done
             </button>
           )}
@@ -716,7 +689,7 @@ function ManagerOrders({ accessToken }: { accessToken: string }) {
 
   function sortIcon(field: SortBy) {
     if (sortBy !== field) return null
-    return <span className="ml-1 text-blue-500">{sortDir === 'asc' ? '↑' : '↓'}</span>
+    return <span className={styles.sortArrow}>{sortDir === 'asc' ? '↑' : '↓'}</span>
   }
 
   if (dataState.status === 'loading') return <PageSkeleton />
@@ -725,309 +698,268 @@ function ManagerOrders({ accessToken }: { accessToken: string }) {
   const { data, pagination } = dataState.result
 
   return (
-    <div className="p-4 md:p-6 space-y-4">
-      {showCreate && (
-        <CreateOrderModal
-          accessToken={accessToken}
-          onClose={() => setShowCreate(false)}
-          onSuccess={() => { setShowCreate(false); setRefreshKey(k => k + 1) }}
-        />
-      )}
-
-      {showBulk && (
-        <BulkUploadModal
-          accessToken={accessToken}
-          onClose={() => setShowBulk(false)}
-          onSuccess={() => { setShowBulk(false); setRefreshKey(k => k + 1) }}
-        />
-      )}
-
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-          All Orders
-          <span className="ml-2 text-sm font-normal text-slate-400">({pagination.total})</span>
-        </h1>
-        <div className="flex gap-2 shrink-0">
-          <button
-            onClick={() => setShowCreate(true)}
-            className="text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg transition-colors"
-          >
-            + Add Order
-          </button>
-          <button
-            onClick={() => setShowBulk(true)}
-            className="text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors"
-          >
-            ⬆ Bulk Upload
-          </button>
-        </div>
-      </div>
-
-      {/* Filter bar */}
-      <div className="card p-3 flex flex-wrap gap-2 items-center">
-        <div className="flex gap-1">
-          <input
-            type="text"
-            value={searchInput}
-            onChange={e => setSearchInput(e.target.value)}
-            onKeyDown={handleSearchKey}
-            placeholder="Order # or customer…"
-            className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 w-40 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+    <div className={styles.page}>
+      <div className={styles.guilloche} />
+      <div className={styles.wrap}>
+        {showCreate && (
+          <CreateOrderModal
+            accessToken={accessToken}
+            onClose={() => setShowCreate(false)}
+            onSuccess={() => { setShowCreate(false); setRefreshKey(k => k + 1) }}
           />
-          <button
-            onClick={commitSearch}
-            className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors"
-          >
-            Search
-          </button>
+        )}
+
+        {showBulk && (
+          <BulkUploadModal
+            accessToken={accessToken}
+            onClose={() => setShowBulk(false)}
+            onSuccess={() => { setShowBulk(false); setRefreshKey(k => k + 1) }}
+          />
+        )}
+
+        <div className={styles.pageHead}>
+          <h1>
+            All Orders
+            <span className={styles.count}>({pagination.total})</span>
+          </h1>
+          <div className={styles.headActions}>
+            <button onClick={() => setShowCreate(true)} className={styles.btnGold}>
+              + Add Order
+            </button>
+            <button onClick={() => setShowBulk(true)} className={styles.btnGhost}>
+              ⬆ Bulk Upload
+            </button>
+          </div>
         </div>
 
-        <FilterSelect value={area} onChange={v => changeFilter(setArea, v)}>
-          <option value="">All Areas</option>
-          {AREAS.map(a => <option key={a} value={a}>{a}</option>)}
-        </FilterSelect>
-
-        <FilterSelect value={status} onChange={v => changeFilter(setStatus, v)}>
-          <option value="">All Statuses</option>
-          {STATUSES.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
-        </FilterSelect>
-
-        <FilterSelect value={riskLevel} onChange={v => changeFilter(setRiskLevel, v)}>
-          <option value="">All Risk Levels</option>
-          {RISK_LEVELS.map(r => <option key={r} value={r}>{r}</option>)}
-        </FilterSelect>
-
-        {(search || area || status || riskLevel) && (
-          <button
-            onClick={() => {
-              setSearchInput(''); setSearch(''); setArea('')
-              setStatus(''); setRiskLevel(''); setPage(1)
-            }}
-            className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
-          >
-            Clear filters
-          </button>
-        )}
-      </div>
-
-      {/* Mobile card list (< md) */}
-      <div className="md:hidden space-y-3">
-        {data.length === 0 ? (
-          <div className="card text-center py-12">
-            <p className="text-sm text-slate-400">No orders match the current filters.</p>
+        {/* Filter bar */}
+        <div className={styles.filterBar}>
+          <div className={styles.searchWrap}>
+            <input
+              type="text"
+              value={searchInput}
+              onChange={e => setSearchInput(e.target.value)}
+              onKeyDown={handleSearchKey}
+              placeholder="Order # or customer…"
+            />
+            <button onClick={commitSearch}>Search</button>
           </div>
-        ) : data.map(order => (
-          <Fragment key={`m-${order.id}`} >
-            <div className="card p-0 overflow-hidden">
+
+          <FilterSelect value={area} onChange={v => changeFilter(setArea, v)}>
+            <option value="">All Areas</option>
+            {AREAS.map(a => <option key={a} value={a}>{a}</option>)}
+          </FilterSelect>
+
+          <FilterSelect value={status} onChange={v => changeFilter(setStatus, v)}>
+            <option value="">All Statuses</option>
+            {STATUSES.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+          </FilterSelect>
+
+          <FilterSelect value={riskLevel} onChange={v => changeFilter(setRiskLevel, v)}>
+            <option value="">All Risk Levels</option>
+            {RISK_LEVELS.map(r => <option key={r} value={r}>{r}</option>)}
+          </FilterSelect>
+
+          {(search || area || status || riskLevel) && (
+            <button
+              onClick={() => {
+                setSearchInput(''); setSearch(''); setArea('')
+                setStatus(''); setRiskLevel(''); setPage(1)
+              }}
+              className={styles.clearLink}
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
+
+        {/* Mobile card list (< md) */}
+        <div className={styles.mobileList}>
+          {data.length === 0 ? (
+            <div className={styles.emptyState}>No orders match the current filters.</div>
+          ) : data.map(order => (
+            <div key={`m-${order.id}`} className={styles.mCard}>
               <div
                 onClick={() => setExpandedId(id => id === order.id ? null : order.id)}
-                className="p-4 cursor-pointer"
+                className={styles.mCardHead}
               >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold text-sm text-slate-800">{order.order_number}</span>
-                      {order.is_urgent && (
-                        <span className="text-xs font-bold text-red-600 bg-red-50 border border-red-200 px-1 rounded">URGENT</span>
-                      )}
+                <div className={styles.mCardTop}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div className={styles.mCardChips}>
+                      <span className={styles.orderNo}>{order.order_number}</span>
+                      {order.is_urgent && <span className={styles.urgentTag}>URGENT</span>}
                       <StatusBadge status={order.status} />
                       <RiskBadge risk={order.risk_level} />
                     </div>
-                    <p className="text-sm text-slate-600 mt-0.5 truncate">{order.customer_name}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">
+                    <p className={styles.mCardCust}>{order.customer_name}</p>
+                    <p className={styles.mCardMeta}>
                       {order.area} · {order.agent_name ?? 'Unassigned'} · {fmtWindow(order.time_window)}
                     </p>
-                    <p className="text-xs text-slate-400 mt-0.5">Deadline: {fmtDate(order.deadline)}</p>
+                    <p className={styles.mCardMeta}>Deadline: {fmtDate(order.deadline)}</p>
                   </div>
-                  <span className="text-slate-300 text-xs shrink-0 pt-1">
-                    {expandedId === order.id ? '▲' : '▼'}
-                  </span>
+                  <span className={styles.mCardChevron}>{expandedId === order.id ? '▲' : '▼'}</span>
                 </div>
               </div>
               {expandedId === order.id && (
-                <div className="border-t border-slate-100 bg-slate-50/70 px-4 py-3">
-                  <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className={styles.mCardDetail}>
+                  <div className={styles.detailGrid}>
                     <div>
-                      <p className="text-slate-400 font-medium uppercase tracking-wide mb-0.5">Address</p>
-                      <p className="text-slate-700">{order.customer_address}</p>
+                      <p className={styles.detailLabel}>Address</p>
+                      <p className={styles.detailVal}>{order.customer_address}</p>
                     </div>
                     <div>
-                      <p className="text-slate-400 font-medium uppercase tracking-wide mb-0.5">Phone</p>
-                      <p className="text-slate-700">{order.customer_phone ?? '—'}</p>
+                      <p className={styles.detailLabel}>Phone</p>
+                      <p className={styles.detailVal}>{order.customer_phone ?? '—'}</p>
                     </div>
                     <div>
-                      <p className="text-slate-400 font-medium uppercase tracking-wide mb-0.5">Package</p>
-                      <p className="text-slate-700">{fmtWindow(order.package_size)}</p>
+                      <p className={styles.detailLabel}>Package</p>
+                      <p className={styles.detailVal}>{fmtWindow(order.package_size)}</p>
                     </div>
                     <div>
-                      <p className="text-slate-400 font-medium uppercase tracking-wide mb-0.5">Payment</p>
-                      <p className="text-slate-700">₹{order.payment_amount.toFixed(2)}</p>
+                      <p className={styles.detailLabel}>Payment</p>
+                      <p className={styles.detailVal}>₹{order.payment_amount.toFixed(2)}</p>
                     </div>
                     <div>
-                      <p className="text-slate-400 font-medium uppercase tracking-wide mb-0.5">Decision</p>
-                      <p className="text-slate-700">{order.decision ?? '—'}</p>
+                      <p className={styles.detailLabel}>Decision</p>
+                      <p className={styles.detailVal}>{order.decision ?? '—'}</p>
                     </div>
                     <div>
-                      <p className="text-slate-400 font-medium uppercase tracking-wide mb-0.5">Risk Score</p>
-                      <p className="text-slate-700">{order.risk_score ?? '—'}</p>
+                      <p className={styles.detailLabel}>Risk Score</p>
+                      <p className={styles.detailVal}>{order.risk_score ?? '—'}</p>
                     </div>
                     {order.failure_reason && (
-                      <div className="col-span-2">
-                        <p className="text-slate-400 font-medium uppercase tracking-wide mb-0.5">Failure Reason</p>
-                        <p className="text-red-600">{order.failure_reason}</p>
+                      <div className={styles.full}>
+                        <p className={styles.detailLabel}>Failure Reason</p>
+                        <p className={styles.detailValFail}>{order.failure_reason}</p>
                       </div>
                     )}
                   </div>
-                  <button
-                    onClick={() => navigate(`/orders/${order.id}`)}
-                    className="mt-3 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
-                  >
+                  <button onClick={() => navigate(`/orders/${order.id}`)} className={styles.viewLink}>
                     View full detail →
                   </button>
                 </div>
               )}
             </div>
-          </Fragment>
-        ))}
-      </div>
-
-      {/* Desktop table (≥ md) */}
-      <div className="card overflow-hidden p-0 hidden md:block">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-100">
-                <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-3 whitespace-nowrap">Order #</th>
-                <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-3">Customer</th>
-                <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-3">Area</th>
-                <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-3">Agent</th>
-                <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-3">Status</th>
-                <th
-                  className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-3 cursor-pointer select-none hover:text-slate-700 whitespace-nowrap"
-                  onClick={() => toggleSort('risk_score')}
-                >
-                  Risk {sortIcon('risk_score')}
-                </th>
-                <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-3">Window</th>
-                <th
-                  className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-3 cursor-pointer select-none hover:text-slate-700 whitespace-nowrap"
-                  onClick={() => toggleSort('deadline')}
-                >
-                  Deadline {sortIcon('deadline')}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="text-center text-sm text-slate-400 py-12">
-                    No orders match the current filters.
-                  </td>
-                </tr>
-              ) : data.map(order => (
-                <Fragment key={order.id}>
-                  {/* Main row */}
-                  <tr
-                    onClick={() => setExpandedId(id => id === order.id ? null : order.id)}
-                    className="border-b border-slate-50 hover:bg-slate-50 cursor-pointer transition-colors"
-                  >
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span className="font-semibold text-slate-800">{order.order_number}</span>
-                      {order.is_urgent && (
-                        <span className="ml-1.5 text-xs font-bold text-red-600 bg-red-50 border border-red-200 px-1 rounded">
-                          URGENT
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-slate-700 max-w-[150px] truncate">{order.customer_name}</td>
-                    <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{order.area}</td>
-                    <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{order.agent_name ?? '—'}</td>
-                    <td className="px-4 py-3"><StatusBadge status={order.status} /></td>
-                    <td className="px-4 py-3"><RiskBadge risk={order.risk_level} /></td>
-                    <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{fmtWindow(order.time_window)}</td>
-                    <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{fmtDate(order.deadline)}</td>
-                  </tr>
-
-                  {/* Expanded inline detail */}
-                  {expandedId === order.id && (
-                    <tr className="bg-slate-50/70 border-b border-slate-100">
-                      <td colSpan={8} className="px-6 py-4">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-                          <div>
-                            <p className="text-slate-400 font-medium uppercase tracking-wide mb-0.5">Address</p>
-                            <p className="text-slate-700">{order.customer_address}</p>
-                          </div>
-                          <div>
-                            <p className="text-slate-400 font-medium uppercase tracking-wide mb-0.5">Phone</p>
-                            <p className="text-slate-700">{order.customer_phone ?? '—'}</p>
-                          </div>
-                          <div>
-                            <p className="text-slate-400 font-medium uppercase tracking-wide mb-0.5">Package</p>
-                            <p className="text-slate-700">{fmtWindow(order.package_size)}</p>
-                          </div>
-                          <div>
-                            <p className="text-slate-400 font-medium uppercase tracking-wide mb-0.5">Payment</p>
-                            <p className="text-slate-700">₹{order.payment_amount.toFixed(2)}</p>
-                          </div>
-                          <div>
-                            <p className="text-slate-400 font-medium uppercase tracking-wide mb-0.5">Decision</p>
-                            <p className="text-slate-700">{order.decision ?? '—'}</p>
-                          </div>
-                          <div>
-                            <p className="text-slate-400 font-medium uppercase tracking-wide mb-0.5">Risk Score</p>
-                            <p className="text-slate-700">{order.risk_score ?? '—'}</p>
-                          </div>
-                          <div>
-                            <p className="text-slate-400 font-medium uppercase tracking-wide mb-0.5">Created</p>
-                            <p className="text-slate-700">{fmtDate(order.created_at)}</p>
-                          </div>
-                          {order.failure_reason && (
-                            <div className="col-span-2">
-                              <p className="text-slate-400 font-medium uppercase tracking-wide mb-0.5">Failure Reason</p>
-                              <p className="text-red-600">{order.failure_reason}</p>
-                            </div>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => navigate(`/orders/${order.id}`)}
-                          className="mt-3 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
-                        >
-                          View full detail →
-                        </button>
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
-              ))}
-            </tbody>
-          </table>
+          ))}
         </div>
-      </div>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between text-xs text-slate-500">
-        <span>
-          Showing {data.length} of {pagination.total} orders
-          {pagination.pages > 1 && ` · Page ${pagination.page} of ${pagination.pages}`}
-        </span>
-        {pagination.pages > 1 && (
-          <div className="flex gap-2">
-            <button
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={pagination.page <= 1}
-              className="px-3 py-1.5 font-semibold rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 transition-colors"
-            >
-              Previous
-            </button>
-            <button
-              onClick={() => setPage(p => Math.min(pagination.pages, p + 1))}
-              disabled={pagination.page >= pagination.pages}
-              className="px-3 py-1.5 font-semibold rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 transition-colors"
-            >
-              Next
-            </button>
+        {/* Desktop table (≥ md) */}
+        <div className={styles.tableCard}>
+          <div style={{ overflowX: 'auto' }}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Order #</th>
+                  <th>Customer</th>
+                  <th>Area</th>
+                  <th>Agent</th>
+                  <th>Status</th>
+                  <th className={styles.sortable} onClick={() => toggleSort('risk_score')}>
+                    Risk {sortIcon('risk_score')}
+                  </th>
+                  <th>Window</th>
+                  <th className={styles.sortable} onClick={() => toggleSort('deadline')}>
+                    Deadline {sortIcon('deadline')}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className={styles.emptyState}>
+                      No orders match the current filters.
+                    </td>
+                  </tr>
+                ) : data.map(order => (
+                  <Fragment key={order.id}>
+                    {/* Main row */}
+                    <tr
+                      onClick={() => setExpandedId(id => id === order.id ? null : order.id)}
+                      className={styles.dataRow}
+                    >
+                      <td>
+                        <span className={styles.orderNo}>{order.order_number}</span>
+                        {order.is_urgent && <span className={styles.urgentTag}>URGENT</span>}
+                      </td>
+                      <td>{order.customer_name}</td>
+                      <td className={styles.muted}>{order.area}</td>
+                      <td className={styles.muted}>{order.agent_name ?? '—'}</td>
+                      <td><StatusBadge status={order.status} /></td>
+                      <td><RiskBadge risk={order.risk_level} /></td>
+                      <td className={styles.muted}>{fmtWindow(order.time_window)}</td>
+                      <td className={styles.muted}>{fmtDate(order.deadline)}</td>
+                    </tr>
+
+                    {/* Expanded inline detail */}
+                    {expandedId === order.id && (
+                      <tr className={styles.detailRow}>
+                        <td colSpan={8}>
+                          <div className={styles.detailGrid}>
+                            <div>
+                              <p className={styles.detailLabel}>Address</p>
+                              <p className={styles.detailVal}>{order.customer_address}</p>
+                            </div>
+                            <div>
+                              <p className={styles.detailLabel}>Phone</p>
+                              <p className={styles.detailVal}>{order.customer_phone ?? '—'}</p>
+                            </div>
+                            <div>
+                              <p className={styles.detailLabel}>Package</p>
+                              <p className={styles.detailVal}>{fmtWindow(order.package_size)}</p>
+                            </div>
+                            <div>
+                              <p className={styles.detailLabel}>Payment</p>
+                              <p className={styles.detailVal}>₹{order.payment_amount.toFixed(2)}</p>
+                            </div>
+                            <div>
+                              <p className={styles.detailLabel}>Decision</p>
+                              <p className={styles.detailVal}>{order.decision ?? '—'}</p>
+                            </div>
+                            <div>
+                              <p className={styles.detailLabel}>Risk Score</p>
+                              <p className={styles.detailVal}>{order.risk_score ?? '—'}</p>
+                            </div>
+                            <div>
+                              <p className={styles.detailLabel}>Created</p>
+                              <p className={styles.detailVal}>{fmtDate(order.created_at)}</p>
+                            </div>
+                            {order.failure_reason && (
+                              <div className={styles.full}>
+                                <p className={styles.detailLabel}>Failure Reason</p>
+                                <p className={styles.detailValFail}>{order.failure_reason}</p>
+                              </div>
+                            )}
+                          </div>
+                          <button onClick={() => navigate(`/orders/${order.id}`)} className={styles.viewLink}>
+                            View full detail →
+                          </button>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                ))}
+              </tbody>
+            </table>
           </div>
-        )}
+        </div>
+
+        {/* Pagination */}
+        <div className={styles.pager}>
+          <span>
+            Showing {data.length} of {pagination.total} orders
+            {pagination.pages > 1 && ` · Page ${pagination.page} of ${pagination.pages}`}
+          </span>
+          {pagination.pages > 1 && (
+            <div className={styles.pagerBtns}>
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={pagination.page <= 1}>
+                Previous
+              </button>
+              <button onClick={() => setPage(p => Math.min(pagination.pages, p + 1))} disabled={pagination.page >= pagination.pages}>
+                Next
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -1129,157 +1061,139 @@ function AgentOrders({ accessToken }: { accessToken: string }) {
   const orders = dataState.orders
 
   return (
-    <div className="p-4 md:p-6 space-y-4">
-      <div>
-        <h1 className="text-xl font-bold text-slate-900">Order History</h1>
-        <p className="text-xs text-slate-400 mt-0.5">{user?.area}</p>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-wrap gap-2 items-center">
-        <FilterSelect value={status} onChange={v => setStatus(v)}>
-          <option value="">All Statuses</option>
-          {STATUSES.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
-        </FilterSelect>
-
-        <div className="flex items-center gap-1.5">
-          <label className="text-xs text-slate-500">From</label>
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={e => setDateFrom(e.target.value)}
-            className="text-sm border border-slate-200 rounded-lg px-2 py-1.5 outline-none focus:border-blue-400"
-          />
-          {dateFrom && (
-            <button
-              onClick={() => setDateFrom('')}
-              className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              Clear
-            </button>
-          )}
+    <div className={styles.page}>
+      <div className={styles.guilloche} />
+      <div className={styles.wrap}>
+        <div className={styles.pageHead}>
+          <div>
+            <h1>Order History</h1>
+            <p className={styles.agentSub}>{user?.area}</p>
+          </div>
         </div>
-      </div>
 
-      <p className="text-xs text-slate-400">
-        {orders.length} order{orders.length !== 1 ? 's' : ''}
-      </p>
+        {/* Filters */}
+        <div className={styles.agentFilters}>
+          <FilterSelect value={status} onChange={v => setStatus(v)}>
+            <option value="">All Statuses</option>
+            {STATUSES.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+          </FilterSelect>
 
-      {orders.length === 0 ? (
-        <div className="card text-center py-12">
-          <p className="text-sm text-slate-400">No orders match the current filters.</p>
+          <div className={styles.dateField}>
+            <label>From</label>
+            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+            {dateFrom && (
+              <button onClick={() => setDateFrom('')} className={styles.clearLink}>
+                Clear
+              </button>
+            )}
+          </div>
         </div>
-      ) : (
-        <div className="space-y-3">
-          {orders.map(order => {
-            const transitions = AGENT_TRANSITIONS[order.status] ?? []
-            const isExpanded  = actionId === order.id
-            const needsReason = actionStatus === 'failed' || actionStatus === 'postponed'
 
-            return (
-              <div key={order.id} className="card p-0 overflow-hidden">
-                {/* Main row */}
-                <div className="flex items-start justify-between p-4">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-slate-800">{order.order_number}</span>
-                      {order.is_urgent && (
-                        <span className="text-xs font-bold text-red-600 bg-red-50 border border-red-200 px-1.5 rounded">
-                          URGENT
-                        </span>
+        <p className={styles.countLine}>
+          {orders.length} order{orders.length !== 1 ? 's' : ''}
+        </p>
+
+        {orders.length === 0 ? (
+          <div className={styles.emptyState}>No orders match the current filters.</div>
+        ) : (
+          <div className={styles.agentList}>
+            {orders.map(order => {
+              const transitions = AGENT_TRANSITIONS[order.status] ?? []
+              const isExpanded  = actionId === order.id
+              const needsReason = actionStatus === 'failed' || actionStatus === 'postponed'
+
+              return (
+                <div key={order.id} className={styles.agentCard}>
+                  {/* Main row */}
+                  <div className={styles.agentCardMain}>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div className={styles.top}>
+                        <span className={styles.name}>{order.order_number}</span>
+                        {order.is_urgent && <span className={styles.urgentTag}>URGENT</span>}
+                        <StatusBadge status={order.status} />
+                        <RiskBadge risk={order.risk_level} />
+                      </div>
+                      <p className={styles.cust}>{order.customer_name}</p>
+                      <p className={styles.meta}>
+                        {fmtWindow(order.time_window)} · Deadline {fmtDate(order.deadline)}
+                      </p>
+                      {order.failure_reason && (
+                        <p className={styles.failMeta}>Reason: {order.failure_reason}</p>
                       )}
-                      <StatusBadge status={order.status} />
-                      <RiskBadge risk={order.risk_level} />
                     </div>
-                    <p className="text-sm text-slate-600 mt-0.5">{order.customer_name}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      {fmtWindow(order.time_window)} · Deadline {fmtDate(order.deadline)}
-                    </p>
-                    {order.failure_reason && (
-                      <p className="text-xs text-red-500 mt-0.5">Reason: {order.failure_reason}</p>
+
+                    {transitions.length > 0 && (
+                      <button
+                        onClick={() => isExpanded ? closeAction() : openAction(order.id)}
+                        className={styles.updateBtn}
+                      >
+                        {isExpanded ? 'Cancel' : 'Update'}
+                      </button>
                     )}
                   </div>
 
-                  {transitions.length > 0 && (
-                    <button
-                      onClick={() => isExpanded ? closeAction() : openAction(order.id)}
-                      className="shrink-0 ml-3 text-xs font-semibold text-blue-600 hover:text-blue-700 border border-blue-200 hover:bg-blue-50 px-2.5 py-1 rounded-lg transition-colors"
-                    >
-                      {isExpanded ? 'Cancel' : 'Update'}
-                    </button>
+                  {/* Action panel */}
+                  {isExpanded && (
+                    <div className={styles.actionPanel}>
+                      <p className={styles.actionLabel}>Mark as</p>
+
+                      <div className={styles.actionChips}>
+                        {transitions.map(t => (
+                          <button
+                            key={t}
+                            onClick={() => setActionStatus(t)}
+                            className={`${styles.actionChip} ${actionStatus === t ? styles.actionChipSel : ''}`}
+                          >
+                            {fmtWindow(t)}
+                          </button>
+                        ))}
+                      </div>
+
+                      {actionStatus && needsReason && (
+                        <div>
+                          <label className={styles.reasonLabel}>
+                            Reason <span className={styles.req}>*</span>
+                          </label>
+                          <textarea
+                            value={failureReason}
+                            onChange={e => setFailureReason(e.target.value)}
+                            placeholder={
+                              actionStatus === 'failed'
+                                ? 'Why did this delivery fail?'
+                                : 'Why is this being postponed?'
+                            }
+                            rows={2}
+                            className={styles.reasonBox}
+                          />
+                        </div>
+                      )}
+
+                      {actionError && (
+                        <p className={styles.actionError}>{actionError}</p>
+                      )}
+
+                      {actionStatus && (
+                        <div className={styles.actionFooter}>
+                          <button
+                            onClick={() => void submitAction()}
+                            disabled={submitting || (needsReason && !failureReason.trim())}
+                            className={styles.confirmBtn}
+                          >
+                            {submitting ? 'Updating…' : 'Confirm'}
+                          </button>
+                          <button onClick={closeAction} disabled={submitting} className={styles.cancelBtn}>
+                            Cancel
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
-
-                {/* Action panel */}
-                {isExpanded && (
-                  <div className="border-t border-slate-100 bg-slate-50 px-4 py-3 space-y-3">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Mark as</p>
-
-                    <div className="flex gap-2 flex-wrap">
-                      {transitions.map(t => (
-                        <button
-                          key={t}
-                          onClick={() => setActionStatus(t)}
-                          className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
-                            actionStatus === t
-                              ? 'border-blue-500 text-blue-600 bg-blue-50'
-                              : 'border-slate-200 text-slate-600 bg-white hover:bg-slate-50'
-                          }`}
-                        >
-                          {fmtWindow(t)}
-                        </button>
-                      ))}
-                    </div>
-
-                    {actionStatus && needsReason && (
-                      <div>
-                        <label className="text-xs font-semibold text-slate-600 block mb-1">
-                          Reason <span className="text-red-500">*</span>
-                        </label>
-                        <textarea
-                          value={failureReason}
-                          onChange={e => setFailureReason(e.target.value)}
-                          placeholder={
-                            actionStatus === 'failed'
-                              ? 'Why did this delivery fail?'
-                              : 'Why is this being postponed?'
-                          }
-                          rows={2}
-                          className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-400 resize-none"
-                        />
-                      </div>
-                    )}
-
-                    {actionError && (
-                      <p className="text-xs text-red-600">{actionError}</p>
-                    )}
-
-                    {actionStatus && (
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => void submitAction()}
-                          disabled={submitting || (needsReason && !failureReason.trim())}
-                          className="text-xs font-semibold px-4 py-1.5 text-white rounded-lg disabled:opacity-40 transition-opacity"
-                          style={{ backgroundColor: '#2563EB' }}
-                        >
-                          {submitting ? 'Updating…' : 'Confirm'}
-                        </button>
-                        <button
-                          onClick={closeAction}
-                          disabled={submitting}
-                          className="text-xs font-semibold px-4 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
+              )
+            })}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

@@ -4,6 +4,7 @@ import {
   getCustomerInsights,
   type CustomerInsightResponse,
 } from '../api/analytics'
+import styles from './CustomerInsights.module.css'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -37,15 +38,15 @@ function fmtDate(iso: string): string {
 
 // ── Risk badge ─────────────────────────────────────────────────────────────────
 
-const RISK_COLORS: Record<string, string> = {
-  low:    'bg-green-50 text-green-700',
-  medium: 'bg-amber-50 text-amber-600',
-  high:   'bg-red-50 text-red-600',
+const RISK_PILL: Record<string, string> = {
+  low:    styles.pillLow,
+  medium: styles.pillMedium,
+  high:   styles.pillHigh,
 }
 
 function RiskBadge({ level }: { level: string }) {
   return (
-    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${RISK_COLORS[level] ?? 'bg-slate-100 text-slate-500'}`}>
+    <span className={`${styles.pill} ${RISK_PILL[level] ?? styles.pillMedium}`}>
       {level}
     </span>
   )
@@ -53,17 +54,17 @@ function RiskBadge({ level }: { level: string }) {
 
 // ── Status badge ───────────────────────────────────────────────────────────────
 
-const STATUS_COLORS: Record<string, string> = {
-  pending:    'bg-slate-100 text-slate-600',
-  in_transit: 'bg-blue-50 text-blue-600',
-  delivered:  'bg-green-50 text-green-700',
-  failed:     'bg-red-50 text-red-600',
-  postponed:  'bg-amber-50 text-amber-600',
+const STATUS_PILL: Record<string, string> = {
+  pending:    styles.stPending,
+  in_transit: styles.stIn_transit,
+  delivered:  styles.stDelivered,
+  failed:     styles.stFailed,
+  postponed:  styles.stPostponed,
 }
 
 function StatusBadge({ status }: { status: string }) {
   return (
-    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_COLORS[status] ?? 'bg-slate-100 text-slate-500'}`}>
+    <span className={`${styles.statusPill} ${STATUS_PILL[status] ?? styles.stPostponed}`}>
       {status.replace('_', ' ')}
     </span>
   )
@@ -71,22 +72,20 @@ function StatusBadge({ status }: { status: string }) {
 
 // ── Skeleton ───────────────────────────────────────────────────────────────────
 
-function Sk({ className }: { className?: string }) {
-  return <div className={`animate-pulse bg-slate-200 rounded-xl ${className ?? ''}`} />
-}
-
 function InsightSkeleton() {
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {Array.from({ length: 4 }).map((_, i) => <Sk key={i} className="h-24" />)}
+    <>
+      <div className={styles.skelGrid}>
+        {Array.from({ length: 4 }).map((_, i) => <div key={i} className={styles.skelBlock} style={{ height: 96 }} />)}
       </div>
-      <Sk className="h-48" />
-    </div>
+      <div className={styles.skelBlock} style={{ height: 192 }} />
+    </>
   )
 }
 
 // ── Metric card ────────────────────────────────────────────────────────────────
+
+const ACCENT_CLASS = { go: styles.mGo, nogo: styles.mNogo }
 
 function MetricCard({
   label,
@@ -96,14 +95,14 @@ function MetricCard({
 }: {
   label:   string
   value:   React.ReactNode
-  accent?: string
+  accent?: 'go' | 'nogo'
   sub?:    string
 }) {
   return (
-    <div className="card">
-      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">{label}</p>
-      <p className={`text-2xl font-bold ${accent ?? 'text-slate-800'}`}>{value}</p>
-      {sub && <p className="text-xs text-slate-400 mt-1">{sub}</p>}
+    <div className={styles.metricCard}>
+      <p className={styles.metricLabel}>{label}</p>
+      <p className={`${styles.metricValue} ${accent ? ACCENT_CLASS[accent] : ''}`}>{value}</p>
+      {sub && <p className={styles.metricSub}>{sub}</p>}
     </div>
   )
 }
@@ -114,95 +113,76 @@ function InsightPanel({ data }: { data: CustomerInsightResponse }) {
   const { summary, preferred_delivery_time } = data
   const recent_orders = data.recent_orders ?? []
 
-  const srColor =
-    summary.success_rate >= 0.7 ? 'text-go' :
-    summary.success_rate >= 0.4 ? 'text-urgent' : 'text-nogo'
+  const srAccent: 'go' | 'nogo' | undefined =
+    summary.success_rate >= 0.7 ? 'go' :
+    summary.success_rate >= 0.4 ? undefined : 'nogo'
 
   return (
-    <div className="space-y-4">
+    <>
       {/* Address display */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs text-slate-400">Result for</span>
-        <span className="text-xs font-semibold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full">
-          {data.address}
-        </span>
+      <div className={styles.addrChip}>
+        <span className={styles.addrLabel}>Result for</span>
+        <span className={styles.addrVal}>{data.address}</span>
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className={styles.metricGrid}>
         <MetricCard
           label="Success Rate"
           value={toPercent(summary.success_rate)}
-          accent={srColor}
+          accent={srAccent}
           sub={`${summary.delivered} of ${summary.total_orders} delivered`}
         />
         <MetricCard
           label="Failed Deliveries"
           value={summary.failed}
-          accent={summary.failed > 0 ? 'text-nogo' : undefined}
+          accent={summary.failed > 0 ? 'nogo' : undefined}
           sub={summary.postponed > 0 ? `${summary.postponed} postponed` : undefined}
         />
         <MetricCard
           label="Preferred Time"
           value={capitalize(preferred_delivery_time)}
         />
-        <div className="card">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">
-            Risk Level
-          </p>
-          <div className="mt-2">
+        <div className={styles.metricCard}>
+          <p className={styles.metricLabel}>Risk Level</p>
+          <div>
             <RiskBadge level={summary.risk_level} />
           </div>
-          <p className="text-xs text-slate-400 mt-2">
+          <p className={styles.metricSub}>
             {summary.total_orders} order{summary.total_orders !== 1 ? 's' : ''} total
           </p>
         </div>
       </div>
 
       {/* Recent orders */}
-      <div className="card overflow-hidden p-0">
-        <div className="px-4 py-3 border-b border-slate-50">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+      <div className={styles.tableCard}>
+        <div className={styles.tableHead}>
+          <span className={styles.tableHeadTitle}>
             Recent Orders
-            <span className="ml-2 font-normal text-slate-400 normal-case">
-              (showing up to 5 most recent)
-            </span>
-          </p>
+            <span className={styles.note}>(showing up to 5 most recent)</span>
+          </span>
         </div>
         {recent_orders.length === 0 ? (
-          <p className="text-sm text-slate-400 text-center py-6 px-4">
+          <p className={styles.emptyNote}>
             No order records available.
           </p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div style={{ overflowX: 'auto' }}>
+            <table className={styles.table}>
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-100">
+                <tr>
                   {['Order', 'Date', 'Time Window', 'Status'].map(h => (
-                    <th
-                      key={h}
-                      className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-3 whitespace-nowrap"
-                    >
-                      {h}
-                    </th>
+                    <th key={h}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {recent_orders.map(o => (
-                  <tr key={o.order_number} className="border-b border-slate-50 last:border-0">
-                    <td className="px-4 py-3 font-mono text-xs text-slate-600 whitespace-nowrap">
-                      {o.order_number}
-                    </td>
-                    <td className="px-4 py-3 text-slate-500 text-xs whitespace-nowrap">
-                      {fmtDate(o.date)}
-                    </td>
-                    <td className="px-4 py-3 text-slate-600 text-xs whitespace-nowrap capitalize">
-                      {o.time_window}
-                    </td>
-                    <td className="px-4 py-3">
-                      <StatusBadge status={o.status} />
-                    </td>
+                  <tr key={o.order_number}>
+                    <td className={styles.orderNo}>{o.order_number}</td>
+                    <td className={styles.muted}>{fmtDate(o.date)}</td>
+                    <td className={styles.muted} style={{ textTransform: 'capitalize' }}>{o.time_window}</td>
+                    <td><StatusBadge status={o.status} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -210,7 +190,7 @@ function InsightPanel({ data }: { data: CustomerInsightResponse }) {
           </div>
         )}
       </div>
-    </div>
+    </>
   )
 }
 
@@ -233,9 +213,12 @@ export function CustomerInsights() {
 
   if (user?.role !== 'manager') {
     return (
-      <div className="p-6">
-        <div className="card">
-          <p className="text-sm text-slate-500">This page is for managers only.</p>
+      <div className={styles.page}>
+        <div className={styles.guilloche} />
+        <div className={styles.wrap}>
+          <div className={styles.roleGate}>
+            <p>This page is for managers only.</p>
+          </div>
         </div>
       </div>
     )
@@ -260,30 +243,30 @@ export function CustomerInsights() {
   }
 
   return (
-    <div>
-      {/* Header */}
-      <div className="px-4 md:px-6 pt-6 pb-4">
-        <h1 className="text-xl font-bold text-slate-900">Customer Insights</h1>
-        <p className="text-xs text-slate-400 mt-0.5">
-          Search by exact customer address to view delivery history and risk profile.
-        </p>
-      </div>
-
-      <div className="px-4 md:px-6 pb-8 space-y-4">
+    <div className={styles.page}>
+      <div className={styles.guilloche} />
+      <div className={styles.wrap}>
+        {/* Header */}
+        <div className={styles.pageHead}>
+          <h1>Customer Insights</h1>
+          <p className={styles.sub}>
+            Search by exact customer address to view delivery history and risk profile.
+          </p>
+        </div>
 
         {/* Search bar */}
-        <form onSubmit={handleSearch} className="flex gap-2">
+        <form onSubmit={handleSearch} className={styles.searchForm}>
           <input
             type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="e.g. 99 Test Lane, Adyar, Chennai"
-            className="flex-1 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-0"
+            className={styles.searchInput}
           />
           <button
             type="submit"
             disabled={searchState.status === 'loading' || !query.trim()}
-            className="text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-4 py-2 rounded-lg transition-colors whitespace-nowrap"
+            className={styles.searchBtn}
           >
             {searchState.status === 'loading' ? 'Looking up…' : 'Look up'}
           </button>
@@ -292,13 +275,13 @@ export function CustomerInsights() {
         {/* States */}
 
         {searchState.status === 'idle' && (
-          <div className="card bg-slate-50 border-slate-100">
-            <p className="text-sm font-semibold text-slate-600 mb-1">
+          <div className={styles.hintCard}>
+            <p className={styles.hintTitle}>
               Search by customer address
             </p>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className={styles.hintBody}>
               Enter a customer's delivery address exactly as recorded in the order system
-              (e.g. "99 Test Lane, Adyar, Chennai"). The lookup is case-sensitive and
+              (e.g. <b>"99 Test Lane, Adyar, Chennai"</b>). The lookup is case-sensitive and
               must match the stored address precisely.
             </p>
           </div>
@@ -307,20 +290,20 @@ export function CustomerInsights() {
         {searchState.status === 'loading' && <InsightSkeleton />}
 
         {searchState.status === 'not_found' && (
-          <div className="card border-amber-200 bg-amber-50">
-            <p className="text-sm font-semibold text-amber-700">No history found</p>
-            <p className="text-xs text-amber-600 mt-1">
+          <div className={`${styles.stateCard} ${styles.stateCardWarn}`}>
+            <p className={styles.stateTitleWarn}>No history found</p>
+            <p className={styles.stateBodyWarn}>
               No order history found for{' '}
-              <span className="font-semibold">"{searchState.address}"</span>.
+              <b>"{searchState.address}"</b>.
               Check that the address matches the stored format exactly.
             </p>
           </div>
         )}
 
         {searchState.status === 'error' && (
-          <div className="card border-red-200 bg-red-50">
-            <p className="text-sm font-semibold text-red-600">Lookup failed</p>
-            <p className="text-xs text-red-500 mt-1">{searchState.message}</p>
+          <div className={`${styles.stateCard} ${styles.stateCardErr}`}>
+            <p className={styles.stateTitleErr}>Lookup failed</p>
+            <p className={styles.stateBodyErr}>{searchState.message}</p>
           </div>
         )}
 

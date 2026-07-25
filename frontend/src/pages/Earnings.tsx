@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { getCostSavings, type CostSavingsResponse } from '../api/analytics'
 import { getAgentOrders, type OrderListItem } from '../api/orders'
-import { MetricCard } from '../components/ui/MetricCard'
+import styles from './Earnings.module.css'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -28,8 +28,7 @@ function periodLabel(p: Period): string {
 }
 
 function fmtDate(iso: string): string {
-  const d = new Date(iso + 'T00:00:00')
-  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
 }
 
 function fmtINR(n: number): string {
@@ -49,29 +48,25 @@ function extractMsg(err: unknown): string {
 // ── Badges ─────────────────────────────────────────────────────────────────────
 
 function DecisionBadge({ decision }: { decision: string | null }) {
-  if (!decision) return <span className="text-xs text-slate-400">—</span>
+  if (!decision) return <span className={styles.pillNone}>—</span>
   return (
-    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-      decision === 'GO'
-        ? 'bg-green-50 text-green-700'
-        : 'bg-red-50 text-red-600'
-    }`}>
+    <span className={`${styles.pill} ${decision === 'GO' ? styles.pillGo : styles.pillNoGo}`}>
       {decision}
     </span>
   )
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  pending:    'bg-slate-100 text-slate-600',
-  in_transit: 'bg-blue-50 text-blue-600',
-  delivered:  'bg-green-50 text-green-700',
-  failed:     'bg-red-50 text-red-600',
-  postponed:  'bg-amber-50 text-amber-600',
+const STATUS_PILL: Record<string, string> = {
+  pending:    styles.stPending,
+  in_transit: styles.stIn_transit,
+  delivered:  styles.stDelivered,
+  failed:     styles.stFailed,
+  postponed:  styles.stPostponed,
 }
 
 function StatusBadge({ status }: { status: string }) {
   return (
-    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_COLORS[status] ?? 'bg-slate-100 text-slate-500'}`}>
+    <span className={`${styles.pill} ${STATUS_PILL[status] ?? styles.stPostponed}`}>
       {status.replace('_', ' ')}
     </span>
   )
@@ -79,39 +74,42 @@ function StatusBadge({ status }: { status: string }) {
 
 // ── Skeleton ───────────────────────────────────────────────────────────────────
 
-function Sk({ className }: { className?: string }) {
-  return <div className={`animate-pulse bg-slate-200 rounded-xl ${className ?? ''}`} />
-}
-
 function EarningsSkeleton() {
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {Array.from({ length: 3 }).map((_, i) => <Sk key={i} className="h-24" />)}
+    <>
+      <div className={styles.kpiGrid3} style={{ marginBottom: 24 }}>
+        {Array.from({ length: 3 }).map((_, i) => <div key={i} className={styles.skelBlock} style={{ height: 88 }} />)}
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {Array.from({ length: 4 }).map((_, i) => <Sk key={i} className="h-24" />)}
+      <div className={styles.kpiGrid4} style={{ marginBottom: 24 }}>
+        {Array.from({ length: 4 }).map((_, i) => <div key={i} className={styles.skelBlock} style={{ height: 88 }} />)}
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {Array.from({ length: 3 }).map((_, i) => <Sk key={i} className="h-24" />)}
+      <div className={styles.kpiGrid3} style={{ marginBottom: 24 }}>
+        {Array.from({ length: 3 }).map((_, i) => <div key={i} className={styles.skelBlock} style={{ height: 88 }} />)}
       </div>
-      <Sk className="h-64" />
-    </div>
+      <div className={styles.skelBlock} style={{ height: 256 }} />
+    </>
   )
 }
 
 // ── Section label ──────────────────────────────────────────────────────────────
 
 function SL({ children }: { children: string }) {
-  return (
-    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
-      {children}
-    </p>
-  )
+  return <p className={styles.sectionLabel}>{children}</p>
 }
 
 function SubNote({ children }: { children: string }) {
-  return <p className="text-[11px] text-slate-400 mb-3 -mt-2">{children}</p>
+  return <p className={styles.subNote}>{children}</p>
+}
+
+// ── KPI tile ───────────────────────────────────────────────────────────────────
+
+function Kpi({ label, value, accent }: { label: string; value: string | number; accent?: 'go' | 'nogo' }) {
+  return (
+    <div className={styles.kpi}>
+      <p className={styles.kpiLabel}>{label}</p>
+      <p className={`${styles.kpiValue} ${styles.mono} ${accent ? styles[accent] : ''}`}>{value}</p>
+    </div>
+  )
 }
 
 // ── Content ────────────────────────────────────────────────────────────────────
@@ -138,26 +136,25 @@ function EarningsContent({ data, period }: { data: PageData; period: Period }) {
   })
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-
+    <>
       {/* ── Delivery Earnings ──────────────────────────────────────────────── */}
-      <div>
-        <SL>Delivery Earnings · {label}</SL>
+      <div className={styles.section}>
+        <SL>{`Delivery Earnings · ${label}`}</SL>
         <SubNote>
           Sum of payment_amount across your delivered orders (simulated — no live payment gateway).
         </SubNote>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <MetricCard
+        <div className={styles.kpiGrid3}>
+          <Kpi
             label="Total Earned"
             value={fmtINR(totalEarned)}
-            accent={totalEarned > 0 ? 'text-go' : undefined}
+            accent={totalEarned > 0 ? 'go' : undefined}
           />
-          <MetricCard
+          <Kpi
             label="Orders Delivered"
             value={deliveredOrders.length}
-            accent="text-go"
+            accent="go"
           />
-          <MetricCard
+          <Kpi
             label="Avg per Delivery"
             value={avgPerDelivery > 0 ? fmtINR(avgPerDelivery) : '—'}
           />
@@ -165,116 +162,107 @@ function EarningsContent({ data, period }: { data: PageData; period: Period }) {
       </div>
 
       {/* ── AI Cost Savings ────────────────────────────────────────────────── */}
-      <div>
-        <SL>AI Cost Savings · {label} · {savings.scope}</SL>
+      <div className={styles.section}>
+        <SL>{`AI Cost Savings · ${label} · ${savings.scope}`}</SL>
         <SubNote>
           Savings generated by the GO/NO-GO system avoiding low-probability deliveries.
         </SubNote>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <MetricCard label="GO Decisions"         value={m.go_count} />
-          <MetricCard
+        <div className={styles.kpiGrid4}>
+          <Kpi label="GO Decisions" value={m.go_count} />
+          <Kpi
             label="Trips Avoided"
             value={m.deliveries_avoided}
-            accent="text-go"
+            accent="go"
           />
-          <MetricCard
+          <Kpi
             label="Fuel Saved"
             value={`${m.fuel_saved_litres} L`}
-            accent="text-go"
+            accent="go"
           />
-          <MetricCard
+          <Kpi
             label="Total Savings"
             value={fmtINR(m.total_savings_inr)}
-            accent="text-go"
+            accent="go"
           />
         </div>
       </div>
 
       {/* ── Performance ────────────────────────────────────────────────────── */}
-      <div>
-        <SL>Performance · {label}</SL>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <MetricCard
+      <div className={styles.section}>
+        <SL>{`Performance · ${label}`}</SL>
+        <div className={styles.kpiGrid3}>
+          <Kpi
             label="Your Success Rate"
             value={toPercent(m.success_rate_with_ai)}
-            accent={m.success_rate_with_ai >= m.baseline_success_rate ? 'text-go' : 'text-nogo'}
+            accent={m.success_rate_with_ai >= m.baseline_success_rate ? 'go' : 'nogo'}
           />
-          <MetricCard
+          <Kpi
             label="Area Baseline"
             value={toPercent(m.baseline_success_rate)}
           />
-          <MetricCard
+          <Kpi
             label="vs Baseline"
             value={`${m.improvement_pct >= 0 ? '+' : ''}${m.improvement_pct}%`}
-            accent={m.improvement_pct >= 0 ? 'text-go' : 'text-nogo'}
+            accent={m.improvement_pct >= 0 ? 'go' : 'nogo'}
           />
         </div>
       </div>
 
       {/* ── Order / Decision History ───────────────────────────────────────── */}
-      <div>
-        <SL>Order & Decision History · {label}</SL>
-        {orders.length === 0 ? (
-          <div className="card">
-            <p className="text-sm text-slate-400 text-center py-4">
-              No orders in this period.
-            </p>
-          </div>
-        ) : (
-          <div className="card overflow-hidden p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-100">
-                    {['Order', 'Customer', 'AI Decision', 'Outcome', 'Deadline', 'Amount'].map(h => (
-                      <th
-                        key={h}
-                        className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-3 whitespace-nowrap"
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedOrders.map(o => (
-                    <tr
-                      key={o.id}
-                      className={`border-b border-slate-50 last:border-0 ${
-                        o.status === 'delivered' ? 'bg-green-50/20' : ''
-                      }`}
-                    >
-                      <td className="px-4 py-3 font-mono text-xs text-slate-600 whitespace-nowrap">
-                        {o.order_number}
-                      </td>
-                      <td className="px-4 py-3 text-slate-700 whitespace-nowrap">
-                        {o.customer_name.length > 18
-                          ? o.customer_name.slice(0, 17) + '…'
-                          : o.customer_name}
-                      </td>
-                      <td className="px-4 py-3">
-                        <DecisionBadge decision={o.decision} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusBadge status={o.status} />
-                      </td>
-                      <td className="px-4 py-3 text-slate-500 text-xs whitespace-nowrap">
-                        {fmtDate(o.deadline)}
-                      </td>
-                      <td className="px-4 py-3 text-xs font-medium whitespace-nowrap">
-                        <span className={o.status === 'delivered' ? 'text-go font-semibold' : 'text-slate-700'}>
-                          ₹{o.payment_amount.toLocaleString('en-IN')}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      <div className={styles.section}>
+        <SL>{`Order & Decision History · ${label}`}</SL>
+        <div style={{ marginTop: 14 }}>
+          {orders.length === 0 ? (
+            <div className={styles.emptyCard}>
+              <p>No orders in this period.</p>
             </div>
-          </div>
-        )}
+          ) : (
+            <div className={styles.tableCard}>
+              <div style={{ overflowX: 'auto' }}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      {['Order', 'Customer', 'AI Decision', 'Outcome', 'Deadline', 'Amount'].map(h => (
+                        <th key={h}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedOrders.map(o => (
+                      <tr
+                        key={o.id}
+                        className={o.status === 'delivered' ? styles.delivered : ''}
+                      >
+                        <td className={styles.orderNo}>
+                          {o.order_number}
+                        </td>
+                        <td>
+                          {o.customer_name.length > 18
+                            ? o.customer_name.slice(0, 17) + '…'
+                            : o.customer_name}
+                        </td>
+                        <td>
+                          <DecisionBadge decision={o.decision} />
+                        </td>
+                        <td>
+                          <StatusBadge status={o.status} />
+                        </td>
+                        <td className={styles.muted}>
+                          {fmtDate(o.deadline)}
+                        </td>
+                        <td className={o.status === 'delivered' ? styles.amountGo : styles.amount}>
+                          ₹{o.payment_amount.toLocaleString('en-IN')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 
@@ -314,50 +302,50 @@ export function Earnings() {
 
   if (user?.role !== 'agent') {
     return (
-      <div className="p-6">
-        <div className="card">
-          <p className="text-sm text-slate-500">This page is for agents only.</p>
+      <div className={styles.page}>
+        <div className={styles.guilloche} />
+        <div className={styles.wrap}>
+          <div className={styles.roleGate}>
+            <p>This page is for agents only.</p>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div>
-      {/* Header + period toggle */}
-      <div className="px-4 md:px-6 pt-6 pb-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-slate-900">Earnings</h1>
-        <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
-          {(['week', 'month', 'all'] as Period[]).map(p => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={`text-xs font-semibold px-3 py-1.5 rounded-md transition-colors ${
-                period === p
-                  ? 'bg-white text-slate-800 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              {p === 'week' ? 'This Week' : p === 'month' ? 'This Month' : 'All Time'}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {state.status === 'loading' && <EarningsSkeleton />}
-
-      {state.status === 'error' && (
-        <div className="p-6">
-          <div className="card border-red-200 bg-red-50">
-            <p className="text-sm font-semibold text-red-600">Failed to load earnings</p>
-            <p className="text-xs text-red-500 mt-1">{state.message}</p>
+    <div className={styles.page}>
+      <div className={styles.guilloche} />
+      <div className={styles.wrap}>
+        {/* Header + period toggle */}
+        <div className={styles.pageHead}>
+          <h1>Earnings</h1>
+          <div className={styles.periodToggle}>
+            {(['week', 'month', 'all'] as Period[]).map(p => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={`${styles.periodBtn} ${period === p ? styles.periodBtnSel : ''}`}
+              >
+                {p === 'week' ? 'This Week' : p === 'month' ? 'This Month' : 'All Time'}
+              </button>
+            ))}
           </div>
         </div>
-      )}
 
-      {state.status === 'success' && (
-        <EarningsContent data={state.data} period={period} />
-      )}
+        {state.status === 'loading' && <EarningsSkeleton />}
+
+        {state.status === 'error' && (
+          <div className={styles.errorCard}>
+            <p className={styles.errorTitle}>Failed to load earnings</p>
+            <p className={styles.errorMsg}>{state.message}</p>
+          </div>
+        )}
+
+        {state.status === 'success' && (
+          <EarningsContent data={state.data} period={period} />
+        )}
+      </div>
     </div>
   )
 }

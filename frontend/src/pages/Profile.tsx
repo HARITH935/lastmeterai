@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { getMe, type UserProfile } from '../api/auth'
+import styles from './Profile.module.css'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -17,97 +18,74 @@ function fmtDate(iso: string): string {
   })
 }
 
-// ── Skeleton ───────────────────────────────────────────────────────────────────
-
-function Sk({ className }: { className?: string }) {
-  return <div className={`animate-pulse bg-slate-200 rounded-xl ${className ?? ''}`} />
-}
-
 // ── Profile card ───────────────────────────────────────────────────────────────
 
 function ProfileCard({ profile }: { profile: UserProfile }) {
   return (
-    <div className="space-y-4">
-
+    <div>
       {/* Identity card */}
-      <div className="card space-y-4">
+      <div className={styles.card}>
 
-        {/* Avatar placeholder + name */}
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-            <span className="text-xl font-bold text-blue-600">
+        {/* Avatar + name + role */}
+        <div className={styles.idRow}>
+          <div className={styles.avatarWrap}>
+            <div className={styles.avatarGlow} />
+            <div className={styles.avatar}>
               {profile.name.charAt(0).toUpperCase()}
-            </span>
+            </div>
           </div>
           <div>
-            <p className="text-lg font-bold text-slate-900">{profile.name}</p>
-            <p className="text-xs text-slate-400 font-mono">@{profile.username}</p>
+            <p className={styles.idName}>{profile.name}</p>
+            <p className={styles.idUsername}>@{profile.username}</p>
+          </div>
+          <div className={styles.roleWrap}>
+            <span className={`${styles.pill} ${styles.pillGold}`}>{profile.role}</span>
           </div>
         </div>
 
-        <hr className="border-slate-100" />
+        <div className={styles.divider} />
 
         {/* Fields grid */}
-        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <dt className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-0.5">Role</dt>
-            <dd>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-600 capitalize">
-                {profile.role}
-              </span>
-            </dd>
-          </div>
-
+        <div className={styles.fieldsGrid}>
           {profile.phone && (
             <div>
-              <dt className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-0.5">Phone</dt>
-              <dd className="text-sm text-slate-700">{profile.phone}</dd>
+              <p className={styles.fieldLabel}>Phone</p>
+              <p className={styles.fieldVal}>{profile.phone}</p>
             </div>
           )}
 
           {profile.area && (
             <div>
-              <dt className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-0.5">Area</dt>
-              <dd>
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
-                  {profile.area}
-                </span>
-              </dd>
+              <p className={styles.fieldLabel}>Area</p>
+              <p><span className={`${styles.pill} ${styles.pillMuted}`}>{profile.area}</span></p>
             </div>
           )}
 
           <div>
-            <dt className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-0.5">City</dt>
-            <dd className="text-sm text-slate-700">{profile.city}</dd>
+            <p className={styles.fieldLabel}>City</p>
+            <p className={styles.fieldVal}>{profile.city}</p>
           </div>
 
           <div>
-            <dt className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-0.5">Member Since</dt>
-            <dd className="text-sm text-slate-700">{fmtDate(profile.created_at)}</dd>
+            <p className={styles.fieldLabel}>Member Since</p>
+            <p className={styles.fieldVal}>{fmtDate(profile.created_at)}</p>
           </div>
 
           <div>
-            <dt className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-0.5">Account Status</dt>
-            <dd>
-              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                profile.is_active
-                  ? 'bg-green-50 text-green-700'
-                  : 'bg-red-50 text-red-600'
-              }`}>
+            <p className={styles.fieldLabel}>Account Status</p>
+            <p>
+              <span className={`${styles.pill} ${profile.is_active ? styles.pillGo : styles.pillNoGo}`}>
                 {profile.is_active ? 'Active' : 'Inactive'}
               </span>
-            </dd>
+            </p>
           </div>
-        </dl>
+        </div>
       </div>
 
       {/* Link to Settings */}
-      <p className="text-xs text-slate-400 text-center">
+      <p className={styles.settingsNote}>
         To edit your name, phone, or notification preferences, visit{' '}
-        <Link to="/settings" className="text-blue-600 hover:underline font-semibold">
-          Settings
-        </Link>
-        .
+        <Link to="/settings">Settings</Link>.
       </p>
 
     </div>
@@ -138,33 +116,34 @@ export function Profile() {
   }, [access_token])
 
   return (
-    <div>
-      <div className="px-4 md:px-6 pt-6 pb-4">
-        <h1 className="text-xl font-bold text-slate-900">Profile</h1>
-        <p className="text-xs text-slate-400 mt-0.5">Your account information.</p>
-      </div>
+    <div className={styles.page}>
+      <div className={styles.guilloche} />
+      <div className={styles.wrap}>
+        <div className={styles.pageHead}>
+          <h1>Profile</h1>
+          <p className={styles.sub}>Your account information.</p>
+        </div>
 
-      <div className="px-4 md:px-6 pb-8">
         {state.status === 'loading' && (
-          <div className="card space-y-4">
-            <div className="flex items-center gap-4">
-              <Sk className="w-14 h-14 rounded-full" />
-              <div className="flex-1 space-y-2">
-                <Sk className="h-5 w-40" />
-                <Sk className="h-3 w-24" />
+          <div className={styles.card}>
+            <div className={styles.skelRow}>
+              <div className={styles.skelBlock} style={{ width: 92, height: 92, borderRadius: '50%' }} />
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div className={styles.skelBlock} style={{ height: 22, width: 200 }} />
+                <div className={styles.skelBlock} style={{ height: 14, width: 120 }} />
               </div>
             </div>
-            <hr className="border-slate-100" />
-            <div className="grid grid-cols-2 gap-4">
-              {Array.from({ length: 6 }).map((_, i) => <Sk key={i} className="h-10" />)}
+            <div className={styles.divider} />
+            <div className={styles.skelGrid}>
+              {Array.from({ length: 5 }).map((_, i) => <div key={i} className={styles.skelBlock} style={{ height: 44 }} />)}
             </div>
           </div>
         )}
 
         {state.status === 'error' && (
-          <div className="card border-red-200 bg-red-50">
-            <p className="text-sm font-semibold text-red-600">Failed to load profile</p>
-            <p className="text-xs text-red-500 mt-1">{state.message}</p>
+          <div className={styles.errorCard}>
+            <p className={styles.errorTitle}>Failed to load profile</p>
+            <p className={styles.errorMsg}>{state.message}</p>
           </div>
         )}
 

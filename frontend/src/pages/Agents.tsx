@@ -4,6 +4,7 @@ import { getKPI, getLeaderboard, type AgentPerf, type LeaderboardAgent } from '.
 import { getAllOrders, type OrderListItem } from '../api/orders'
 import { createAgentAccount, listAgentAccounts, setAgentActive, type AgentAccount } from '../api/agents'
 import { VALID_AREAS } from '../api/analytics'
+import styles from './Agents.module.css'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -30,21 +31,27 @@ function extractMsg(err: unknown): string {
 }
 
 function fmtDate(iso: string): string {
-  const d = new Date(iso + 'T00:00:00')
-  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+}
+
+function rateClass(rate: number): string {
+  return rate >= 0.7 ? styles.rateGo : rate >= 0.4 ? styles.rateUrgent : styles.rateNogo
+}
+
+function rateColor(rate: number): string {
+  return rate >= 0.7 ? 'var(--go)' : rate >= 0.4 ? 'var(--urgent)' : 'var(--nogo)'
 }
 
 // ── Skeleton ───────────────────────────────────────────────────────────────────
 
-function Sk({ className }: { className?: string }) {
-  return <div className={`animate-pulse bg-slate-200 rounded-xl ${className ?? ''}`} />
-}
-
 function AgentsSkeleton() {
   return (
-    <div className="p-4 md:p-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {Array.from({ length: 5 }).map((_, i) => <Sk key={i} className="h-44" />)}
+    <div className={styles.page}>
+      <div className={styles.guilloche} />
+      <div className={styles.wrap}>
+        <div className={styles.cardsGrid}>
+          {Array.from({ length: 5 }).map((_, i) => <div key={i} className={styles.skelBlock} style={{ height: 176 }} />)}
+        </div>
       </div>
     </div>
   )
@@ -52,32 +59,32 @@ function AgentsSkeleton() {
 
 // ── Status + Risk badges ───────────────────────────────────────────────────────
 
-const STATUS_COLORS: Record<string, string> = {
-  pending:    'bg-slate-100 text-slate-600',
-  in_transit: 'bg-blue-50 text-blue-600',
-  delivered:  'bg-green-50 text-green-700',
-  failed:     'bg-red-50 text-red-600',
-  postponed:  'bg-amber-50 text-amber-600',
+const STATUS_PILL: Record<string, string> = {
+  pending:    styles.pillPending,
+  in_transit: styles.pillIn_transit,
+  delivered:  styles.pillDelivered,
+  failed:     styles.pillFailed,
+  postponed:  styles.pillPostponed,
 }
 
-const RISK_COLORS: Record<string, string> = {
-  low:    'bg-green-50 text-green-700',
-  medium: 'bg-amber-50 text-amber-600',
-  high:   'bg-red-50 text-red-600',
+const RISK_PILL: Record<string, string> = {
+  low:    styles.pillLow,
+  medium: styles.pillMedium,
+  high:   styles.pillHigh,
 }
 
 function StatusBadge({ status }: { status: string }) {
   return (
-    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_COLORS[status] ?? 'bg-slate-100 text-slate-500'}`}>
+    <span className={`${styles.pill} ${STATUS_PILL[status] ?? styles.pillPostponed}`}>
       {status.replace('_', ' ')}
     </span>
   )
 }
 
 function RiskBadge({ level }: { level: string | null }) {
-  if (!level) return <span className="text-xs text-slate-400">—</span>
+  if (!level) return <span className={styles.pillNone}>—</span>
   return (
-    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${RISK_COLORS[level] ?? 'bg-slate-100 text-slate-500'}`}>
+    <span className={`${styles.pill} ${RISK_PILL[level] ?? styles.pillPostponed}`}>
       {level}
     </span>
   )
@@ -94,69 +101,49 @@ function AgentCard({
   selected: boolean
   onClick: () => void
 }) {
-  const successColor =
-    agent.success_rate >= 0.7 ? 'text-go' :
-    agent.success_rate >= 0.4 ? 'text-urgent' : 'text-nogo'
-
   return (
     <button
       onClick={onClick}
-      className={`card text-left w-full transition-all ${
-        selected
-          ? 'ring-2 ring-blue-500 shadow-md'
-          : 'hover:shadow-md hover:border-slate-300'
-      }`}
+      className={`${styles.agentCard} ${selected ? styles.agentCardSel : ''}`}
     >
       {/* Name + area */}
-      <div className="flex items-start justify-between gap-2 mb-3">
+      <div className={styles.acHead}>
         <div>
-          <p className="font-semibold text-slate-800 text-sm">{agent.agent_name}</p>
-          <span className="inline-block mt-0.5 text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-            {agent.area}
-          </span>
+          <p className={styles.acName}>{agent.agent_name}</p>
+          <span className={styles.areaChip}>{agent.area}</span>
         </div>
-        <div className="text-right shrink-0">
-          <p className="text-xs text-slate-400">Score</p>
-          <p className="text-lg font-bold text-slate-800">
-            {Math.round(agent.performance_score * 100)}
-          </p>
+        <div>
+          <p className={styles.acScoreLbl}>Score</p>
+          <p className={styles.acScore}>{Math.round(agent.performance_score * 100)}</p>
         </div>
       </div>
 
       {/* Stat row */}
-      <div className="grid grid-cols-3 gap-2 text-center mb-3">
+      <div className={styles.acStats}>
         <div>
-          <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide">Orders</p>
-          <p className="text-sm font-bold text-slate-700">{agent.order_count}</p>
+          <p className={styles.acStatLbl}>Orders</p>
+          <p className={styles.acStatVal}>{agent.order_count}</p>
         </div>
         <div>
-          <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide">Delivered</p>
-          <p className="text-sm font-bold text-slate-700">{agent.delivered_count}</p>
+          <p className={styles.acStatLbl}>Delivered</p>
+          <p className={styles.acStatVal}>{agent.delivered_count}</p>
         </div>
         <div>
-          <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide">Success</p>
-          <p className={`text-sm font-bold ${successColor}`}>{toPercent(agent.success_rate)}</p>
+          <p className={`${styles.acStatVal} ${rateClass(agent.success_rate)}`}>{toPercent(agent.success_rate)}</p>
+          <p className={styles.acStatLbl} style={{ marginTop: 0 }}>Success</p>
         </div>
       </div>
 
       {/* Score bar */}
-      <div className="flex items-center gap-2">
-        <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-          <div
-            className="h-full rounded-full"
-            style={{
-              width: `${Math.round(agent.performance_score * 100)}%`,
-              backgroundColor: '#2563EB',
-            }}
-          />
+      <div className={styles.acBarRow}>
+        <div className={styles.acBar}>
+          <div className={styles.acBarFill} style={{ width: `${Math.round(agent.performance_score * 100)}%` }} />
         </div>
-        <span className="text-[10px] text-slate-400 shrink-0">
-          {Math.round(agent.performance_score * 100)} / 100
-        </span>
+        <span className={styles.acBarNum}>{Math.round(agent.performance_score * 100)} / 100</span>
       </div>
 
       {/* Click hint */}
-      <p className="text-[10px] text-slate-400 mt-2 text-right">
+      <p className={styles.acHint}>
         {selected ? 'Click to hide orders' : 'Click to view orders'}
       </p>
     </button>
@@ -170,17 +157,17 @@ function AgentOrderDetail({ agent, state }: { agent: AgentPerf; state: OrderFetc
 
   if (state.status === 'loading') {
     return (
-      <div className="space-y-2">
-        {Array.from({ length: 3 }).map((_, i) => <Sk key={i} className="h-10" />)}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {Array.from({ length: 3 }).map((_, i) => <div key={i} className={styles.skelBlock} style={{ height: 40 }} />)}
       </div>
     )
   }
 
   if (state.status === 'error') {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
-        <p className="text-xs font-semibold text-red-600">Failed to load orders</p>
-        <p className="text-xs text-red-500 mt-0.5">{state.message}</p>
+      <div className={styles.errorCard}>
+        <p className={styles.errorTitle}>Failed to load orders</p>
+        <p className={styles.errorMsg}>{state.message}</p>
       </div>
     )
   }
@@ -189,37 +176,37 @@ function AgentOrderDetail({ agent, state }: { agent: AgentPerf; state: OrderFetc
 
   if (orders.length === 0) {
     return (
-      <p className="text-sm text-slate-400 text-center py-4">
+      <p className={styles.emptyNote}>
         No orders assigned to {agent.agent_name} in this period.
       </p>
     )
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="bg-slate-50 border-b border-slate-100">
-            {['Order', 'Customer', 'Status', 'Deadline', 'Risk', 'Amount'].map(h => (
-              <th key={h} className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-3 py-2 whitespace-nowrap">
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {orders.map(o => (
-            <tr key={o.id} className="border-b border-slate-50 last:border-0">
-              <td className="px-3 py-2 font-mono text-xs text-slate-600">{o.order_number}</td>
-              <td className="px-3 py-2 text-slate-700 whitespace-nowrap">{o.customer_name}</td>
-              <td className="px-3 py-2"><StatusBadge status={o.status} /></td>
-              <td className="px-3 py-2 text-slate-500 text-xs whitespace-nowrap">{fmtDate(o.deadline)}</td>
-              <td className="px-3 py-2"><RiskBadge level={o.risk_level} /></td>
-              <td className="px-3 py-2 text-slate-700 text-xs">₹{o.payment_amount.toLocaleString('en-IN')}</td>
+    <div className={styles.tableCard}>
+      <div style={{ overflowX: 'auto' }}>
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              {['Order', 'Customer', 'Status', 'Deadline', 'Risk', 'Amount'].map(h => (
+                <th key={h}>{h}</th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {orders.map(o => (
+              <tr key={o.id}>
+                <td className={styles.mono}>{o.order_number}</td>
+                <td>{o.customer_name}</td>
+                <td><StatusBadge status={o.status} /></td>
+                <td className={styles.mono} style={{ color: 'var(--ink-muted)' }}>{fmtDate(o.deadline)}</td>
+                <td><RiskBadge level={o.risk_level} /></td>
+                <td>₹{o.payment_amount.toLocaleString('en-IN')}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
@@ -230,54 +217,42 @@ const MEDALS: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' }
 
 function LeaderboardRow({ agent }: { agent: LeaderboardAgent }) {
   const medal = MEDALS[agent.rank]
-  const srColor =
-    agent.success_rate >= 0.7 ? 'text-go' :
-    agent.success_rate >= 0.4 ? 'text-urgent' : 'text-nogo'
 
   return (
-    <tr className={`border-b border-slate-50 last:border-0 ${agent.rank <= 3 ? 'bg-amber-50/30' : ''}`}>
-      <td className="px-4 py-3 text-center w-10">
+    <tr className={agent.rank <= 3 ? styles.top3 : ''}>
+      <td className={styles.centerCol}>
         {medal
-          ? <span className="text-lg">{medal}</span>
-          : <span className="text-sm font-bold text-slate-400">#{agent.rank}</span>
+          ? <span className={styles.medal}>{medal}</span>
+          : <span className={styles.rankNum}>#{agent.rank}</span>
         }
       </td>
-      <td className="px-4 py-3">
-        <p className="font-semibold text-slate-800 text-sm">{agent.agent_name}</p>
-        <div className="flex items-center gap-1.5 mt-0.5">
-          {agent.area && (
-            <span className="text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full">{agent.area}</span>
-          )}
+      <td>
+        <p className={styles.agentName}>{agent.agent_name}</p>
+        <div style={{ marginTop: 2 }}>
+          {agent.area && <span className={styles.areaChip}>{agent.area}</span>}
           {agent.avg_rating != null && (
-            <span className="text-xs font-semibold text-amber-500" title={`${agent.rating_count} rating${agent.rating_count !== 1 ? 's' : ''}`}>
+            <span className={styles.ratingTxt} title={`${agent.rating_count} rating${agent.rating_count !== 1 ? 's' : ''}`}>
               ★ {agent.avg_rating.toFixed(1)}
             </span>
           )}
         </div>
       </td>
-      <td className="px-4 py-3 text-center">
-        <p className="text-sm font-bold text-slate-700">{agent.order_count}</p>
-        <p className="text-[10px] text-slate-400">{agent.delivered_count} delivered</p>
+      <td className={styles.ordersNum}>
+        {agent.order_count}
+        <p className={styles.deliveredSub}>{agent.delivered_count} delivered</p>
       </td>
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-2">
-          <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden min-w-[60px]">
-            <div
-              className="h-full rounded-full"
-              style={{ width: `${Math.round(agent.success_rate * 100)}%`, backgroundColor: agent.success_rate >= 0.7 ? '#10B981' : agent.success_rate >= 0.4 ? '#F59E0B' : '#EF4444' }}
-            />
+      <td>
+        <div className={styles.srRow}>
+          <div className={styles.srBar}>
+            <div className={styles.srBarFill} style={{ width: `${Math.round(agent.success_rate * 100)}%`, backgroundColor: rateColor(agent.success_rate) }} />
           </div>
-          <span className={`text-xs font-bold ${srColor} w-10 text-right shrink-0`}>
+          <span className={`${styles.srPct} ${rateClass(agent.success_rate)}`}>
             {toPercent(agent.success_rate)}
           </span>
         </div>
       </td>
-      <td className="px-4 py-3 text-right">
-        <p className="text-sm font-bold text-slate-800">₹{agent.earnings_inr.toLocaleString('en-IN')}</p>
-      </td>
-      <td className="px-4 py-3 text-center">
-        <span className="text-sm font-bold text-blue-600">{Math.round(agent.performance_score * 100)}</span>
-      </td>
+      <td className={styles.earnings}>₹{agent.earnings_inr.toLocaleString('en-IN')}</td>
+      <td className={styles.scoreCol}>{Math.round(agent.performance_score * 100)}</td>
     </tr>
   )
 }
@@ -300,53 +275,53 @@ function Leaderboard({ period, accessToken }: { period: Period; accessToken: str
 
   if (state.status === 'loading') return <AgentsSkeleton />
   if (state.status === 'error') return (
-    <div className="p-6"><div className="card border-red-200 bg-red-50">
-      <p className="text-sm font-semibold text-red-600">{state.message}</p>
-    </div></div>
+    <div className={styles.errorCard}>
+      <p className={styles.errorMsg}>{state.message}</p>
+    </div>
   )
 
   const { agents } = state
   const top = agents[0]
 
   return (
-    <div className="p-4 md:p-6 space-y-4">
+    <>
       {/* Top performer highlight */}
       {top && (
-        <div className="card bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200">
-          <div className="flex items-center gap-4">
-            <span className="text-4xl">🏆</span>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-amber-600 uppercase tracking-wide mb-0.5">Top Performer · {period === 'week' ? 'This Week' : 'This Month'}</p>
-              <p className="text-lg font-bold text-slate-900">{top.agent_name}</p>
-              <p className="text-sm text-slate-500">{top.area} · {toPercent(top.success_rate)} success · ₹{top.earnings_inr.toLocaleString('en-IN')} earned</p>
-            </div>
-            <div className="text-right shrink-0">
-              <p className="text-2xl font-black text-blue-600">{Math.round(top.performance_score * 100)}</p>
-              <p className="text-[10px] text-slate-400">score</p>
-            </div>
+        <div className={styles.topCard}>
+          <span className={styles.topEmoji}>🏆</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p className={styles.topLabel}>Top Performer · {period === 'week' ? 'This Week' : 'This Month'}</p>
+            <p className={styles.topName}>{top.agent_name}</p>
+            <p className={styles.topMeta}>{top.area} · {toPercent(top.success_rate)} success · ₹{top.earnings_inr.toLocaleString('en-IN')} earned</p>
+          </div>
+          <div className={styles.topScoreWrap}>
+            <p className={styles.topScore}>{Math.round(top.performance_score * 100)}</p>
+            <p className={styles.topScoreLbl}>score</p>
           </div>
         </div>
       )}
 
       {/* Table */}
-      <div className="card overflow-hidden p-0">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-slate-50 border-b border-slate-200">
-              <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-3 w-10">#</th>
-              <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-3">Agent</th>
-              <th className="text-center text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-3">Orders</th>
-              <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-3 min-w-[140px]">Success Rate</th>
-              <th className="text-right text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-3">Earnings</th>
-              <th className="text-center text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-3">Score</th>
-            </tr>
-          </thead>
-          <tbody>
-            {agents.map(a => <LeaderboardRow key={a.agent_id} agent={a} />)}
-          </tbody>
-        </table>
+      <div className={styles.tableCard}>
+        <div style={{ overflowX: 'auto' }}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th className={styles.centerCol} style={{ width: 40 }}>#</th>
+                <th>Agent</th>
+                <th className={styles.centerCol}>Orders</th>
+                <th style={{ minWidth: 140 }}>Success Rate</th>
+                <th className={styles.rightCol}>Earnings</th>
+                <th className={styles.centerCol}>Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              {agents.map(a => <LeaderboardRow key={a.agent_id} agent={a} />)}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 
@@ -386,56 +361,46 @@ function AccountsView({ accessToken }: { accessToken: string }) {
   if (state.status === 'loading') return <AgentsSkeleton />
   if (state.status === 'error') {
     return (
-      <div className="p-6">
-        <div className="card border-red-200 bg-red-50">
-          <p className="text-sm font-semibold text-red-600">Failed to load agent accounts</p>
-          <p className="text-xs text-red-500 mt-1">{state.message}</p>
-        </div>
+      <div className={styles.errorCard}>
+        <p className={styles.errorTitle}>Failed to load agent accounts</p>
+        <p className={styles.errorMsg}>{state.message}</p>
       </div>
     )
   }
 
   return (
-    <div className="p-4 md:p-6">
-      <div className="card overflow-hidden p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+    <>
+      <div className={styles.tableCard}>
+        <div style={{ overflowX: 'auto' }}>
+          <table className={styles.table}>
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-100">
+              <tr>
                 {['Agent', 'Username', 'Area', 'Phone', 'Status', 'Created', ''].map(h => (
-                  <th key={h} className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-3 whitespace-nowrap">
-                    {h}
-                  </th>
+                  <th key={h}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {state.agents.map(a => (
                 <Fragment key={a.id}>
-                  <tr className="border-b border-slate-50 last:border-0">
-                    <td className="px-4 py-3 font-medium text-slate-800 whitespace-nowrap">{a.name}</td>
-                    <td className="px-4 py-3 text-slate-500 whitespace-nowrap font-mono text-xs">{a.username}</td>
-                    <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{a.area}</td>
-                    <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{a.phone ?? '—'}</td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                        a.is_active ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-500'
-                      }`}>
+                  <tr>
+                    <td className={styles.agentName}>{a.name}</td>
+                    <td className={styles.mono} style={{ color: 'var(--ink-muted)' }}>{a.username}</td>
+                    <td style={{ color: 'var(--ink-muted)' }}>{a.area}</td>
+                    <td style={{ color: 'var(--ink-muted)' }}>{a.phone ?? '—'}</td>
+                    <td>
+                      <span className={`${styles.pill} ${a.is_active ? styles.statusPillActive : styles.statusPillOff}`}>
                         {a.is_active ? 'Active' : 'Deactivated'}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">
+                    <td style={{ color: 'var(--ink-dim)', fontSize: '0.76rem' }}>
                       {new Date(a.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className={styles.rightCol}>
                       <button
                         onClick={() => toggle(a)}
                         disabled={busyId === a.id}
-                        className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 ${
-                          a.is_active
-                            ? 'text-red-600 bg-red-50 hover:bg-red-100'
-                            : 'text-green-700 bg-green-50 hover:bg-green-100'
-                        }`}
+                        className={`${styles.toggleBtn} ${a.is_active ? styles.toggleBtnOff : styles.toggleBtnOn}`}
                       >
                         {busyId === a.id ? '…' : a.is_active ? 'Deactivate' : 'Reactivate'}
                       </button>
@@ -443,8 +408,8 @@ function AccountsView({ accessToken }: { accessToken: string }) {
                   </tr>
                   {rowError?.id === a.id && (
                     <tr>
-                      <td colSpan={7} className="px-4 pb-3 -mt-2">
-                        <p className="text-xs font-semibold text-red-600">{rowError.message}</p>
+                      <td colSpan={7} style={{ paddingTop: 0 }}>
+                        <p className={styles.rowError}>{rowError.message}</p>
                       </td>
                     </tr>
                   )}
@@ -454,11 +419,11 @@ function AccountsView({ accessToken }: { accessToken: string }) {
           </table>
         </div>
       </div>
-      <p className="text-xs text-slate-400 mt-3">
+      <p className={styles.footNote}>
         Deactivating blocks login but preserves the agent's full order/decision history.
         Agents with pending or in-transit orders must be reassigned before deactivating.
       </p>
-    </div>
+    </>
   )
 }
 
@@ -503,54 +468,54 @@ function AddAgentModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-bold text-slate-900">Add Agent</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-lg leading-none">✕</button>
+    <div className={styles.overlay}>
+      <div className={styles.modal}>
+        <div className={styles.modalHead}>
+          <h2>Add Agent</h2>
+          <button onClick={onClose} className={styles.modalClose}>✕</button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div>
-            <label className="text-xs font-semibold text-slate-500">Username</label>
+        <form onSubmit={handleSubmit}>
+          <div className={styles.formRow}>
+            <label className={styles.formLabel}>Username</label>
             <input
               value={username}
               onChange={e => setUsername(e.target.value)}
               required
               placeholder="e.g. priya.lakshmi"
-              className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={styles.formInput}
             />
           </div>
-          <div>
-            <label className="text-xs font-semibold text-slate-500">Full name</label>
+          <div className={styles.formRow}>
+            <label className={styles.formLabel}>Full name</label>
             <input
               value={name}
               onChange={e => setName(e.target.value)}
               required
-              className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={styles.formInput}
             />
           </div>
-          <div>
-            <label className="text-xs font-semibold text-slate-500">Area</label>
+          <div className={styles.formRow}>
+            <label className={styles.formLabel}>Area</label>
             <select
               value={area}
               onChange={e => setArea(e.target.value)}
-              className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={styles.formInput}
             >
               {VALID_AREAS.map(a => <option key={a} value={a}>{a}</option>)}
             </select>
           </div>
-          <div>
-            <label className="text-xs font-semibold text-slate-500">Phone (optional)</label>
+          <div className={styles.formRow}>
+            <label className={styles.formLabel}>Phone (optional)</label>
             <input
               value={phone}
               onChange={e => setPhone(e.target.value)}
               placeholder="10-digit number"
-              className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={styles.formInput}
             />
           </div>
-          <div>
-            <label className="text-xs font-semibold text-slate-500">Initial password</label>
+          <div className={styles.formRow}>
+            <label className={styles.formLabel}>Initial password</label>
             <input
               type="password"
               value={password}
@@ -558,26 +523,18 @@ function AddAgentModal({
               required
               minLength={8}
               placeholder="At least 8 characters"
-              className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={styles.formInput}
             />
-            <p className="text-[11px] text-slate-400 mt-1">The agent can change this later from their own Settings.</p>
+            <p className={styles.formHint}>The agent can change this later from their own Settings.</p>
           </div>
 
-          {error && <p className="text-xs font-semibold text-red-600">{error}</p>}
+          {error && <p className={styles.formError}>{error}</p>}
 
-          <div className="flex gap-2 pt-1">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-lg transition-colors"
-            >
+          <div className={styles.modalFooter}>
+            <button type="button" onClick={onClose} className={styles.cancelBtn}>
               Cancel
             </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex-1 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-4 py-2 rounded-lg transition-colors"
-            >
+            <button type="submit" disabled={saving} className={styles.createBtn}>
               {saving ? 'Creating…' : 'Create Agent'}
             </button>
           </div>
@@ -647,9 +604,12 @@ export function Agents() {
 
   if (user?.role !== 'manager') {
     return (
-      <div className="p-6">
-        <div className="card">
-          <p className="text-sm text-slate-500">This page is for managers only.</p>
+      <div className={styles.page}>
+        <div className={styles.guilloche} />
+        <div className={styles.wrap}>
+          <div className={styles.roleGate}>
+            <p>This page is for managers only.</p>
+          </div>
         </div>
       </div>
     )
@@ -670,151 +630,147 @@ export function Agents() {
       : []
 
   return (
-    <div>
-      {/* Header + controls */}
-      <div className="px-4 md:px-6 pt-6 pb-4 flex flex-wrap items-center gap-3 justify-between">
-        <h1 className="text-xl font-bold text-slate-900">Agent Management</h1>
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setShowAddAgent(true)}
-            className="text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg transition-colors"
-          >
-            + Add Agent
-          </button>
-          {/* View toggle */}
-          <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
-            {(['leaderboard', 'cards', 'accounts'] as View[]).map(v => (
-              <button
-                key={v}
-                onClick={() => setView(v)}
-                className={`text-xs font-semibold px-3 py-1.5 rounded-md transition-colors ${
-                  view === v ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                {v === 'leaderboard' ? '🏆 Leaderboard' : v === 'cards' ? 'Cards' : 'Accounts'}
-              </button>
-            ))}
-          </div>
-          {/* Period toggle */}
-          <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
-            {(['week', 'month'] as Period[]).map(p => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={`text-xs font-semibold px-3 py-1.5 rounded-md transition-colors ${
-                  period === p ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                {p === 'week' ? 'This Week' : 'This Month'}
-              </button>
-            ))}
-          </div>
-          {/* Sort dropdown — only in cards view */}
-          {view === 'cards' && (
-            <select
-              value={sortKey}
-              onChange={e => setSortKey(e.target.value as SortKey)}
-              className="text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="performance_score">Sort: Score</option>
-              <option value="success_rate">Sort: Success Rate</option>
-              <option value="area">Sort: Area</option>
-              <option value="agent_name">Sort: Name</option>
-            </select>
-          )}
-        </div>
-      </div>
+    <div className={styles.page}>
+      <div className={styles.guilloche} />
+      <div className={styles.wrap}>
 
-      {/* Add-agent success confirmation */}
-      {addedUsername && (
-        <div className="mx-4 md:mx-6 mb-4 card border-green-200 bg-green-50 flex items-center justify-between">
-          <p className="text-sm font-semibold text-green-700">
-            ✓ Agent "{addedUsername}" created — they can log in now. They'll appear on the
-            Leaderboard/Cards views once they have order activity; this Accounts tab shows them right away.
-          </p>
-          <button onClick={() => setAddedUsername(null)} className="text-green-600 hover:text-green-800 text-lg leading-none">✕</button>
-        </div>
-      )}
-
-      {showAddAgent && (
-        <AddAgentModal
-          accessToken={access_token!}
-          onClose={() => setShowAddAgent(false)}
-          onCreated={(username) => {
-            setShowAddAgent(false)
-            setAddedUsername(username)
-            setView('accounts')
-          }}
-        />
-      )}
-
-      {/* Leaderboard view */}
-      {view === 'leaderboard' && (
-        <Leaderboard period={period} accessToken={access_token!} />
-      )}
-
-      {/* Accounts view — full roster, deactivate/reactivate */}
-      {view === 'accounts' && (
-        <AccountsView accessToken={access_token!} />
-      )}
-
-      {/* Cards view */}
-      {view === 'cards' && (
-        <>
-          {kpiState.status === 'loading' && <AgentsSkeleton />}
-
-          {kpiState.status === 'error' && (
-            <div className="p-6">
-              <div className="card border-red-200 bg-red-50">
-                <p className="text-sm font-semibold text-red-600">Failed to load agents</p>
-                <p className="text-xs text-red-500 mt-1">{kpiState.message}</p>
-              </div>
+        {/* Header + controls */}
+        <div className={styles.pageHead}>
+          <h1>Agent Management</h1>
+          <div className={styles.headActions}>
+            <button onClick={() => setShowAddAgent(true)} className={styles.btnGold}>
+              + Add Agent
+            </button>
+            {/* View toggle */}
+            <div className={styles.pillToggle}>
+              {(['leaderboard', 'cards', 'accounts'] as View[]).map(v => (
+                <button
+                  key={v}
+                  onClick={() => setView(v)}
+                  className={`${styles.pillBtn} ${view === v ? styles.pillBtnSel : ''}`}
+                >
+                  {v === 'leaderboard' ? '🏆 Leaderboard' : v === 'cards' ? 'Cards' : 'Accounts'}
+                </button>
+              ))}
             </div>
-          )}
+            {/* Period toggle */}
+            <div className={styles.pillToggle}>
+              {(['week', 'month'] as Period[]).map(p => (
+                <button
+                  key={p}
+                  onClick={() => setPeriod(p)}
+                  className={`${styles.pillBtn} ${period === p ? styles.pillBtnSel : ''}`}
+                >
+                  {p === 'week' ? 'This Week' : 'This Month'}
+                </button>
+              ))}
+            </div>
+            {/* Sort dropdown — only in cards view */}
+            {view === 'cards' && (
+              <select
+                value={sortKey}
+                onChange={e => setSortKey(e.target.value as SortKey)}
+                className={styles.sortSelect}
+              >
+                <option value="performance_score">Sort: Score</option>
+                <option value="success_rate">Sort: Success Rate</option>
+                <option value="area">Sort: Area</option>
+                <option value="agent_name">Sort: Name</option>
+              </select>
+            )}
+          </div>
+        </div>
 
-          {kpiState.status === 'success' && (
-            <div className="p-4 md:p-6 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {sortedAgents.map(agent => (
-                  <AgentCard
-                    key={agent.agent_id}
-                    agent={agent}
-                    selected={selectedAgent?.agent_id === agent.agent_id}
-                    onClick={() =>
-                      setSelectedAgent(selectedAgent?.agent_id === agent.agent_id ? null : agent)
-                    }
-                  />
-                ))}
+        {/* Add-agent success confirmation */}
+        {addedUsername && (
+          <div className={styles.successBanner}>
+            <p>
+              ✓ Agent "{addedUsername}" created — they can log in now. They'll appear on the
+              Leaderboard/Cards views once they have order activity; this Accounts tab shows them right away.
+            </p>
+            <button onClick={() => setAddedUsername(null)} className={styles.successClose}>✕</button>
+          </div>
+        )}
+
+        {showAddAgent && (
+          <AddAgentModal
+            accessToken={access_token!}
+            onClose={() => setShowAddAgent(false)}
+            onCreated={(username) => {
+              setShowAddAgent(false)
+              setAddedUsername(username)
+              setView('accounts')
+            }}
+          />
+        )}
+
+        {/* Leaderboard view */}
+        {view === 'leaderboard' && (
+          <Leaderboard period={period} accessToken={access_token!} />
+        )}
+
+        {/* Accounts view — full roster, deactivate/reactivate */}
+        {view === 'accounts' && (
+          <AccountsView accessToken={access_token!} />
+        )}
+
+        {/* Cards view */}
+        {view === 'cards' && (
+          <>
+            {kpiState.status === 'loading' && (
+              <div className={styles.cardsGrid}>
+                {Array.from({ length: 5 }).map((_, i) => <div key={i} className={styles.skelBlock} style={{ height: 176 }} />)}
               </div>
+            )}
 
-              {selectedAgent && (
-                <div className="card">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-700">
-                        {selectedAgent.agent_name}
-                        <span className="ml-2 text-xs font-normal text-slate-400">· {selectedAgent.area}</span>
-                      </p>
-                      {orderState.status === 'success' && (
-                        <p className="text-xs text-slate-400 mt-0.5">
-                          {orderState.orders.length} order{orderState.orders.length !== 1 ? 's' : ''} total
-                        </p>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => setSelectedAgent(null)}
-                      className="text-xs text-slate-400 hover:text-slate-600 px-2 py-1 rounded hover:bg-slate-100 transition-colors"
-                    >
-                      Close ×
-                    </button>
-                  </div>
-                  <AgentOrderDetail agent={selectedAgent} state={orderState} />
+            {kpiState.status === 'error' && (
+              <div className={styles.errorCard}>
+                <p className={styles.errorTitle}>Failed to load agents</p>
+                <p className={styles.errorMsg}>{kpiState.message}</p>
+              </div>
+            )}
+
+            {kpiState.status === 'success' && (
+              <>
+                <div className={styles.cardsGrid}>
+                  {sortedAgents.map(agent => (
+                    <AgentCard
+                      key={agent.agent_id}
+                      agent={agent}
+                      selected={selectedAgent?.agent_id === agent.agent_id}
+                      onClick={() =>
+                        setSelectedAgent(selectedAgent?.agent_id === agent.agent_id ? null : agent)
+                      }
+                    />
+                  ))}
                 </div>
-              )}
-            </div>
-          )}
-        </>
-      )}
+
+                {selectedAgent && (
+                  <div className={styles.detailCard}>
+                    <div className={styles.detailHead}>
+                      <div>
+                        <span className={styles.detailName}>
+                          {selectedAgent.agent_name}
+                          <span className={styles.detailSub}> · {selectedAgent.area}</span>
+                        </span>
+                        {orderState.status === 'success' && (
+                          <p className={styles.detailSub}>
+                            {orderState.orders.length} order{orderState.orders.length !== 1 ? 's' : ''} total
+                          </p>
+                        )}
+                      </div>
+                      <button onClick={() => setSelectedAgent(null)} className={styles.closeBtn}>
+                        Close ×
+                      </button>
+                    </div>
+                    <AgentOrderDetail agent={selectedAgent} state={orderState} />
+                  </div>
+                )}
+              </>
+            )}
+          </>
+        )}
+      </div>
     </div>
   )
 }

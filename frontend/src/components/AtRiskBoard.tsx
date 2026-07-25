@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getAllOrders, type OrderListItem } from '../api/orders'
+import styles from './AtRiskBoard.module.css'
 
 // ── Time helpers ────────────────────────────────────────────────────────────────
 
@@ -19,11 +20,11 @@ function fmtCountdown(ms: number): string {
 }
 
 // Urgency band from minutes remaining.
-function band(ms: number): { row: string; text: string; label: string } {
-  if (ms < 0)            return { row: 'bg-red-100 dark:bg-red-950/40',    text: 'text-red-700 dark:text-red-400',    label: 'OVERDUE' }
-  if (ms < 60 * 60_000)  return { row: 'bg-red-50 dark:bg-red-950/20',     text: 'text-red-600 dark:text-red-400',    label: 'CRITICAL' }
-  if (ms < 180 * 60_000) return { row: 'bg-amber-50 dark:bg-amber-950/20', text: 'text-amber-600 dark:text-amber-400', label: 'SOON' }
-  return { row: 'bg-slate-50 dark:bg-slate-800/40', text: 'text-slate-600 dark:text-slate-400', label: 'ON TRACK' }
+function band(ms: number): { row: string; label: string } {
+  if (ms < 0)            return { row: styles.overdue, label: 'OVERDUE' }
+  if (ms < 60 * 60_000)  return { row: styles.overdue, label: 'CRITICAL' }
+  if (ms < 180 * 60_000) return { row: styles.soon,    label: 'SOON' }
+  return { row: styles.ok, label: 'ON TRACK' }
 }
 
 // ── Board ───────────────────────────────────────────────────────────────────────
@@ -57,7 +58,7 @@ export function AtRiskBoard({ accessToken }: { accessToken: string }) {
   }, [])
 
   if (!orders) {
-    return <div className="animate-pulse h-40 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
+    return <div className={styles.skeleton} />
   }
 
   const ranked = [...orders]
@@ -67,20 +68,18 @@ export function AtRiskBoard({ accessToken }: { accessToken: string }) {
   const atRiskCount = orders.filter(o => msLeft(o.deadline, now) < 180 * 60_000).length
 
   return (
-    <div className="card dark:bg-slate-900 dark:border-slate-800">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-          ⏳ Deadline Countdown
-        </h2>
-        <span className={`text-xs font-bold ${atRiskCount > 0 ? 'text-red-600' : 'text-green-600'}`}>
+    <div className={styles.board}>
+      <div className={styles.boardHead}>
+        <h2 className={styles.boardTitle}>Deadline Countdown</h2>
+        <span className={`${styles.boardCount} ${atRiskCount > 0 ? styles.countRisk : styles.countClear}`}>
           {atRiskCount} at risk
         </span>
       </div>
 
       {ranked.length === 0 ? (
-        <p className="text-sm text-slate-400 py-4 text-center">No active orders — all clear ✓</p>
+        <p className={styles.empty}>No active orders — all clear</p>
       ) : (
-        <div className="space-y-1.5">
+        <div className={styles.list}>
           {ranked.map(o => {
             const ms = msLeft(o.deadline, now)
             const b = band(ms)
@@ -88,24 +87,22 @@ export function AtRiskBoard({ accessToken }: { accessToken: string }) {
               <button
                 key={o.id}
                 onClick={() => navigate(`/orders/${o.id}`)}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-colors hover:brightness-95 ${b.row}`}
+                className={`${styles.row} ${b.row}`}
               >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{o.order_number}</span>
-                    {o.is_urgent && (
-                      <span className="text-[9px] font-bold text-red-600 bg-red-100 border border-red-200 px-1 rounded">URGENT</span>
-                    )}
+                <div className={styles.rowMain}>
+                  <div>
+                    <span className={styles.rowId}>{o.order_number}</span>
+                    {o.is_urgent && <span className={styles.rowTag}>URGENT</span>}
                   </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                  <p className={styles.rowMeta}>
                     {o.customer_name} · {o.area} · {o.agent_name ?? 'Unassigned'}
                   </p>
                 </div>
-                <div className="text-right shrink-0">
-                  <p className={`text-sm font-bold tabular-nums ${b.text}`}>
+                <div className={styles.rowTime}>
+                  <p className={styles.rowCountdown}>
                     {ms < 0 ? '−' : ''}{fmtCountdown(ms)}
                   </p>
-                  <p className={`text-[9px] font-bold uppercase tracking-wide ${b.text}`}>{b.label}</p>
+                  <p className={styles.rowLabel}>{b.label}</p>
                 </div>
               </button>
             )

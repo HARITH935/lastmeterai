@@ -1,0 +1,89 @@
+/* Shared floating-chrome styles for the committed-dark map pages
+   (MapboxManager, MapboxAgent). Imported as a plain global stylesheet
+   (like index.css) rather than a CSS module, so classes are prefixed
+   `map*` to avoid colliding with anything else in the app. */
+
+.mapTokens {
+  --ground: #0E2038;
+  --surface: rgba(22, 48, 79, 0.9);
+  --ink: #F3ECDA;
+  --ink-muted: #B9C2D2;
+  --ink-dim: #8290A3;
+  --border: rgba(243, 236, 218, 0.16);
+  --accent: #D9A54B;
+  --accent-soft: #E8BE73;
+  --accent-deep: #A9772A;
+  --go: #1FA971;
+  --nogo: #E35B52;
+  --urgent: #C1841A;
+
+  position: relative;
+  height: 100%;
+  font-family: 'LM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+}
+
+.mapMono { font-family: 'LM Plex Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+.mapTokenCard { display: flex; align-items: center; justify-content: center; height: 100%; padding: 24px; background: var(--ground); }
+.mapTokenBox { max-width: 380px; text-align: center; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 24px; }
+.mapTokenBox p:first-child { font-size: 1.8rem; margin: 0 0 8px; }
+.mapTokenTitle { font-size: 0.9rem; font-weight: 700; color: var(--ink); margin: 0; }
+.mapTokenBody { font-size: 0.78rem; color: var(--ink-muted); margin-top: 8px; line-height: 1.5; }
+.mapTokenBody code { font-family: 'LM Plex Mono', monospace; background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 3px; }
+
+.mapPill {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: 'LM Plex Sans', sans-serif; font-weight: 600; font-size: 0.72rem;
+  padding: 7px 12px; border-radius: 7px; cursor: pointer; border: 1px solid var(--border);
+  background: var(--surface); color: var(--ink-muted);
+  backdrop-filter: blur(10px); box-shadow: 0 6px 18px -8px rgba(0,0,0,0.5);
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+.mapPillGold {
+  background-image: linear-gradient(100deg, var(--accent-deep), var(--accent-soft) 30%, var(--accent) 55%, var(--accent-soft) 80%, var(--accent-deep));
+  color: #241503; border-color: var(--accent); box-shadow: 0 6px 16px -6px rgba(217,165,75,0.55);
+}
+.mapPillGo { background: rgba(31,169,113,0.85); color: #06180F; border-color: var(--go); box-shadow: 0 6px 16px -6px rgba(31,169,113,0.45); }
+.mapPillRisk { background: rgba(227,91,82,0.88); color: #2B0705; border-color: var(--nogo); box-shadow: 0 6px 16px -6px rgba(227,91,82,0.45); }
+
+.mapPanel {
+  position: relative;
+  background: linear-gradient(160deg, rgba(217,165,75,0.07), transparent 65%), var(--surface);
+  border: 1px solid var(--border); border-radius: 8px;
+  backdrop-filter: blur(14px) saturate(140%);
+  box-shadow: 0 14px 34px -12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+  color: var(--ink);
+}
+.mapCorner { position: absolute; width: 13px; height: 13px; border-color: var(--accent); border-style: solid; border-width: 0; opacity: 0.85; z-index: 2; }
+.mapCornerTl { top: -1px; left: -1px; border-top-width: 1.5px; border-left-width: 1.5px; }
+.mapCornerTr { top: -1px; right: -1px; border-top-width: 1.5px; border-right-width: 1.5px; }
+.mapCornerBl { bottom: -1px; left: -1px; border-bottom-width: 1.5px; border-left-width: 1.5px; }
+.mapCornerBr { bottom: -1px; right: -1px; border-bottom-width: 1.5px; border-right-width: 1.5px; }
+
+.mapGoldShimmer {
+  background-image: linear-gradient(100deg, var(--accent-deep) 0%, var(--accent) 20%, var(--accent-soft) 38%, var(--accent) 56%, var(--accent-deep) 72%, var(--accent) 88%, var(--accent-soft) 100%);
+  background-size: 260% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: mapShimmer 9s linear infinite;
+}
+@keyframes mapShimmer { 0% { background-position: 0% 0; } 100% { background-position: -260% 0; } }
+@media (prefers-reduced-motion: reduce) { .mapGoldShimmer { animation: none; } }
+
+/* Mapbox popup / control override — third-party DOM appended inside the map
+   container, scoped via the ancestor .mapTokens wrapper so it never affects
+   any other Mapbox instance in the app. */
+.mapTokens .mapboxgl-popup-content {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  backdrop-filter: blur(14px) saturate(140%);
+  box-shadow: 0 14px 34px -12px rgba(0,0,0,0.6);
+  padding: 10px 12px;
+}
+.mapTokens .mapboxgl-popup-tip { display: none; }
+.mapTokens .mapboxgl-ctrl-group {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(10px);
+}
+.mapTokens .mapboxgl-ctrl-icon { filter: invert(0.9) brightness(1.4); }
