@@ -37,10 +37,9 @@ class PredictionUnavailable(Exception):
 # ── Valid status transitions ───────────────────────────────────────────────────
 
 # Transitions available via PATCH /api/orders/:id/status (Agent endpoint).
-# pending → in_transit is how the agent starts a delivery (mobile Start Delivery).
-# Geofence arrival can still flip pending → in_transit independently.
+# Agents cannot set in_transit — that happens when they start their route.
 _AGENT_TRANSITIONS: dict[OrderStatus, set[OrderStatus]] = {
-    OrderStatus.PENDING:     {OrderStatus.POSTPONED, OrderStatus.IN_TRANSIT},
+    OrderStatus.PENDING:     {OrderStatus.POSTPONED},
     OrderStatus.IN_TRANSIT:  {OrderStatus.DELIVERED, OrderStatus.FAILED, OrderStatus.POSTPONED},
     OrderStatus.POSTPONED:   set(),   # agent cannot self-reschedule
     OrderStatus.DELIVERED:   set(),   # terminal
@@ -591,7 +590,7 @@ def update_status(
     failure_reason: str | None,
 ) -> dict:
     """
-    Agent marks an order in_transit / delivered / failed / postponed.
+    Agent marks an order delivered / failed / postponed.
     Enforces area isolation and valid transition rules.
     Raises: OrderNotFound, Forbidden, InvalidTransition.
     """
