@@ -21,7 +21,7 @@ VALID_RESIDENCE_TYPES = ["apartment", "independent"]
 VALID_SORT_FIELDS = ["created_at", "deadline", "risk_score", "payment_amount"]
 VALID_SORT_DIRS = ["asc", "desc"]
 VALID_STATUSES = ["pending", "in_transit", "delivered", "failed", "postponed"]
-AGENT_SETTABLE_STATUSES = ["delivered", "failed", "postponed"]
+AGENT_SETTABLE_STATUSES = ["in_transit", "delivered", "failed", "postponed"]
 
 
 class OrderCreateSchema(Schema):
@@ -161,9 +161,9 @@ class OrderStatusSchema(Schema):
             raise ValidationError(
                 {"failure_reason": "Required when status is 'failed' or 'postponed'."}
             )
-        if status == "delivered" and reason:
+        if status in ("delivered", "in_transit") and reason:
             raise ValidationError(
-                {"failure_reason": "Must be null when status is 'delivered'."}
+                {"failure_reason": "Must be null when status is 'delivered' or 'in_transit'."}
             )
 
 

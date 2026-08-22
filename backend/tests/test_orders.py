@@ -157,6 +157,17 @@ def run():
               r.status_code == 400 and r.get_json().get("error") == "INVALID_TRANSITION",
               r.data[:200])
 
+        # 4e. pending → in_transit (mobile Start Delivery)
+        r = c.post("/api/orders", json=ADYAR_ORDER, headers=mgr)
+        start_id = r.get_json().get("id")
+        r = c.patch(f"/api/orders/{start_id}/status",
+                    json={"status": "in_transit"},
+                    headers=adyar)
+        check("4e. pending → in_transit → 200",
+              r.status_code == 200, r.data[:200])
+        if r.status_code == 200:
+            check("4e. status is in_transit", r.get_json().get("status") == "in_transit")
+
         # 4b. pending → postponed is valid
         r = c.patch(f"/api/orders/{order_id}/status",
                     json={"status": "postponed", "failure_reason": "Customer unreachable."},

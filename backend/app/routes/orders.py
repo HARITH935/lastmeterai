@@ -233,7 +233,7 @@ def delete_order(order_id: int):
 @bp.patch("/<int:order_id>/status")
 @jwt_required()
 def update_status(order_id: int):
-    """🧢 Agent only. Mark delivered / failed / postponed."""
+    """🧢 Agent only. Mark in_transit / delivered / failed / postponed."""
     current_user = _current_user()
     if err := _require_agent(current_user):
         return err

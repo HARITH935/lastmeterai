@@ -22,7 +22,8 @@ class Config:
     JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "change-jwt-secret-in-production")
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=8)
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
-    SOCKETIO_CORS_ALLOWED_ORIGINS = os.environ.get("CORS_ORIGINS", "*")
+    # Native Flutter has no browser Origin. JWT still required on connect.
+    SOCKETIO_CORS_ALLOWED_ORIGINS = os.environ.get("SOCKETIO_CORS_ALLOWED_ORIGINS", "*")
     CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "http://localhost:5173,https://lastmeterai-lq6p.vercel.app")
     OPENWEATHER_API_KEY = os.environ.get("OPENWEATHER_API_KEY")
     GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")

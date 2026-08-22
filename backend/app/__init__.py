@@ -20,15 +20,14 @@ def create_app(config_name: str | None = None) -> Flask:
     limiter.init_app(app)
 
     # ── CORS ──────────────────────────────────────────────────────────────────
-    # Parse once, reuse for both Flask-CORS (REST) and Flask-SocketIO (WebSocket).
-    # Flask-SocketIO requires a list or the bare string "*" — it does NOT split
-    # comma-separated strings the way Flask-CORS does, so passing the raw env
-    # string causes every WebSocket handshake to fail with a CORS error.
+    # REST CORS stays origin-restricted. Socket.IO CORS is separate so the
+    # native Flutter client can handshake (JWT is still required on connect).
     from flask_cors import CORS
     cors_origin_str = app.config.get("CORS_ORIGINS", "http://localhost:5173")
     cors_origins = [o.strip() for o in cors_origin_str.split(",")]
-    # Flask-SocketIO treats the bare string "*" as allow-all; a list ["*"] also works.
-    socket_origins = "*" if cors_origins == ["*"] else cors_origins
+    # Socket.IO CORS is separate from REST. Native clients often send no Origin
+    # (or the API host); keep JWT auth on connect and default to allow-all.
+    socket_origins = app.config.get("SOCKETIO_CORS_ALLOWED_ORIGINS", "*")
 
     socketio.init_app(
         app,
