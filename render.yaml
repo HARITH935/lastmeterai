@@ -15,7 +15,7 @@ services:
     # seed.py is safe to run on every deploy now — it only seeds an empty
     # database, never touches one that already has data (manual agents,
     # order status changes, etc. all persist across deploys).
-    startCommand: python seed.py && gunicorn -k gthread -w 1 --threads 4 --bind 0.0.0.0:$PORT run:app
+    startCommand: gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT run:app
     envVars:
       - key: FLASK_ENV
         value: production
