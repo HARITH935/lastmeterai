@@ -35,12 +35,8 @@ def get_embeddings():
     process, not once per request."""
     global _embeddings
     if _embeddings is None:
-        from langchain_huggingface import HuggingFaceEmbeddings
-        from app.config import Config
-        from app.rag import load_model_offline_first
-        _embeddings = load_model_offline_first(
-            lambda: HuggingFaceEmbeddings(model_name=Config.RAG_EMBEDDING_MODEL)
-        )
+        from app.rag.embeddings import build_embeddings
+        _embeddings = build_embeddings()
     return _embeddings
 
 

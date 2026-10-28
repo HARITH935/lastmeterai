@@ -37,7 +37,30 @@ services:
       - key: CORS_ORIGINS
         value: "https://lastmeterai-lq6p.vercel.app"
       # Set these manually in the Render dashboard if you have the keys.
+      # GEMINI_API_KEY is now required rather than optional: RAG embeddings
+      # go through it, so without a key retrieval falls back to the local
+      # model and the instance will exceed the free tier's 512MB.
       - key: GEMINI_API_KEY
         sync: false
       - key: OPENWEATHER_API_KEY
         sync: false
+      # ── RAG ───────────────────────────────────────────────────────────────
+      # Embeddings via the API, not a local model. The local backend loads
+      # ~365MB of torch; measured peak RSS was 463MB against a 512MB cap,
+      # i.e. an OOM kill. Via the API the same query peaks at 211MB, and the
+      # 175MB model download on every cold start disappears with it.
+      - key: RAG_EMBEDDING_PROVIDER
+        value: gemini
+      # The cross-encoder is the only thing left that would pull torch back
+      # in, undoing the above. It also measured no better than splitting the
+      # context budget between the two indexes.
+      - key: RAG_RERANK_ENABLED
+        value: "false"
+      # Nothing local to warm once embeddings are remote.
+      - key: RAG_WARM_ON_BOOT
+        value: "false"
+      # Free-tier generation is capped at 20 requests/day per model, shared
+      # with the chat assistant. Past the cap answers stay grounded and cited
+      # but are no longer synthesised into prose.
+      - key: GEMINI_MODEL
+        value: gemini-3.5-flash-lite

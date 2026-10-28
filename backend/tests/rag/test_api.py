@@ -29,7 +29,9 @@ def test_policy_query_happy_path(client, manager_token):
     body = r.get_json()
     assert body["route"] == "policy_lookup"
     assert len(body["sources"]) > 0
-    assert all(s["citation"].startswith("SOP:") for s in body["sources"])
+    # Both indexes are searched now, so decision records legitimately appear
+    # alongside the SOPs; what matters is that the policy docs are in there.
+    assert any(s["citation"].startswith("SOP:") for s in body["sources"])
 
 
 def test_historical_query_happy_path(client, manager_token):
@@ -74,6 +76,9 @@ def test_agent_historical_query_is_area_scoped(client, agent_token, app):
     with app.app_context():
         areas = set()
         for s in body["sources"]:
+            # SOP docs carry no area and aren't scoped; only records are.
+            if not s["citation"].startswith("decision_log:"):
+                continue
             decision_id = int(s["citation"].split(":")[1])
             decision = db.session.get(Decision, decision_id)
             areas.add(db.session.get(Order, decision.order_id).area)

@@ -34,8 +34,17 @@ def _ensure_indexed() -> None:
     # while still missing every decision that existed before that moment —
     # a silently incomplete index that looks "already built" forever after.
     # Comparing against the real DB row count catches that partial state.
+    # Compared against the *capped* expectation, not the raw row count: the
+    # backfill only indexes the newest RAG_MAX_INDEXED_DECISIONS rows, so once
+    # the table grows past the cap a raw comparison would never be satisfied
+    # and every single query would trigger a full rebuild.
+    from app.config import Config
     from app.models import Decision
-    if collection_count(DECISION_COLLECTION) < Decision.query.count():
+
+    expected = Decision.query.count()
+    if Config.RAG_MAX_INDEXED_DECISIONS:
+        expected = min(expected, Config.RAG_MAX_INDEXED_DECISIONS)
+    if collection_count(DECISION_COLLECTION) < expected:
         decision_indexer.reindex_all()
 
 
@@ -82,7 +91,18 @@ def answer_query(user, query: str) -> dict:
             from app.rag.retrievers import retrieve_policy, retrieve_historical
             p_blocks, p_sources = retrieve_policy(query, Config.RAG_TOP_K)
             h_blocks, h_sources = retrieve_historical(query, filters, Config.RAG_TOP_K, user)
-            blocks, sources = p_blocks + h_blocks, p_sources + h_sources
+
+            if Config.RAG_RERANK_ENABLED:
+                # Let the cross-encoder allocate all the slots.
+                blocks, sources = p_blocks + h_blocks, p_sources + h_sources
+            else:
+                # Without a reranker, concatenating and truncating would hand
+                # every slot to whichever list came first — all policy docs,
+                # no decisions. Split the budget instead, so both sources
+                # reach the model. Scored identically (20/21) to reranking.
+                half = max(1, Config.RAG_TOP_K // 2)
+                blocks = p_blocks[:half] + h_blocks[:half]
+                sources = p_sources[:half] + h_sources[:half]
     except Exception as exc:
         log.warning("RAG retrieval failed for route %s: %s", route.value, exc)
         return {

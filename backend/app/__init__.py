@@ -100,17 +100,24 @@ def create_app(config_name: str | None = None) -> Flask:
     register_blueprints(app)
 
     # ── RAG model warmup ──────────────────────────────────────────────────────
-    # Both local models are module-level singletons, so touching them once in a
+    # Local models are module-level singletons, so touching them once in a
     # daemon thread moves the ~11s load off the first user's question. Failures
     # are logged and ignored: the lazy load on first use is still there.
-    if app.config.get("RAG_WARM_ON_BOOT") and not app.config.get("TESTING"):
+    # Nothing to warm when embeddings come from the API — there is no model to
+    # load, and a warmup call would just spend quota on every boot.
+    _warms_a_local_model = (
+        app.config.get("RAG_EMBEDDING_PROVIDER", "gemini").lower() == "local"
+        or app.config.get("RAG_RERANK_ENABLED")
+    )
+    if app.config.get("RAG_WARM_ON_BOOT") and _warms_a_local_model and not app.config.get("TESTING"):
         # With the debug reloader the parent process would load a second copy.
         is_reloader_parent = app.debug and os.environ.get("WERKZEUG_RUN_MAIN") != "true"
         if not is_reloader_parent:
             def _warm_rag_models():
                 try:
-                    from app.rag.vectorstore import get_embeddings
-                    get_embeddings().embed_query("warmup")
+                    if app.config.get("RAG_EMBEDDING_PROVIDER", "gemini").lower() == "local":
+                        from app.rag.vectorstore import get_embeddings
+                        get_embeddings().embed_query("warmup")
                     if app.config.get("RAG_RERANK_ENABLED"):
                         from app.rag.reranker import _get_model
                         _get_model().predict([("warmup", "warmup")])

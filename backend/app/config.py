@@ -43,10 +43,25 @@ class Config:
     # each time the instance restarts rather than assumed to survive deploys.
     RAG_SOP_DIR = os.environ.get("RAG_SOP_DIR", "../ml/rag/docs")
     RAG_CHROMA_DIR = os.environ.get("RAG_CHROMA_DIR", "../ml/rag/chroma")
+    # "gemini" keeps the process small enough for a 512MB instance: the local
+    # backend pulls in ~365MB of torch runtime, which alone exceeds what's left
+    # after the app and its ML models. "local" runs on-device instead — no API
+    # key and no per-query network call, for hosts with memory to spare.
+    # Switching provider changes vector dimensions, so it needs a full reindex.
+    RAG_EMBEDDING_PROVIDER = os.environ.get("RAG_EMBEDDING_PROVIDER", "gemini")
+    RAG_GEMINI_EMBEDDING_MODEL = os.environ.get("RAG_GEMINI_EMBEDDING_MODEL", "gemini-embedding-001")
     RAG_EMBEDDING_MODEL = os.environ.get("RAG_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
     RAG_RERANK_MODEL = os.environ.get("RAG_RERANK_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2")
     RAG_TOP_K = int(os.environ.get("RAG_TOP_K", "6"))
-    RAG_RERANK_ENABLED = os.environ.get("RAG_RERANK_ENABLED", "true").lower() == "true"
+    # Caps the decision backfill, newest first. 0 means no cap. See the note
+    # in decision_indexer.reindex_all — this bounds cold-start rebuild time.
+    RAG_MAX_INDEXED_DECISIONS = int(os.environ.get("RAG_MAX_INDEXED_DECISIONS", "300"))
+    # Off by default: the cross-encoder is the only remaining reason to load
+    # torch (~365MB), which is exactly what moving embeddings to Gemini was
+    # meant to avoid. It also showed length bias on this corpus — ranking a
+    # short policy doc last behind verbose decision records — and scored no
+    # better than splitting the context budget between the two sources.
+    RAG_RERANK_ENABLED = os.environ.get("RAG_RERANK_ENABLED", "false").lower() == "true"
     # Loading the embedding + cross-encoder models takes ~11s, which otherwise
     # lands on whichever user asks the first question (measured: 15.5s cold vs
     # 2-4s warm). Warming happens in a background thread so boot isn't blocked.

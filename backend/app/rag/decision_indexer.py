@@ -96,8 +96,18 @@ def reindex_all(batch_size: int = 200) -> int:
     if existing and existing.get("ids"):
         store.delete(ids=existing["ids"])
 
+    # Newest first, capped. Without a persistent disk the index is rebuilt on
+    # every cold start, and with API embeddings that cost scales with the row
+    # count — at the free tier's ~90 texts/minute an unbounded backfill would
+    # eventually take longer than anyone will wait for their first answer.
+    # Historical questions are about recent patterns, so older rows earn their
+    # keep least. Set RAG_MAX_INDEXED_DECISIONS=0 to index everything.
+    from app.config import Config
+
     total = 0
-    query = Decision.query.order_by(Decision.id.asc())
+    query = Decision.query.order_by(Decision.id.desc())
+    if Config.RAG_MAX_INDEXED_DECISIONS:
+        query = query.limit(Config.RAG_MAX_INDEXED_DECISIONS)
     batch_docs, batch_ids = [], []
     for decision in query.yield_per(batch_size):
         batch_docs.append(_decision_to_document(decision))
