@@ -70,6 +70,39 @@ AREAS = [
     "Koyambedu", "Ambattur", "Perambur", "Chromepet", "Saidapet",
 ]
 
+# Same geography-grounded risk ranking used to generate the ML training set
+# (ml/data/generate_dataset.py — Velachery/Adyar/Sholinganallur flood-prone
+# low ground, Anna Nagar higher elevation/baseline). Reused here so the demo
+# seed data's per-area failure rate isn't flat — every agent otherwise gets
+# an identical 6-order status mix regardless of area, which made
+# "Failure Rate by Area" show the same number for all 20 areas.
+AREA_RISK_BIAS = {
+    "Velachery": 0.10, "Adyar": 0.07, "T Nagar": 0.04, "Anna Nagar": 0.00,
+    "Porur": 0.02, "Guindy": 0.075, "Saidapet": 0.072, "Sholinganallur": 0.105,
+    "Thiruvanmiyur": 0.08, "Egmore": 0.06, "Nungambakkam": 0.045, "Mylapore": 0.04,
+    "Tambaram": 0.045, "Chromepet": 0.045, "Perambur": 0.04, "Besant Nagar": 0.03,
+    "Vadapalani": 0.035, "Koyambedu": 0.03, "Ambattur": 0.025, "Kilpauk": 0.02,
+}
+
+# Rank areas by risk (ties broken alphabetically for determinism) and split
+# into quartiles — riskiest 5 areas get 4/6 orders failed-or-postponed,
+# safest 5 get 1/6 — instead of a linear scale, so the spread stays visible
+# even with only 6 orders per agent to work with.
+_RANKED_AREAS = sorted(AREA_RISK_BIAS, key=lambda a: (-AREA_RISK_BIAS[a], a))
+_N_BAD_BY_QUARTILE = [4, 3, 2, 1]
+AREA_N_BAD = {
+    area: _N_BAD_BY_QUARTILE[min(i * 4 // len(_RANKED_AREAS), 3)]
+    for i, area in enumerate(_RANKED_AREAS)
+}
+
+# Slot indices in ORDER_TEMPLATES promoted to FAILED/POSTPONED as an area's
+# n_bad target rises above the templates' built-in baseline of 2 (slots 3, 4).
+_BAD_SLOT_PRIORITY = [3, 4, 2, 0]  # order in which extra slots turn "bad"
+_BAD_SLOT_OVERRIDE = {
+    2: (OrderStatus.FAILED,    "Address not found"),
+    0: (OrderStatus.POSTPONED, "Requested reschedule — not home"),
+}
+
 # Approximate centroid coordinates for each area (Chennai).
 AREA_COORDS = {
     "Anna Nagar":     (13.0850, 80.2101),
@@ -195,7 +228,10 @@ def make_decision(order: Order, seq: int) -> Decision:
             "description": "clear sky" if is_go else "light rain",
         },
         reschedule_suggestion=reschedule,
-        created_at=utcnow(),
+        # A few minutes after the order itself, not "now" — otherwise every
+        # decision lands on the exact instant seed.py ran, collapsing daily
+        # trend charts (weather-impact, dashboards) onto a single data point.
+        created_at=order.created_at + timedelta(minutes=5 + (seq % 50)),
     )
 
 
@@ -292,9 +328,24 @@ def seed(force: bool = False):
         order_seq = 1
         for agent in agents:
             base_lat, base_lon = AREA_COORDS[agent.area]
-            for tmpl in ORDER_TEMPLATES:
+            n_bad = AREA_N_BAD[agent.area]
+            bad_slots = set(_BAD_SLOT_PRIORITY[:n_bad])
+            for slot_idx, tmpl in enumerate(ORDER_TEMPLATES):
                 (cname, rtype, pkg, window, days, payment,
                  status, urgent, dlat, dlon, fail_reason) = tmpl
+
+                # Slots 3/4 already fail/postpone by default (baseline n_bad=2).
+                # Higher-risk areas promote more slots into failure; lower-risk
+                # areas demote slot 4 back to delivered — see AREA_N_BAD above.
+                if slot_idx in bad_slots and slot_idx in _BAD_SLOT_OVERRIDE:
+                    status, fail_reason = _BAD_SLOT_OVERRIDE[slot_idx]
+                elif slot_idx == 4 and slot_idx not in bad_slots:
+                    status, fail_reason = OrderStatus.DELIVERED, None
+
+                # Spread across the last 7 days (including today) rather than
+                # a fixed 1-3-days-ago band, so daily trend charts have more
+                # than a single trailing day of data.
+                order_created = days_ago(6 - (order_seq % 7)) + timedelta(hours=(order_seq * 37) % 14)
 
                 order = Order(
                     order_number=make_order_number(order_seq),
@@ -315,8 +366,8 @@ def seed(force: bool = False):
                     payment_amount=payment,
                     is_urgent=urgent,
                     created_by=manager.id,
-                    created_at=days_ago(3 - (order_seq % 3)),
-                    updated_at=days_ago(1),
+                    created_at=order_created,
+                    updated_at=order_created + timedelta(hours=2, minutes=(order_seq * 13) % 60),
                 )
                 db.session.add(order)
                 all_orders.append(order)

@@ -156,14 +156,13 @@ interface Props {
   orders:   OrderListItem[]
   route:    OptimizedRoute | null
   agentPos: [number, number] | null
-  optimize: 'time' | 'distance'
   onOptimizeChange: (mode: 'time' | 'distance') => void
   // When set (via /map?order=<id> deep-link), auto-navigate to just this one
   // order instead of following the full optimized multi-stop route.
   focusOrderId?: number | null
 }
 
-export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChange, focusOrderId }: Props) {
+export function MapboxAgent({ orders, route, agentPos, onOptimizeChange, focusOrderId }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef       = useRef<mapboxgl.Map | null>(null)
   const loadedRef    = useRef(false)
@@ -592,28 +591,23 @@ export function MapboxAgent({ orders, route, agentPos, optimize, onOptimizeChang
 
       {/* Corner controls — hidden while navigating for a clean driver view */}
       {!navMode && (<>
-      <div className={styles.optimizeToggle}>
-        {([
-          { key: 'time',     label: '⚡ Fastest' },
-          { key: 'distance', label: '📏 Shortest' },
-        ] as const).map(m => (
-          <button
-            key={m.key}
-            onClick={() => onOptimizeChange(m.key)}
-            className={`mapPill ${optimize === m.key ? 'mapPillGold' : ''}`}
-          >
-            {m.label}
-          </button>
-        ))}
-      </div>
-
       {/* Layer panel */}
       <div className={styles.layerStack}>
         {[
           { on: showPins,    variant: 'mapPillGold', set: () => setShowPins(p => !p),    label: 'Order Pins' },
           { on: showRoute,   variant: 'mapPillGold', set: () => setShowRoute(r => !r),   label: showRoute ? 'Route ON' : 'My Route' },
           { on: showTraffic, variant: 'mapPillRisk', set: () => setShowTraffic(t => !t), label: showTraffic ? '🚦 Traffic ON' : 'Traffic' },
-          { on: showWeather, variant: 'mapPillGold', set: () => setShowWeather(w => !w), label: showWeather ? '🌧 Weather ON' : 'Weather' },
+          {
+            on: showWeather, variant: 'mapPillGold',
+            // Weather doubles as the route-mode toggle: ON → shortest (distance),
+            // OFF → fastest (time). Replaces the old separate Fastest/Shortest buttons.
+            set: () => {
+              const next = !showWeather
+              setShowWeather(next)
+              onOptimizeChange(next ? 'distance' : 'time')
+            },
+            label: showWeather ? '🌧 Weather ON' : 'Weather',
+          },
         ].map(b => (
           <button
             key={b.label} onClick={b.set}

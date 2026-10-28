@@ -643,9 +643,12 @@ def get_area_analytics(area: str, time_slot: str | None = None) -> dict:
 # ── 5. Customer analytics ─────────────────────────────────────────────────────
 
 def get_customer_analytics(address: str) -> dict:
+    # Case-insensitive match — customer addresses are free-typed at order entry,
+    # so exact byte-for-byte comparison made this lookup fail for any casing
+    # variation of an address that otherwise matches perfectly.
     orders = (
         db.session.query(Order)
-        .filter(Order.customer_address == address)
+        .filter(func.lower(Order.customer_address) == func.lower(address))
         .order_by(Order.created_at.desc())
         .all()
     )
@@ -666,18 +669,25 @@ def get_customer_analytics(address: str) -> dict:
     window_counts = Counter(o.time_window.value for o in source)
     preferred = window_counts.most_common(1)[0][0] if window_counts else "morning"
 
+    total_value_inr = round(sum(o.payment_amount for o in orders), 2)
+    ratings = [o.rating for o in orders if o.rating is not None]
+    avg_rating = round(sum(ratings) / len(ratings), 1) if ratings else None
+
     recent_orders = [
         {
             "order_number": o.order_number,
             "date": o.created_at.date().isoformat() if o.created_at else None,
             "status": o.status.value,
             "time_window": o.time_window.value,
+            "payment_amount": o.payment_amount,
         }
         for o in orders[:5]
     ]
 
     return {
         "address": address,
+        "customer_name": orders[0].customer_name,
+        "customer_phone": orders[0].customer_phone,
         "summary": {
             "total_orders": total,
             "delivered": delivered,
@@ -685,10 +695,44 @@ def get_customer_analytics(address: str) -> dict:
             "postponed": postponed,
             "success_rate": success_rate,
             "risk_level": risk_level,
+            "total_value_inr": total_value_inr,
+            "avg_rating": avg_rating,
+            "rating_count": len(ratings),
         },
         "preferred_delivery_time": preferred,
         "recent_orders": recent_orders,
     }
+
+
+def search_customer_addresses(query: str, limit: int = 8) -> list[dict]:
+    """
+    Autocomplete lookup for the Customer Insights search bar.  Matches
+    case-insensitively against a substring of the stored address OR the
+    customer name so managers don't need the exact, exactly-cased address
+    on hand — and can look a customer up by name.
+    """
+    q = query.strip()
+    if len(q) < 2:
+        return []
+
+    pattern = f"%{q}%"
+    rows = (
+        db.session.query(Order.customer_address, Order.customer_name, Order.created_at)
+        .filter(
+            Order.customer_address.ilike(pattern) | Order.customer_name.ilike(pattern)
+        )
+        .order_by(Order.created_at.desc())
+        .limit(500)
+        .all()
+    )
+
+    seen: dict[str, dict] = {}
+    for addr, name, _created in rows:
+        entry = seen.setdefault(addr, {"address": addr, "customer_name": name, "order_count": 0})
+        entry["order_count"] += 1
+
+    results = sorted(seen.values(), key=lambda r: r["order_count"], reverse=True)
+    return results[:limit]
 
 
 # ── 6. Heatmap ────────────────────────────────────────────────────────────────
@@ -1047,12 +1091,16 @@ def get_weather_impact(period: str) -> dict:
         day_rows = by_date[day]
         conds = [(r.weather_snapshot or {}).get("condition", "Unknown") for r in day_rows]
         dominant = max(set(conds), key=conds.count)
-        go_count = sum(1 for r in day_rows if r.decision == DecisionType.GO)
+        # Same metric as the per-category summary below (avg predicted success
+        # probability) — was previously go_count/total, i.e. the fraction of
+        # decisions the AI said GO on, which isn't "success rate" at all and
+        # could disagree wildly with the summary for the same weather category.
+        probs = [r.success_probability or 0.0 for r in day_rows]
         total = len(day_rows)
         daily_correlation.append({
             "date": day,
             "weather_condition": dominant,
-            "success_rate": round(go_count / total, 4) if total else 0.0,
+            "success_rate": _safe_avg(probs),
             "order_count": total,
         })
 

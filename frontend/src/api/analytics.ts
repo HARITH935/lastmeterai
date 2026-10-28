@@ -214,13 +214,18 @@ export interface CustomerInsightOrder {
 
 export interface CustomerInsightResponse {
   address: string
+  customer_name:  string
+  customer_phone: string | null
   summary: {
-    total_orders: number
-    delivered:    number
-    failed:       number
-    postponed:    number
-    success_rate: number  // 0.0–1.0
-    risk_level:   'low' | 'medium' | 'high'
+    total_orders:   number
+    delivered:      number
+    failed:         number
+    postponed:      number
+    success_rate:   number  // 0.0–1.0
+    risk_level:     'low' | 'medium' | 'high'
+    total_value_inr: number
+    avg_rating:     number | null
+    rating_count:   number
   }
   preferred_delivery_time: 'morning' | 'afternoon' | 'evening'
   recent_orders: CustomerInsightOrder[]   // capped at 5 by the backend
@@ -237,6 +242,27 @@ export async function getCustomerInsights(
   const body = await res.json()
   if (!res.ok) throw body
   return body as CustomerInsightResponse
+}
+
+// ── Customer address autocomplete ────────────────────────────────────────────
+
+export interface CustomerAddressMatch {
+  address: string
+  customer_name: string
+  order_count: number
+}
+
+export async function searchCustomerAddresses(
+  accessToken: string,
+  q: string,
+): Promise<CustomerAddressMatch[]> {
+  const qs = new URLSearchParams({ q })
+  const res = await authFetch(`${API_BASE}/api/analytics/customers/search?${qs}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  const body = await res.json()
+  if (!res.ok) throw body
+  return (body as { results: CustomerAddressMatch[] }).results
 }
 
 // ── Leaderboard ────────────────────────────────────────────────────────────────

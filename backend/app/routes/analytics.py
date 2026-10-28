@@ -101,6 +101,18 @@ def customer_analytics():
     return jsonify(result), 200
 
 
+# ── GET /api/analytics/customers/search ──────────────────────────────────────
+
+@bp.get("/customers/search")
+@jwt_required()
+def customer_address_search():
+    user = _current_user()
+    if err := _require_manager(user):
+        return err
+    q = request.args.get("q", "")
+    return jsonify({"results": analytics_service.search_customer_addresses(q)}), 200
+
+
 # ── GET /api/analytics/heatmap ───────────────────────────────────────────────
 
 @bp.get("/heatmap")

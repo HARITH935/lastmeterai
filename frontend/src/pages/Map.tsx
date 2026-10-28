@@ -171,7 +171,6 @@ export function Map() {
       orders={state.orders}
       route={route}
       agentPos={agentPos}
-      optimize={optimize}
       onOptimizeChange={setOptimize}
       focusOrderId={focusOrderId}
     />
