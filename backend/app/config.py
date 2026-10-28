@@ -36,6 +36,24 @@ class Config:
     ML_MODELS_DIR = os.environ.get("ML_MODELS_DIR", "../ml/models")
     GONOGO_THRESHOLD = float(os.environ.get("GONOGO_THRESHOLD", "0.5"))
 
+    # RAG (retrieval-augmented Q&A — app/rag/). Embeddings + reranking run
+    # locally via sentence-transformers — no API key required for retrieval.
+    # Generation reuses GEMINI_API_KEY above. Render's web service has no
+    # persistent disk, so RAG_CHROMA_DIR is rebuilt lazily on first query
+    # each time the instance restarts rather than assumed to survive deploys.
+    RAG_SOP_DIR = os.environ.get("RAG_SOP_DIR", "../ml/rag/docs")
+    RAG_CHROMA_DIR = os.environ.get("RAG_CHROMA_DIR", "../ml/rag/chroma")
+    RAG_EMBEDDING_MODEL = os.environ.get("RAG_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+    RAG_RERANK_MODEL = os.environ.get("RAG_RERANK_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2")
+    RAG_TOP_K = int(os.environ.get("RAG_TOP_K", "6"))
+    RAG_RERANK_ENABLED = os.environ.get("RAG_RERANK_ENABLED", "true").lower() == "true"
+    # Loading the embedding + cross-encoder models takes ~11s, which otherwise
+    # lands on whichever user asks the first question (measured: 15.5s cold vs
+    # 2-4s warm). Warming happens in a background thread so boot isn't blocked.
+    # Turn off on a memory-constrained host where RAG is used rarely — the
+    # models then load on first use instead.
+    RAG_WARM_ON_BOOT = os.environ.get("RAG_WARM_ON_BOOT", "true").lower() == "true"
+
 
 class DevelopmentConfig(Config):
     DEBUG = True

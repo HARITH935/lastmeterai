@@ -386,6 +386,7 @@ def predict_and_save(order, commit: bool = False) -> Decision:
         threshold             = threshold,
     )
     db.session.add(decision)
+    db.session.flush()  # assign decision.id for step 10 below without committing yet
 
     # 7 — Audit log
     AuditLog.log(
@@ -444,6 +445,17 @@ def predict_and_save(order, commit: bool = False) -> Decision:
 
     if commit:
         db.session.commit()
+
+    # 10 — Incrementally index into RAG Index B (non-fatal; keeps the
+    # historical/live-decision RAG routes current without a manual reindex
+    # after every new decision).
+    try:
+        from app.rag.decision_indexer import upsert_decision  # noqa: PLC0415
+        upsert_decision(decision)
+    except Exception as exc:
+        # Warning, not debug: the decision itself is already committed, but a
+        # recurring failure here means the RAG index is silently going stale.
+        log.warning("Failed to index decision %s into RAG: %s", decision.id, exc)
 
     return decision
 

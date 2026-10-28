@@ -25,10 +25,14 @@ Internal hooks (module-level, patchable by tests):
 from __future__ import annotations
 
 import logging
+import os
 
 log = logging.getLogger(__name__)
 
-_GEMINI_MODEL = "gemini-2.5-flash"
+# Overridable because the free tier's per-model daily cap is low (20 requests
+# /day for gemini-2.5-flash), and both chat and RAG generation draw on it.
+# Switching to a higher-limit model shouldn't need a code change.
+_GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 
 
 # ── Internal hooks ─────────────────────────────────────────────────────────────

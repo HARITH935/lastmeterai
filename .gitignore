@@ -16,3 +16,10 @@ dist/
 /tmp/
 backend.log
 frontend.log
+
+# RAG — rebuildable vector index, not source
+ml/rag/chroma/
+backend/tests/rag/_tmp_test_state/
+
+# Browser-test screenshots
+frontend/.tmp_test/

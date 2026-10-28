@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { getCostSavings, type CostSavingsResponse } from '../api/analytics'
 import { getAgentOrders, getOptimizedRoute, type OrderListItem, type OrderListResponse, type OptimizedRoute } from '../api/orders'
+import { RagChatPanel } from '../components/RagChatPanel'
 import styles from './AgentDashboard.module.css'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -174,12 +175,13 @@ function AICard({ savings }: { savings: CostSavingsResponse }) {
 // ── Dashboard content ──────────────────────────────────────────────────────────
 
 interface AgentContentProps {
-  orders:  OrderListResponse
-  savings: CostSavingsResponse
-  route:   OptimizedRoute | null
+  orders:      OrderListResponse
+  savings:     CostSavingsResponse
+  route:       OptimizedRoute | null
+  accessToken: string
 }
 
-function AgentContent({ orders, savings, route }: AgentContentProps) {
+function AgentContent({ orders, savings, route, accessToken }: AgentContentProps) {
   const { user } = useAuth()
   const allOrders = orders.data
 
@@ -292,6 +294,8 @@ function AgentContent({ orders, savings, route }: AgentContentProps) {
 
         </div>
       </div>
+
+      <RagChatPanel accessToken={accessToken} />
     </div>
   )
 }
@@ -347,5 +351,5 @@ export function AgentDashboard() {
     )
   }
 
-  return <AgentContent orders={state.orders} savings={state.savings} route={state.route} />
+  return <AgentContent orders={state.orders} savings={state.savings} route={state.route} accessToken={access_token!} />
 }

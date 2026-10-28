@@ -1,4 +1,5 @@
 import os
+import threading
 from flask import Flask, jsonify
 from .extensions import db, jwt, socketio, bcrypt, migrate, limiter
 from .config import config
@@ -97,5 +98,34 @@ def create_app(config_name: str | None = None) -> Flask:
     # ── Blueprints ────────────────────────────────────────────────────────────
     from .routes import register_blueprints
     register_blueprints(app)
+
+    # ── RAG model warmup ──────────────────────────────────────────────────────
+    # Both local models are module-level singletons, so touching them once in a
+    # daemon thread moves the ~11s load off the first user's question. Failures
+    # are logged and ignored: the lazy load on first use is still there.
+    if app.config.get("RAG_WARM_ON_BOOT") and not app.config.get("TESTING"):
+        # With the debug reloader the parent process would load a second copy.
+        is_reloader_parent = app.debug and os.environ.get("WERKZEUG_RUN_MAIN") != "true"
+        if not is_reloader_parent:
+            def _warm_rag_models():
+                try:
+                    from app.rag.vectorstore import get_embeddings
+                    get_embeddings().embed_query("warmup")
+                    if app.config.get("RAG_RERANK_ENABLED"):
+                        from app.rag.reranker import _get_model
+                        _get_model().predict([("warmup", "warmup")])
+                    app.logger.info("RAG models warm.")
+                except Exception as exc:
+                    app.logger.warning("RAG warmup skipped: %s", exc)
+
+            threading.Thread(target=_warm_rag_models, daemon=True).start()
+
+    # ── CLI ───────────────────────────────────────────────────────────────────
+    @app.cli.command("rag-reindex")
+    def rag_reindex_command():
+        """Full rebuild of both RAG indexes (SOP docs + decision log)."""
+        from app.rag.reindex import reindex_all
+        counts = reindex_all()
+        print(f"Indexed {counts['sop_chunks']} SOP chunks, {counts['decisions']} decisions.")
 
     return app

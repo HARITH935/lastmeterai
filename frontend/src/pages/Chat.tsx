@@ -5,12 +5,18 @@ import styles from './Chat.module.css'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
+interface RagSourceRef {
+  citation:    string
+  description: string
+}
+
 interface ChatMsg {
   id: number
   role: 'user' | 'assistant' | 'error'
   text: string
   intent?: string
   intentConfidence?: number
+  sources?: RagSourceRef[]
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -92,13 +98,36 @@ function MessageBubble({ msg }: { msg: ChatMsg }) {
     )
   }
 
+  // RAG answers carry sources; the intent classifier's confidence is not
+  // meaningful for them, and only cited sources are worth listing.
+  const isRag = msg.sources !== undefined
+  const allSources = msg.sources ?? []
+  const cited = allSources.filter(s => msg.text.includes(s.citation))
+  const shownSources = cited.length > 0 ? cited : allSources
+
   return (
     <div className={`${styles.row} ${styles.rowStart}`}>
       <div className={styles.bubbleAssistantWrap}>
         <div className={styles.bubbleAssistant}>
           <p>{msg.text}</p>
+          {shownSources.length > 0 && (
+            <div className={styles.sources}>
+              <p className={styles.sourcesLabel}>Sources</p>
+              <ul>
+                {shownSources.map((s, i) => (
+                  <li key={i} title={s.description}>{s.citation}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
-        {msg.intent && <IntentBadge intent={msg.intent} confidence={msg.intentConfidence} />}
+        {isRag ? (
+          <div className={styles.badgeRow}>
+            <span className={`${styles.badge} ${styles.badgeIntent}`}>Knowledge base</span>
+          </div>
+        ) : (
+          msg.intent && <IntentBadge intent={msg.intent} confidence={msg.intentConfidence} />
+        )}
       </div>
     </div>
   )
@@ -189,6 +218,7 @@ export function Chat() {
         sessionId,
       )
       if (!sessionId) setSessionId(res.session_id)
+      const ragSources = res.context_data?.rag_sources
       setMessages(prev => [
         ...prev,
         {
@@ -197,6 +227,7 @@ export function Chat() {
           text:             res.reply,
           intent:           res.intent,
           intentConfidence: res.intent_confidence,
+          sources:          Array.isArray(ragSources) ? (ragSources as RagSourceRef[]) : undefined,
         },
       ])
     } catch (err: unknown) {

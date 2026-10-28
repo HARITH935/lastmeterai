@@ -108,6 +108,12 @@
 }
 .bubbleError p { font-size: 0.82rem; font-weight: 600; color: var(--nogo); margin: 0; }
 
+/* ---- RAG sources (shown on grounded "general"-fallback replies) ---- */
+.sources { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); }
+.sourcesLabel { font-family: 'LM Plex Mono', monospace; font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-dim); margin: 0 0 4px; }
+.sources ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.sources li { font-family: 'LM Plex Mono', monospace; font-size: 0.68rem; color: var(--ink-muted); }
+
 /* ---- intent badge ---- */
 .badgeRow { display: flex; align-items: center; gap: 6px; margin-top: 6px; margin-left: 4px; flex-wrap: wrap; }
 .badge {

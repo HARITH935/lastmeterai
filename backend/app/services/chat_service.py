@@ -220,12 +220,25 @@ def handle_chat_message(user, message_text: str, session_id: str | None = None) 
         log.warning("Context fetch failed for intent %r: %s", effective_intent, exc)
         context_data = {"error": "context fetch failed", "detail": str(exc)}
 
-    # 4. Generate Gemini reply (falls back to intent template on any error)
-    from app.services import gemini_service
+    # 4. Generate reply. "general" (no confident intent match) falls through
+    #    to the RAG pipeline instead of a static canned reply — grounded,
+    #    cited answers from SOP docs / decision history / live SHAP data.
+    #    Every other intent keeps its existing fast, structured Gemini reply.
     user_role = "manager" if user.is_manager else "agent"
-    reply, gemini_tokens = gemini_service.generate_reply(
-        user_role, effective_intent, context_data, message_text
-    )
+    if effective_intent == ChatIntent.GENERAL:
+        from app.rag.service import answer_query
+        rag_result = answer_query(user, message_text)
+        reply = rag_result["answer"]
+        gemini_tokens = rag_result["tokens_used"]
+        context_data = {
+            "rag_route": rag_result["route"],
+            "rag_sources": rag_result["sources"],
+        }
+    else:
+        from app.services import gemini_service
+        reply, gemini_tokens = gemini_service.generate_reply(
+            user_role, effective_intent, context_data, message_text
+        )
 
     # 5. Persist assistant row
     assistant_row = ChatHistory(

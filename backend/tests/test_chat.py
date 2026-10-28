@@ -209,6 +209,9 @@ def run():
               f"got type {type(ctx.get('workload_by_area'))}")
 
         # ── 10. general ────────────────────────────────────────────────────────
+        # "general" now falls through to the RAG pipeline (grounded, cited
+        # answers) instead of a static canned reply — context_data carries
+        # the RAG route + sources rather than being empty.
         print("\n── 10. general intent ──")
         r = post_msg(mgr_token, "Good morning", SESSION)
         check("general → 200", r.status_code == 200, r.data[:200])
@@ -216,7 +219,9 @@ def run():
         check("intent == general", d.get("intent") == "general",
               f"got {d.get('intent')!r}")
         ctx = d.get("context_data") or {}
-        check("context_data is empty dict", ctx == {},
+        check("context_data has rag_route", "rag_route" in ctx,
+              f"got {ctx!r}")
+        check("context_data has rag_sources list", isinstance(ctx.get("rag_sources"), list),
               f"got {ctx!r}")
 
         # ── 11. Low-confidence threshold fallback ──────────────────────────────

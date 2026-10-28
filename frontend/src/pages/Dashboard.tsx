@@ -21,6 +21,7 @@ import {
   type WeatherCurrent,
 } from '../api/analytics'
 import { AtRiskBoard } from '../components/AtRiskBoard'
+import { RagChatPanel } from '../components/RagChatPanel'
 import { AgentDashboard } from './AgentDashboard'
 import { Placeholder } from './Placeholder'
 import styles from './Dashboard.module.css'
@@ -312,6 +313,8 @@ function DashboardContent({ data, accessToken }: { data: DashboardResponse; acce
           </ResponsiveContainer>
         </ChartCard>
       </div>
+
+      <RagChatPanel accessToken={accessToken} />
     </div>
   )
 }

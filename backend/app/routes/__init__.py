@@ -8,6 +8,7 @@ def register_blueprints(app):
     from app.routes.tracking      import bp as tracking_bp
     from app.routes.models         import bp as models_bp
     from app.routes.agents         import bp as agents_bp
+    from app.routes.rag            import bp as rag_bp
     app.register_blueprint(auth_bp)
     app.register_blueprint(orders_bp)
     app.register_blueprint(decisions_bp)
@@ -18,3 +19,4 @@ def register_blueprints(app):
     app.register_blueprint(tracking_bp)
     app.register_blueprint(models_bp)
     app.register_blueprint(agents_bp)
+    app.register_blueprint(rag_bp)
