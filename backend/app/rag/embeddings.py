@@ -79,7 +79,12 @@ class GeminiEmbeddings:
 
         import google.generativeai as genai
 
-        genai.configure(api_key=self._api_key)
+        # REST, not the default gRPC: production runs a gunicorn eventlet
+        # worker, and run.py monkey-patches the stdlib for green threads.
+        # gRPC's native C threading doesn't cooperate with that and hangs the
+        # worker until it's killed (a 502 with no traceback). REST goes through
+        # the patched socket layer and behaves.
+        genai.configure(api_key=self._api_key, transport="rest")
         for attempt, delay in enumerate((*_RETRY_DELAYS, None)):
             try:
                 result = genai.embed_content(

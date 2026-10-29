@@ -49,7 +49,11 @@ def _call_gemini(prompt: str, api_key: str) -> tuple[str, int | None]:
     """
     import google.generativeai as genai
 
-    genai.configure(api_key=api_key)
+    # REST, not the default gRPC: production serves on a gunicorn eventlet
+    # worker and run.py monkey-patches the stdlib, which gRPC's native C
+    # threading does not cooperate with — it hangs the worker until it's
+    # killed, surfacing as a 502 with no traceback.
+    genai.configure(api_key=api_key, transport="rest")
     model = genai.GenerativeModel(_GEMINI_MODEL)
     response = model.generate_content(prompt)
     reply_text = response.text.strip()
