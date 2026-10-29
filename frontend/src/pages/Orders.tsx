@@ -334,7 +334,7 @@ function validateBulkRow(data: Record<string, string>, rowNum: number): ParsedRo
   const phone = data.customer_phone?.trim()
   if (phone && (!/^\d+$/.test(phone) || phone.length < 10 || phone.length > 15))
     errors.push('customer_phone: 10–15 digits only (no + or -)')
-  if (!AREAS.includes(data.area))     errors.push(`area: ${AREAS.join(' | ')}`)
+  if (!(AREAS as readonly string[]).includes(data.area))     errors.push(`area: ${AREAS.join(' | ')}`)
   if (!VALID_RESIDENCE_B.includes(data.residence_type)) errors.push('residence_type: apartment | independent')
   if (!VALID_PACKAGES_B.includes(data.package_size))    errors.push('package_size: small | medium | large')
   if (!VALID_WINDOWS_B.includes(data.time_window))      errors.push('time_window: morning | afternoon | evening')

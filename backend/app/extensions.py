@@ -21,4 +21,9 @@ def _rate_limit_key() -> str:
         pass
     return get_remote_address()
 
-limiter = Limiter(key_func=_rate_limit_key, default_limits=[])
+# In-memory storage, stated explicitly rather than left as the default
+# flask-limiter warns about on every boot. It's correct here because the server
+# runs a single gunicorn worker, so one process sees every request. If workers
+# are ever increased, each would count separately and the limits would
+# effectively multiply — at that point switch to a shared store (redis://).
+limiter = Limiter(key_func=_rate_limit_key, default_limits=[], storage_uri="memory://")

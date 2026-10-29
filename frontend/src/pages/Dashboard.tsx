@@ -261,7 +261,7 @@ function DashboardContent({ data, accessToken }: { data: DashboardResponse; acce
                   axisLine={false}
                   tickLine={false}
                 />
-                <Tooltip formatter={(v: number) => [`${v}%`, 'Success Rate']} contentStyle={tooltipStyle} />
+                <Tooltip formatter={(v: unknown) => [`${v}%`, 'Success Rate']} contentStyle={tooltipStyle} />
                 <Line
                   type="monotone"
                   dataKey="value"
@@ -286,7 +286,7 @@ function DashboardContent({ data, accessToken }: { data: DashboardResponse; acce
                   axisLine={false}
                   tickLine={false}
                 />
-                <Tooltip formatter={(v: number) => [formatINR(v), 'Revenue']} contentStyle={tooltipStyle} />
+                <Tooltip formatter={(v: unknown) => [formatINR(Number(v)), 'Revenue']} contentStyle={tooltipStyle} />
                 <Bar dataKey="value" fill={c.accent} radius={[4, 4, 0, 0]} maxBarSize={24} />
               </BarChart>
             </ResponsiveContainer>
@@ -307,7 +307,7 @@ function DashboardContent({ data, accessToken }: { data: DashboardResponse; acce
                 axisLine={false}
                 tickLine={false}
               />
-              <Tooltip formatter={(v: number) => [`${v}%`, 'Failure Rate']} contentStyle={tooltipStyle} />
+              <Tooltip formatter={(v: unknown) => [`${v}%`, 'Failure Rate']} contentStyle={tooltipStyle} />
               <Bar dataKey="value" fill={c.nogo} radius={[4, 4, 0, 0]} maxBarSize={40} />
             </BarChart>
           </ResponsiveContainer>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import {
   ResponsiveContainer,
   BarChart, Bar,
@@ -159,7 +159,7 @@ function ReportsSkeleton() {
 
 // ── Section label ──────────────────────────────────────────────────────────────
 
-function SectionLabel({ children }: { children: string }) {
+function SectionLabel({ children }: { children: ReactNode }) {
   return <p className={styles.sectionLabel}>{children}</p>
 }
 
@@ -312,7 +312,7 @@ function ReportsContent({ data, period }: { data: ReportData; period: Period }) 
                   axisLine={false}
                   tickLine={false}
                 />
-                <Tooltip formatter={(v: number) => [`${v}%`, 'Success Rate']} contentStyle={tooltipStyle} />
+                <Tooltip formatter={(v: unknown) => [`${v}%`, 'Success Rate']} contentStyle={tooltipStyle} />
                 <Line
                   type="monotone" dataKey="rate" stroke={c.accent}
                   strokeWidth={2} dot={{ r: 3, fill: c.accent }} activeDot={{ r: 5 }}

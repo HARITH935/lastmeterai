@@ -73,14 +73,6 @@ function AnalyticsIcon(p: IconProps) {
   )
 }
 
-function PowerBiIcon(p: IconProps) {
-  return (
-    <Svg {...p}>
-      <path d="M13 3 5 13.5h6L11 21l8-10.5h-6L13 3Z" />
-    </Svg>
-  )
-}
-
 function AgentsIcon(p: IconProps) {
   return (
     <Svg {...p}>
@@ -163,7 +155,6 @@ const ICONS: Record<NavIcon, (p: IconProps) => React.ReactElement> = {
   orders: OrdersIcon,
   reports: ReportsIcon,
   analytics: AnalyticsIcon,
-  powerbi: PowerBiIcon,
   agents: AgentsIcon,
   earnings: EarningsIcon,
   bell: BellIcon,

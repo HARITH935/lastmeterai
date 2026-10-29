@@ -46,7 +46,7 @@ function extractMsg(err: unknown): string {
   return 'Unable to load analytics.'
 }
 
-// ── CSV export (tidy tables → Tableau / Power BI) ────────────────────────────────
+// ── CSV export (tidy tables for Excel, Tableau or any BI tool) ──────────────────
 function toCSV(rows: Record<string, string | number>[]): string {
   if (rows.length === 0) return ''
   const cols = Object.keys(rows[0])
@@ -301,7 +301,7 @@ export function Analytics() {
                 <XAxis dataKey="label" tick={{ fontSize: 12, fill: c.tick }} />
                 <YAxis unit="%" domain={[0, 100]} tick={{ fontSize: 11, fill: c.tick }} width={34} />
                 <Tooltip content={<TT unit="%" />} cursor={{ fill: 'rgba(148,163,184,0.08)' }} />
-                <Bar dataKey="rate" name="Success rate" radius={[4, 4, 0, 0]} maxBarSize={90} label={{ position: 'top', fontSize: 12, fill: c.tick, formatter: (v: number) => `${v}%` }}>
+                <Bar dataKey="rate" name="Success rate" radius={[4, 4, 0, 0]} maxBarSize={90} label={{ position: 'top', fontSize: 12, fill: c.tick, formatter: (v: unknown) => `${v}%` }}>
                   {aiVsBaseline.map((d, i) => <Cell key={i} fill={d.color} />)}
                 </Bar>
               </BarChart>
@@ -315,7 +315,7 @@ export function Analytics() {
                 <XAxis type="number" unit="%" domain={[0, 100]} tick={{ fontSize: 11, fill: c.tick }} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 12, fill: c.tick }} width={64} />
                 <Tooltip content={<TT unit="%" />} cursor={{ fill: 'rgba(148,163,184,0.08)' }} />
-                <Bar dataKey="rate" name="Success rate" fill={c.accent} radius={[0, 4, 4, 0]} maxBarSize={22} label={{ position: 'right', fontSize: 11, fill: c.tick, formatter: (v: number) => `${v}%` }} />
+                <Bar dataKey="rate" name="Success rate" fill={c.accent} radius={[0, 4, 4, 0]} maxBarSize={22} label={{ position: 'right', fontSize: 11, fill: c.tick, formatter: (v: unknown) => `${v}%` }} />
               </BarChart>
             </ResponsiveContainer>
           </ChartCard>
@@ -331,7 +331,7 @@ export function Analytics() {
                 <YAxis unit="%" tick={{ fontSize: 11, fill: c.tick }} width={34} />
                 <Tooltip content={<TT unit="%" />} cursor={{ fill: 'rgba(148,163,184,0.08)' }} />
                 <Bar dataKey="fail" name="Failure rate" radius={[4, 4, 0, 0]} maxBarSize={64}
-                  label={{ position: 'top', fontSize: 11, fill: c.tick, formatter: (v: number) => `${v}%` }}>
+                  label={{ position: 'top', fontSize: 11, fill: c.tick, formatter: (v: unknown) => `${v}%` }}>
                   {areaChart.map((d, i) => <Cell key={i} fill={c[RISK_KEY[d.band] ?? 'urgent']} />)}
                 </Bar>
               </BarChart>
@@ -370,7 +370,7 @@ export function Analytics() {
                 <YAxis unit="%" domain={[0, 100]} tick={{ fontSize: 11, fill: c.tick }} width={34} />
                 <Tooltip content={<TT unit="%" />} cursor={{ fill: 'rgba(148,163,184,0.08)' }} />
                 <Bar dataKey="rate" name="Success rate" radius={[4, 4, 0, 0]} maxBarSize={72}
-                  label={{ position: 'top', fontSize: 11, fill: c.tick, formatter: (v: number) => `${v}%` }}>
+                  label={{ position: 'top', fontSize: 11, fill: c.tick, formatter: (v: unknown) => `${v}%` }}>
                   {weatherBars.map((d, i) => <Cell key={i} fill={d.color} />)}
                 </Bar>
               </BarChart>
@@ -380,7 +380,7 @@ export function Analytics() {
 
         {/* ── BI export ───────────────────────────────────────────────────────── */}
         <div className={styles.biCard}>
-          <p className={styles.biTitle}>Export for Power BI / Tableau</p>
+          <p className={styles.biTitle}>Export data (CSV)</p>
           <p className={styles.biSub}>
             Tidy CSV tables ready to import into a BI tool — one table per dataset.
           </p>

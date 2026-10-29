@@ -210,6 +210,7 @@ export interface CustomerInsightOrder {
   date:         string   // YYYY-MM-DD
   status:       string
   time_window:  'morning' | 'afternoon' | 'evening'
+  payment_amount: number
 }
 
 export interface CustomerInsightResponse {

@@ -1,5 +1,5 @@
 export type NavIcon =
-  | 'home' | 'map' | 'chat' | 'orders' | 'reports' | 'analytics' | 'powerbi'
+  | 'home' | 'map' | 'chat' | 'orders' | 'reports' | 'analytics'
   | 'agents' | 'earnings' | 'bell' | 'profile' | 'settings' | 'insights' | 'radar'
 
 export interface NavItem {
@@ -22,7 +22,6 @@ export const MANAGER_NAV: NavItem[] = [
   { label: 'All Orders',        path: '/orders',            icon: 'orders' },
   { label: 'Reports',           path: '/reports',           icon: 'reports' },
   { label: 'Analytics',         path: '/analytics',         icon: 'analytics' },
-  { label: 'Power BI',          path: '/power-bi',          icon: 'powerbi' },
   { label: 'Agents',            path: '/agents',            icon: 'agents' },
   { label: 'Notifications',     path: '/notifications',     icon: 'bell' },
   { label: 'Profile',           path: '/profile',           icon: 'profile' },
@@ -66,7 +65,6 @@ export const MANAGER_NAV_GROUPS: NavGroup[] = [
     items: [
       { label: 'Reports',           path: '/reports',            icon: 'reports' },
       { label: 'Analytics',         path: '/analytics',           icon: 'analytics' },
-      { label: 'Power BI',          path: '/power-bi',            icon: 'powerbi' },
       { label: 'Customer Insights', path: '/customer-insights',   icon: 'insights' },
       { label: 'Area Intelligence', path: '/area-intelligence',   icon: 'radar' },
     ],

@@ -350,7 +350,11 @@ export function MapboxAgent({ orders, route, agentPos, onOptimizeChange, focusOr
 
     // Any user pan/zoom (originalEvent present) breaks camera-follow so the map
     // can be explored freely; programmatic jumpTo has no originalEvent.
-    let onUserGesture: ((e: { originalEvent?: unknown }) => void) | null = null
+    // `type` keeps this from being an all-optional "weak" type: mapbox-gl's
+    // typings declare zoomstart's event without originalEvent, which TS then
+    // rejects as sharing no properties. Mapbox does set it on user-initiated
+    // zooms at runtime, which is the whole point of the check below.
+    let onUserGesture: ((e: { type: string; originalEvent?: unknown }) => void) | null = null
 
     const stop = () => {
       navRef.current = false

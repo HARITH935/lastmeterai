@@ -151,7 +151,7 @@ export function Notifications() {
   const [markingAll,   setMarkingAll]   = useState(false)
 
   // Stable ref so fetch callback can be called after mutations too
-  const fetchRef = useRef<() => void>()
+  const fetchRef = useRef<(() => void) | undefined>(undefined)
 
   useEffect(() => {
     let cancelled = false
