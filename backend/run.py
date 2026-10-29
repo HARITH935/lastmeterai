@@ -1,5 +1,11 @@
 import eventlet
-eventlet.monkey_patch()
+
+# os=False matters, and matches what gunicorn's own eventlet worker does.
+# Greening os.write breaks gunicorn's arbiter: it writes to an internal wakeup
+# pipe from the main loop, and a greened write raises "do not call blocking
+# functions from the mainloop", killing the master and restarting the instance
+# in a loop. Everything else is still patched, so Flask-SocketIO works as before.
+eventlet.monkey_patch(os=False)
 import os
 
 # joblib/scikit-learn default to a multiprocessing ("loky") backend for
