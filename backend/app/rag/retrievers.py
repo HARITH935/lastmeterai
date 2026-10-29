@@ -62,18 +62,13 @@ def retrieve_historical(query: str, filters: dict, k: int, user=None) -> tuple[l
         where["decision"] = filters["decision"]
     where = _apply_role_scope(where, user)
 
-    # Chroma's `where` requires a single top-level operator for >1 key.
-    chroma_where = None
-    if len(where) == 1:
-        chroma_where = where
-    elif len(where) > 1:
-        chroma_where = {"$and": [{k: v} for k, v in where.items()]}
-
+    # Every key must match. Scoping is applied here, before ranking, so an
+    # agent's results are drawn only from their own area rather than filtered
+    # down afterwards from a pool that included everyone's.
     store = get_vectorstore(DECISION_COLLECTION)
-    results = store.similarity_search(query, k=k, filter=chroma_where)
+    results = store.similarity_search(query, k=k, filter=where or None)
 
-    # date_from/date_to aren't Chroma-filterable in this simple schema (no
-    # range operator wired up) — apply as a post-filter instead.
+    # Date range is a post-filter: the store only does equality matching.
     date_from = filters.get("date_from")
     date_to = filters.get("date_to")
     if date_from or date_to:

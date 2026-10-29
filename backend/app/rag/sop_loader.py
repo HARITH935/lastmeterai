@@ -23,22 +23,46 @@ def _sop_dir() -> Path:
     return Path(Config.RAG_SOP_DIR)
 
 
+def _split(text: str) -> list[str]:
+    """Pack paragraphs into chunks of at most _CHUNK_SIZE characters.
+
+    Replaces LangChain's recursive splitter, which pulled langchain-core into
+    memory for a corpus where every document is a single chunk anyway (the
+    longest SOP is ~700 characters). Paragraph boundaries are kept intact;
+    only a paragraph longer than a whole chunk is cut mid-text, and those cuts
+    overlap by _CHUNK_OVERLAP so a sentence spanning the cut stays findable.
+    """
+    paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
+    chunks: list[str] = []
+    current = ""
+    for para in paragraphs:
+        if len(para) > _CHUNK_SIZE:
+            if current:
+                chunks.append(current)
+                current = ""
+            step = _CHUNK_SIZE - _CHUNK_OVERLAP
+            chunks.extend(para[i:i + _CHUNK_SIZE] for i in range(0, len(para), step))
+            continue
+        candidate = f"{current}\n\n{para}" if current else para
+        if len(candidate) > _CHUNK_SIZE:
+            chunks.append(current)
+            current = para
+        else:
+            current = candidate
+    if current:
+        chunks.append(current)
+    return chunks
+
+
 def load_and_chunk() -> list:
-    """Read every .md file in RAG_SOP_DIR, split into chunks, return
-    a list of langchain Document objects with source metadata."""
-    from langchain_text_splitters import RecursiveCharacterTextSplitter
-    from langchain_core.documents import Document
+    """Read every .md file in RAG_SOP_DIR, split into chunks, return a list
+    of Documents with source metadata."""
+    from app.rag.vectorstore import Document
 
     sop_dir = _sop_dir()
     if not sop_dir.exists():
         log.warning("SOP directory %s does not exist — Index A will be empty.", sop_dir)
         return []
-
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=_CHUNK_SIZE,
-        chunk_overlap=_CHUNK_OVERLAP,
-        separators=["\n## ", "\n### ", "\n\n", "\n", " ", ""],
-    )
 
     docs: list[Document] = []
     md_files = sorted(sop_dir.glob("*.md"))
@@ -47,7 +71,7 @@ def load_and_chunk() -> list:
         # Use the first line ("# Title") as a human-readable section label,
         # falling back to the filename.
         title_line = text.splitlines()[0].lstrip("# ").strip() if text.strip() else path.stem
-        chunks = splitter.split_text(text)
+        chunks = _split(text)
         for i, chunk in enumerate(chunks):
             docs.append(Document(
                 page_content=chunk,

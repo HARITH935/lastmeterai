@@ -16,8 +16,8 @@ log = logging.getLogger(__name__)
 
 
 def _decision_to_document(decision):
-    """Build a langchain Document from a Decision row + its parent Order."""
-    from langchain_core.documents import Document
+    """Build a retrievable Document from a Decision row + its parent Order."""
+    from app.rag.vectorstore import Document
 
     order = decision.order
     top_factors = decision.top_shap_factors

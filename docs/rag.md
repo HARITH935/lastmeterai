@@ -23,18 +23,32 @@ to RAG rather than a canned reply).
 4. **Generation** (`app/rag/generation.py`) — every claim must carry a
    citation, and the model is instructed to refuse rather than guess.
 
+## Vector storage
+
+Plain numpy, not a vector database (`app/rag/vectorstore.py`). The corpus is a
+few hundred vectors — about 4MB — and chromadb + LangChain cost ~55MB of memory
+just to import, which is what ran the 512MB instance out of memory in
+production. Search is brute-force cosine similarity, well under a millisecond
+at this size; a real index only pays off at tens of thousands of rows.
+
+Each index records which embedding model built it. If that doesn't match the
+current model — say after switching `RAG_EMBEDDING_PROVIDER` — the stale index
+is discarded and rebuilt automatically, instead of comparing vectors from two
+incompatible models.
+
 ## Configuration that matters
 
 | Variable | Default | Why |
 |---|---|---|
-| `RAG_EMBEDDING_PROVIDER` | `gemini` | `local` loads ~365MB of torch. Measured peak RSS: **463MB local vs 211MB via API**, against Render's 512MB cap. |
+| `RAG_EMBEDDING_PROVIDER` | `gemini` | `local` loads ~365MB of torch. Measured peak RSS against Render's 512MB cap: **463MB** local models + Chroma, **~200MB** Gemini + Chroma (still OOM'd in production), **134MB** Gemini + the numpy store. |
 | `RAG_RERANK_ENABLED` | `false` | The cross-encoder is the only thing that still pulls torch in. It also showed length bias here, ranking a short policy doc last behind verbose decision records. |
 | `RAG_WARM_ON_BOOT` | `true` | Only does anything with local models. Harmless (and skipped) on the API provider. |
 | `RAG_MAX_INDEXED_DECISIONS` | `300` | Bounds cold-start rebuild time. `0` indexes everything. |
 | `GEMINI_MODEL` | `gemini-2.5-flash` | Generation model. Production sets `gemini-3.5-flash-lite`. |
 
-**Switching embedding provider changes vector dimensions** (3072 vs 384).
-Always rerun a reindex afterwards; mixed vectors silently return nonsense.
+**Switching embedding provider changes vector dimensions** (3072 vs 384). The
+store detects this and rebuilds on first use, so no manual step is needed —
+but that first query pays for the rebuild.
 
 ## Reindexing
 
@@ -70,7 +84,7 @@ short, so a deploy doesn't strictly need this.
 ## Tests
 
 `backend/tests/rag/` — 43 tests, real pytest (unlike the hand-rolled scripts
-elsewhere in `backend/tests/`). Hermetic: throwaway SQLite DB, throwaway Chroma
+elsewhere in `backend/tests/`). Hermetic: throwaway SQLite DB, throwaway index
 directory, and `GEMINI_API_KEY` pinned empty so generation takes the
 deterministic fallback path and embeddings stay local — no network, no quota.
 

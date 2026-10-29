@@ -36,19 +36,16 @@ Flask-Limiter==3.12
 # Validation (used in backend/app/schemas/ and routes/orders.py)
 marshmallow==3.23.2
 
-# RAG (retrieval-augmented Q&A — app/rag/). Embeddings + reranking run locally
-# via sentence-transformers — no external API key needed for retrieval.
-# Generation reuses the existing GEMINI_API_KEY / gemini_service.py.
-langchain==1.3.15
-langchain-core==1.5.5
-langchain-text-splitters==1.1.2
-langchain-chroma==1.1.0
+# RAG (retrieval-augmented Q&A — app/rag/). Production embeds through the
+# Gemini API (google-generativeai, above) and stores vectors in plain numpy, so
+# none of the packages below are imported on Render. They back the optional
+# RAG_EMBEDDING_PROVIDER=local mode and the cross-encoder reranker only.
+# chromadb and the rest of LangChain were dropped: ~55MB of import overhead to
+# hold a few hundred vectors, which is what ran the 512MB instance out of memory.
 langchain-huggingface==1.2.2
-chromadb==1.5.9
 # Pinned <5: 5.x eagerly imports its full surface (training, ONNX export,
 # sparse encoders) on load, which is much slower to import than needed here.
 sentence-transformers==3.0.1
-pypdf==6.14.2
-# Pinned <6: chromadb/langchain pull protobuf 6.x transitively, which breaks
+# Pinned <6: newer transitive pulls bring protobuf 6.x, which breaks
 # google-generativeai and mlflow-skinny (both require protobuf<6).
 protobuf==5.29.6

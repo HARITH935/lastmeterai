@@ -56,6 +56,9 @@ class GeminiEmbeddings:
     def __init__(self, model: str, api_key: str):
         self._model = model if model.startswith("models/") else f"models/{model}"
         self._api_key = api_key
+        # Read by the vector store to tell whether an index on disk was built
+        # by this model, and so whether its vectors are comparable at all.
+        self.signature = f"gemini:{self._model}"
         self._recent: list[float] = []  # timestamps of recently embedded texts
 
     def _throttle(self, count: int) -> None:
